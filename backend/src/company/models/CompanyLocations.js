@@ -1,0 +1,3 @@
+import mongoose from "mongoose";
+const companyLocationsSchema = new mongoose.Schema({ company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", unique: true, required: true }, headquarters: String, branchLocations: String, franchiseLocations: String, serviceRadius: String, serviceAreas: String, cities: String, states: String, countries: String, mapUrl: String, latitude: String, longitude: String, locations: [{ label: String, address: String, city: String, state: String, country: String, zipCode: String, latitude: String, longitude: String, radius: String }] }, { timestamps: true });
+export const CompanyLocations = mongoose.model("CompanyLocations", companyLocationsSchema);

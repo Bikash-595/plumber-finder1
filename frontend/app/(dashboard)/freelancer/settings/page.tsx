@@ -1,0 +1,5 @@
+import SettingsSection from "@/components/company-dashboard/sections/SettingsSection";
+
+export default function FreelancerSettingsPage() {
+  return <SettingsSection />;
+}

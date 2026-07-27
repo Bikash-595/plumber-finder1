@@ -1,0 +1,3 @@
+import mongoose from "mongoose";
+const companyServicesSchema = new mongoose.Schema({ company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", unique: true, required: true }, category: String, name: String, description: String, features: String, benefits: String, areas: String, pricing: String, duration: String, warranty: String, faqs: String, services: [{ name: String, category: String, description: String, pricing: String, duration: String, warranty: String, areas: String }] }, { timestamps: true });
+export const CompanyServices = mongoose.model("CompanyServices", companyServicesSchema);
