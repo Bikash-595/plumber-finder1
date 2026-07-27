@@ -26,6 +26,7 @@ const DEFAULT_BASE_URL = "http://localhost:3300/api";
 export function createApiClient(options: ApiClientOptions = {}) {
   const baseUrl =
     options.baseUrl ||
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
     process.env.API_URL ||
     DEFAULT_BASE_URL;

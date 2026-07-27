@@ -56,7 +56,7 @@ export async function authenticateAccount(accountType: AccountType, action: Auth
     freelancer: "freelancers",
   };
   const resource = resourceByAccountType[accountType];
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
+  const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
   let response: Response;
   try {
     response = await fetch(`${baseUrl}/auth/${resource}/${action}`, {
@@ -77,7 +77,7 @@ export async function authenticateAccount(accountType: AccountType, action: Auth
 }
 
 export async function loginWithEmail(email: string, password: string, selectedAccountType: AccountType) {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
+  const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
   let response: Response;
   try {
     response = await fetch(`${baseUrl}/auth/login`, {

@@ -119,7 +119,7 @@ export default function Home() {
   const itemsPerPage = 9;
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api"}/companies/public`)
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api"}/companies/public`)
       .then((response) => response.ok ? response.json() : { data: [] })
       .then(({ data }) => setPublishedCompanies((data || []).map((company: { _id: string; companyName: string; logo?: string; coverImage?: string; services?: string[]; serviceAreas?: string[]; location?: string; city?: string; state?: string; phone?: string; email?: string; website?: string; description?: string; rating?: number; reviewCount?: number }) => ({
         id: company._id,

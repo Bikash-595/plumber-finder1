@@ -10,7 +10,9 @@ import { userAuthRouter } from "./user/routers/userAuthRouter.js";
 
 export const app = express();
 
-app.use(cors({ origin: process.env.CORS_ORIGIN?.split(",") || "http://localhost:3000" }));
+const frontendUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "http://localhost:3000";
+
+app.use(cors({ origin: frontendUrl.split(",") }));
 app.use(express.json({ limit: "3mb" }));
 
 app.get("/health", (_req, res) => {

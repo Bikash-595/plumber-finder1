@@ -39,7 +39,7 @@ export default function SectionForm({ section, title, description, fields, defau
     if (!apiEndpoint) return;
     const token = readStoredUser()?.accessToken;
     if (!token) return;
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api"}${apiEndpoint}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api"}${apiEndpoint}`, { headers: { Authorization: `Bearer ${token}` } })
       .then((response) => response.ok ? response.json() : null)
       .then((payload) => { if (payload?.data) form.reset({ ...defaults, ...payload.data }); })
       .catch(() => undefined);
@@ -52,7 +52,7 @@ export default function SectionForm({ section, title, description, fields, defau
     }
     const token = readStoredUser()?.accessToken;
     if (!token) return setNotice("Please log in with your company account before saving.");
-    const url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api"}${apiEndpoint}`;
+    const url = `${process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api"}${apiEndpoint}`;
     try {
       let response = await fetch(url, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(values) });
       if (response.status === 404) {
