@@ -21,6 +21,8 @@ See `docs/project-separation.md` for the migration map and backend scope convent
 
 ## Getting Started
 
+Before starting the app, copy `.env.example` to `.env` and set `NEXT_PUBLIC_GOOGLE_CLIENT_ID` to the Google OAuth 2.0 **Web application** client ID. Its authorized JavaScript origins must include the address where Next.js runs, such as `http://localhost:3000`.
+
 First, run the development server:
 
 ```bash

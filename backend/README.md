@@ -36,4 +36,13 @@ Each account type has its own model, controller, and router. Replace `{type}` wi
 
 `users` and `freelancers` require `name`, `email`, and `password` to sign up. `companies` requires `companyName`, `email`, and `password`. Google requests send the Google Identity Services `credential` (ID token), which is verified by the server before an account is created.
 
+## Google sign-in setup
+
+1. In Google Cloud Console, create an OAuth 2.0 credential with application type **Web application**.
+2. Add every frontend origin exactly, for example `http://localhost:3000` for development and `https://app.example.com` in production. Do not add `/api` to these origins.
+3. Set the issued client ID, ending in `.apps.googleusercontent.com`, as both `frontend/NEXT_PUBLIC_GOOGLE_CLIENT_ID` and `backend/GOOGLE_CLIENT_ID`.
+4. Set `FRONTEND_URL` to the same comma-separated frontend origins and restart both services after changing environment files.
+
+The client secret is not used by this ID-token flow and must never be exposed through `NEXT_PUBLIC_*` variables.
+
 `GET /api/plumbers` accepts `page`, `limit`, `q`, `service`, `area`, and `available=true` query parameters.

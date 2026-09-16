@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 
+const GOOGLE_WEB_CLIENT_ID = /^\d+-[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/;
+
 function requireJwtSecret() {
   if (!process.env.JWT_SECRET || process.env.JWT_SECRET === "replace-with-a-long-random-secret") {
     throw new Error("JWT_SECRET must be set to a long random value.");
@@ -25,8 +27,8 @@ export function verifyAccessToken(token) {
 }
 
 export async function verifyGoogleCredential(credential) {
-  if (!process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID.startsWith("your-")) {
-    throw new Error("GOOGLE_CLIENT_ID must be configured before using Google sign-in.");
+  if (!GOOGLE_WEB_CLIENT_ID.test(process.env.GOOGLE_CLIENT_ID || "")) {
+    throw new Error("GOOGLE_CLIENT_ID must be a valid Google OAuth 2.0 Web application client ID.");
   }
 
   const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);

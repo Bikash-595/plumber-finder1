@@ -11,6 +11,7 @@ import ResultsHeader from "@/components/find/ResultsHeader";
 import PlumberCardGrid from "@/components/find/PlumberCardGrid";
 import PlumberCardList from "@/components/find/PlumberCardList";
 import Pagination from "@/components/find/Pagination";
+import StateSeoContent from "@/components/find/StateSeoContent";
 import { useState } from "react";
 
 export default function StatePage({ params, searchParams }: { params: Promise<{ state: string }>, searchParams: Promise<{ city?: string }> }) {
@@ -70,6 +71,11 @@ export default function StatePage({ params, searchParams }: { params: Promise<{ 
             {totalPages > 1 && (
               <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
             )}
+            <StateSeoContent
+              stateName={stateName}
+              city={city}
+              plumbers={filteredPlumbers}
+            />
           </div>
         </div>
       </div>

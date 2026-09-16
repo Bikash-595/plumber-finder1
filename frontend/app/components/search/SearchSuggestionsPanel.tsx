@@ -424,6 +424,7 @@ export default function SearchSuggestionsPanel({
                   : "border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
               }`}
             >
+            
               <FaMapMarkerAlt className="text-xs" />
               {item}
             </button>
@@ -432,6 +433,7 @@ export default function SearchSuggestionsPanel({
       </div>
 
       {/* Middle Section: Popular Services + Active Location */}
+
       <div className="grid gap-5 border-b border-slate-100 bg-slate-50/80 px-5 py-5 sm:px-6 lg:grid-cols-[1.2fr_0.8fr]">
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -475,6 +477,7 @@ export default function SearchSuggestionsPanel({
       </div>
 
       {/* Bottom Section: Last Viewed Deals (with scrolling) */}
+
       <div className="px-5 py-5 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>

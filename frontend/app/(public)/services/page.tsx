@@ -1,31 +1,5 @@
 import Link from "next/link";
-
-const serviceGroups = [
-  {
-    title: "Emergency Plumbing",
-    items: ["Burst pipe response", "Overflow control", "After-hours support", "Rapid leak isolation"],
-  },
-  {
-    title: "Drain & Sewer",
-    items: ["Drain cleaning", "Sewer line diagnostics", "Hydro jetting", "Camera inspection"],
-  },
-  {
-    title: "Water Heater Services",
-    items: ["Tank and tankless install", "Water heater repair", "Efficiency upgrades", "Maintenance plans"],
-  },
-  {
-    title: "Repairs & Installations",
-    items: ["Faucets and fixtures", "Toilet repair", "Pipe replacement", "Kitchen and bath plumbing"],
-  },
-  {
-    title: "Commercial Plumbing",
-    items: ["Retail and office service", "Preventive maintenance", "Backflow checks", "Code-compliant upgrades"],
-  },
-  {
-    title: "Inspection & Prevention",
-    items: ["Leak detection", "Pressure checks", "System health reports", "Seasonal readiness"],
-  },
-];
+import { serviceDefinitions } from "@/components/services/serviceData";
 
 export default function ServicesPage() {
   return (
@@ -61,17 +35,11 @@ export default function ServicesPage() {
 
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {serviceGroups.map((group) => (
-            <article key={group.title} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-gray-900">{group.title}</h2>
-              <ul className="mt-4 space-y-2 text-sm text-gray-600">
-                {group.items.map((item) => (
-                  <li key={item} className="flex items-start gap-2">
-                    <span className="mt-1 inline-block h-2 w-2 rounded-full bg-[#FFD60A]" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+          {serviceDefinitions.map((service) => (
+            <article key={service.slug} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-bold text-gray-900">{service.name}</h2>
+              <p className="mt-3 text-sm leading-6 text-gray-600">{service.seoDescription}</p>
+              <Link href={`/services/${service.slug}`} className="mt-5 inline-flex text-sm font-bold text-[#0f2a4d] underline decoration-[#FFD60A] decoration-2 underline-offset-4">Learn about {service.name}</Link>
             </article>
           ))}
         </div>

@@ -9,6 +9,7 @@ import ResultsHeader from "@/components/find/ResultsHeader";
 import PlumberCardGrid from "@/components/find/PlumberCardGrid";
 import PlumberCardList from "@/components/find/PlumberCardList";
 import Pagination from "@/components/find/Pagination";
+import ServiceSeoContent from "@/components/find/ServiceSeoContent";
 export default function FindPlumberPageWrapper() {
   return (
     <Suspense>
@@ -27,7 +28,8 @@ function FindPlumberPage() {
     emergencyOnly: false,
     verifiedOnly: false,
   });
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const requestedService = searchParams.get("service") ?? "";
+  const [selectedServices, setSelectedServices] = useState<string[]>(() => requestedService ? [requestedService] : []);
   const [priceRange, setPriceRange] = useState<string>("all");
   const [emergencyOnly, setEmergencyOnly] = useState(false);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
@@ -40,6 +42,11 @@ function FindPlumberPage() {
   const [selectedAvailability, setSelectedAvailability] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+
+  const activeServices = useMemo(
+    () => requestedService ? [requestedService] : selectedServices,
+    [requestedService, selectedServices]
+  );
 
   // Helper functions for ranges (team size, years)
   const matchesTeamSize = useCallback((size: number, ranges: string[]) => {
@@ -153,8 +160,8 @@ function FindPlumberPage() {
     const matchesVerifiedHero = !searchFilters.verifiedOnly || plumber.isVerified;
 
     const matchesServices =
-      selectedServices.length === 0 ||
-      selectedServices.some((selectedService) =>
+      activeServices.length === 0 ||
+      activeServices.some((selectedService) =>
         plumberServices.some(
           (service) =>
             service.includes(selectedService.toLowerCase()) ||
@@ -205,7 +212,7 @@ function FindPlumberPage() {
     );
   }), [
     searchFilters,
-    selectedServices,
+    activeServices,
     priceRange,
     emergencyOnly,
     verifiedOnly,
@@ -281,6 +288,7 @@ function FindPlumberPage() {
               totalPages={totalPages}
               onPageChange={setCurrentPage}
             />
+            <ServiceSeoContent service={requestedService} />
           </div>
         </div>
       </div>
