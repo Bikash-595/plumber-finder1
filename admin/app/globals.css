@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+:root {
+  --font-inter: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+@theme inline {
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+/* Layered so Tailwind text-* utilities on links can override it. */
+@layer base {
+  a {
+    color: inherit;
+  }
+}

@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:backend": "npm --prefix backend run dev",
+    "dev:backend": "npm --prefix ../backend run dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "dev:admin": "npm --prefix ../admin run dev"
   },
   "engines": {
     "node": "20.x"

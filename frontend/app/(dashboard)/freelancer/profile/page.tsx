@@ -1,5 +1,5 @@
-import CompanyProfileSection from "@/components/company-dashboard/sections/CompanyProfileSection";
+import { redirect } from "next/navigation";
 
 export default function FreelancerProfilePage() {
-  return <CompanyProfileSection />;
+  redirect("/freelancer/business-profile/header-profile");
 }

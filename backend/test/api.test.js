@@ -1,60 +1,17 @@
 // Integration tests: real Express app + a throwaway local mongod.
 // Run with `npm test` (requires the `mongod` binary on PATH).
-import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
-import { createServer } from "node:net";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
 import mongoose from "mongoose";
+import { startTestServer } from "./helpers/testServer.js";
 
-process.env.JWT_SECRET = "test-secret-that-is-long-enough-for-tests";
-process.env.GOOGLE_CLIENT_ID = "123456789012-test.apps.googleusercontent.com";
+const { Company } = await import("../src/auth/company/models/Company.js");
+const { CompanyBranding } = await import("../src/company/onboarding/models/CompanyBranding.js");
+const { Freelancer } = await import("../src/auth/freelancer/models/Freelancer.js");
 
-const { app } = await import("../src/app.js");
-const { Company } = await import("../src/company/models/Company.js");
-const { CompanyBranding } = await import("../src/company/models/CompanyBranding.js");
-const { Freelancer } = await import("../src/freelancer/models/Freelancer.js");
-
-const freePort = () => new Promise((resolve) => {
-  const srv = createServer().listen(0, () => { const { port } = srv.address(); srv.close(() => resolve(port)); });
-});
-
-let mongod, dbPath, server, baseUrl;
-
-before(async () => {
-  dbPath = mkdtempSync(path.join(tmpdir(), "plumber-test-db-"));
-  const mongoPort = await freePort();
-  mongod = spawn("mongod", ["--dbpath", dbPath, "--port", String(mongoPort), "--bind_ip", "127.0.0.1", "--quiet"], { stdio: "ignore" });
-  const uri = `mongodb://127.0.0.1:${mongoPort}/plumber-test`;
-  for (let attempt = 0; ; attempt++) {
-    try { await mongoose.connect(uri, { serverSelectionTimeoutMS: 500 }); break; } catch (error) {
-      if (attempt > 40) throw error;
-      await new Promise((r) => setTimeout(r, 250));
-    }
-  }
-  await mongoose.connection.syncIndexes();
-  server = app.listen(0);
-  baseUrl = `http://127.0.0.1:${server.address().port}`;
-});
-
-after(async () => {
-  server?.close();
-  await mongoose.disconnect();
-  mongod?.kill();
-  await new Promise((r) => mongod ? mongod.once("exit", r) : r());
-  rmSync(dbPath, { recursive: true, force: true });
-});
-
-const api = async (method, url, { body, token, raw } = {}) => {
-  const headers = { "Content-Type": "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(baseUrl + url, { method, headers, body: raw ?? (body === undefined ? undefined : JSON.stringify(body)) });
-  const text = await res.text();
-  let json; try { json = JSON.parse(text); } catch { json = text; }
-  return { status: res.status, body: json };
-};
+let api, stop;
+before(async () => ({ api, stop } = await startTestServer()));
+after(() => stop());
 
 let seq = 0;
 const email = () => `user${++seq}@example.com`;
@@ -192,6 +149,6 @@ describe("header profile", () => {
     assert.equal((await api("PUT", "/api/companies/header-profile", { token, body: { companyName: 42 } })).status, 400);
     const badYears = await api("PUT", "/api/companies/header-profile", { token, body: { companyName: "Ok", yearsInBusiness: "abc" } });
     assert.equal(badYears.status, 400);
-    assert.match(badYears.body.message, /years/i);
+    assert.match(badYears.body.errors.yearsInBusiness, /number/);
   });
 });

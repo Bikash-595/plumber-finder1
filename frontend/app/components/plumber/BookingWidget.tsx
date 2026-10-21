@@ -1,7 +1,9 @@
 
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { isCustomerSignedIn, userApi } from "@/components/utils/userApi";
 import { Plumber } from "@/components/find/types";
 import { FaCalendarAlt, FaClock, FaWrench, FaCommentDots } from "react-icons/fa";
 
@@ -11,8 +13,28 @@ export default function BookingWidget({ plumber }: { plumber: Plumber }) {
   const [selectedService, setSelectedService] = useState("");
   const [message, setMessage] = useState("");
 
-  const handleBooking = () => {
-    alert(`Booking request sent to ${plumber.companyName}!\n\nService: ${selectedService || "Not specified"}\nDate: ${selectedDate}\nTime: ${selectedTime}\nMessage: ${message || "None"}`);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ tone: "success" | "error" | "login"; text: string } | null>(null);
+
+  // Signed-in customers send a real booking request (it appears in their dashboard); guests are asked to log in.
+  const handleBooking = async () => {
+    if (!isCustomerSignedIn()) return setResult({ tone: "login", text: "Log in with a customer account to send a booking request." });
+    if (!selectedService) return setResult({ tone: "error", text: "Please choose the service you need." });
+    setBusy(true);
+    setResult(null);
+    try {
+      await userApi.requestBooking({
+        providerType: "company", providerId: plumber.id, providerName: plumber.companyName,
+        service: selectedService === "other" ? "Other plumbing service" : selectedService,
+        scheduledDate: selectedDate || undefined, timeSlot: selectedTime || undefined, details: message || undefined,
+      });
+      setResult({ tone: "success", text: `Booking request sent to ${plumber.companyName}.` });
+      setSelectedDate(""); setSelectedTime(""); setSelectedService(""); setMessage("");
+    } catch (caught) {
+      setResult({ tone: "error", text: caught instanceof Error ? caught.message : "Could not send the request." });
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -90,11 +112,20 @@ export default function BookingWidget({ plumber }: { plumber: Plumber }) {
         </div>
 
         <button
+          type="button"
           onClick={handleBooking}
-          className="w-full rounded-full bg-gradient-to-r from-[#FFD60A] to-[#B1A606] py-3 font-semibold text-white shadow-md transition hover:brightness-105 hover:shadow-lg active:scale-[0.98]"
+          disabled={busy}
+          className="w-full rounded-full bg-gradient-to-r from-[#FFD60A] to-[#B1A606] py-3 font-semibold text-[#0b1f3b] shadow-md transition hover:brightness-105 hover:shadow-lg active:scale-[0.98] disabled:opacity-60"
         >
-          Send Request →
+          {busy ? "Sending…" : "Send Request →"}
         </button>
+        {result && (
+          <p role="status" className={`rounded-lg px-3 py-2 text-sm ${result.tone === "success" ? "bg-emerald-50 text-emerald-700" : result.tone === "login" ? "bg-amber-50 text-amber-800" : "bg-red-50 text-red-700"}`}>
+            {result.text}{" "}
+            {result.tone === "success" && <Link href="/dashboard/bookings" className="font-semibold underline">View bookings</Link>}
+            {result.tone === "login" && <Link href="/login" className="font-semibold underline">Log in</Link>}
+          </p>
+        )}
         <p className="text-center text-xs text-gray-400">
           ✅ No commitment • 📞 Free estimate • 🔒 Your data is safe
         </p>

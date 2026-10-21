@@ -9,7 +9,7 @@ export type AppUser = {
 };
 
 export type AccountType = "seeker" | "company" | "freelancer";
-type AuthAction = "signup" | "login" | "google";
+type AuthAction = "signup" | "login" | "google" | "apple";
 
 type AuthResponse = {
   token: string;

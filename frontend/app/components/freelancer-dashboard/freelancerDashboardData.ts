@@ -36,9 +36,9 @@ export const freelancerNavSections = [
   {
     label: "Profile",
     items: [
-      { label: "Profile", href: "/freelancer/profile", icon: FaRegUser },
-      { label: "Services", href: "/freelancer/services", icon: FaTools },
-      { label: "Reviews", href: "/freelancer/reviews", icon: FaStar },
+      { label: "Business Profile", href: "/freelancer/business-profile", icon: FaRegUser },
+      { label: "Services", href: "/freelancer/business-profile/services", icon: FaTools },
+      { label: "Reviews", href: "/freelancer/business-profile/reviews", icon: FaStar },
       { label: "Billing", href: "/freelancer/billing", icon: FaFileInvoiceDollar },
       { label: "Settings", href: "/freelancer/settings", icon: FaCog },
     ],

@@ -193,6 +193,7 @@ import DiscountCard from "@/components/plumber/DiscountCard";
 import ProfileBlogSection from "@/components/plumber/ProfileBlogSection";
 import ProfileFaq from "@/components/plumber/ProfileFaq";
 import ProfileTeam from "@/components/plumber/ProfileTeam";
+import ProfileActions from "@/components/plumber/ProfileActions";
 
 const RECENT_DEALS_KEY = "plumberfinder_recent_deals";
 
@@ -274,6 +275,7 @@ export default function PlumberProfilePage({ params }: { params: Promise<{ id: s
             
           </div>
           <aside className="min-w-0 space-y-5 sm:space-y-6">
+            <ProfileActions plumber={plumber} />
             <DiscountCard plumber={plumber} />
              <BookingWidget plumber={plumber} />
           </aside>

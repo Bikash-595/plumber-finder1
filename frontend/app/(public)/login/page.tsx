@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { loginWithEmail, readStoredUser, storeUser, type AccountType } from "@/components/utils/auth";
+import { AppleAuthButton } from "@/components/auth/AppleAuthButton";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 
 export default function LoginPage() {
@@ -71,6 +72,7 @@ export default function LoginPage() {
 
             {/* Google OAuth */}
             <GoogleAuthButton accountType={accountType} onComplete={goToDashboard} />
+            <AppleAuthButton accountType={accountType} onComplete={goToDashboard} />
 
             {/* Divider */}
             <div className="relative my-6">

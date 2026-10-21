@@ -38,6 +38,8 @@ import { serviceDefinitions } from "./services/serviceData";
 import { ServiceIcon } from "./services/serviceIcons";
 import SearchSuggestionsPanel from "./search/SearchSuggestionsPanel";
 import { getInitials, readStoredUser, clearStoredUser, type AppUser } from "../components/utils/auth";
+import { isCustomerSignedIn, USER_DATA_EVENT, userApi } from "./utils/userApi";
+import { useUserData } from "./dashboard/useUserData";
 
 const navLinks = [
   { label: "Home", href: "/", icon: FaHouse },
@@ -56,8 +58,6 @@ const headerActions = [
   { label: "Cart", href: "/checkout", icon: FaCartShopping, countKey: "cartCount" },
 ] as const;
 
-// Mock counts (replace with real data)
-const counts = { savedCount: 2, notifCount: 3, cartCount: 1 };
 
 const isActivePath = (pathname: string, href: string) => (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`));
 
@@ -99,6 +99,20 @@ export function Header() {
   const searchWrapRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const desktopNavRef = useRef<HTMLDivElement>(null);
+
+  // Live badge counts for signed-in customers (refreshed after any cart/saved/notification change).
+  const summary = useUserData(userApi.dashboard);
+  const reloadSummary = summary.reload;
+  useEffect(() => {
+    const refresh = () => { if (isCustomerSignedIn()) reloadSummary(); };
+    window.addEventListener(USER_DATA_EVENT, refresh);
+    return () => window.removeEventListener(USER_DATA_EVENT, refresh);
+  }, [reloadSummary]);
+  const counts = {
+    savedCount: summary.signedIn ? summary.data?.counts.saved ?? 0 : 0,
+    notifCount: summary.signedIn ? summary.data?.counts.unreadNotifications ?? 0 : 0,
+    cartCount: summary.signedIn ? summary.data?.counts.cart ?? 0 : 0,
+  };
 
   const openMobileMenu = (withSearch = false) => {
     setFocusMobileSearch(withSearch);

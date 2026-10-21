@@ -1,6 +1,7 @@
 # AI Agent Guide for plumber-finder
 
 ## What this repo is
+- Three apps: `frontend/` (public site + customer/company/freelancer dashboards), `admin/` (separate admin panel, port 3001), and `backend/` (Express + MongoDB API)
 - A Next.js app using the App Router (`app/` directory)
 - Built with Next 16.2.2, React 19 RC, TypeScript 5, Tailwind CSS 4, ESLint 9
 - Primary package manager is npm (`package-lock.json` exists), but yarn/pnpm/bun are acceptable for local use
@@ -31,6 +32,7 @@
 
 ## Helpful context
 - The current user-facing app lives in `app/`
-- Dashboard experiences are grouped under `app/(dashboard)/admin`, `app/(dashboard)/company-dashboard`, etc.
+- Dashboard experiences are grouped under `app/(dashboard)/company-dashboard`, `app/(dashboard)/dashboard`, and `app/(dashboard)/freelancer`
+- The admin panel is NOT in `frontend/` — it is the separate `admin/` app; admin APIs are in `backend/src/admin/`
 - Static assets are under `public/images`
 - There is no existing `AGENTS.md` or `.github/copilot-instructions.md` in this repository yet

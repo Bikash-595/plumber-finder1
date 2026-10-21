@@ -1,3 +1,3 @@
-import { requireAuth } from "../../../config/authMiddleware.js";
+import { requireAuth } from "../../../auth/shared/middleware/requireAuth.js";
 
 export const requireCompanyHeaderProfileAccess = requireAuth("company");

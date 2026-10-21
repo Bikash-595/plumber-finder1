@@ -47,6 +47,7 @@ export default function SectionForm({ section, title, description, fields, defau
         const saved = Object.fromEntries(Object.entries(payload.data as Record<string, unknown>).flatMap(([key, value]) => {
           if (typeof value === "string" || typeof value === "boolean") return [[key, value]];
           if (typeof value === "number") return [[key, String(value)]];
+          if (Array.isArray(value)) return [[key, value.join(", ")]]; // list fields, e.g. specialties
           return [];
         }));
         form.reset({ ...defaults, ...saved });
@@ -68,7 +69,8 @@ export default function SectionForm({ section, title, description, fields, defau
         response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(values) });
       }
       const payload = await response.json();
-      setNotice(response.ok ? "Changes saved to the database." : payload.message || `Unable to save changes (${response.status}).`);
+      const [field, problem] = Object.entries((payload.errors ?? {}) as Record<string, string>)[0] ?? [];
+      setNotice(response.ok ? "Changes saved to the database." : field ? `${field} ${problem}` : payload.message || `Unable to save changes (${response.status}).`);
     } catch {
       setNotice("Cannot reach the backend. Start it with: cd backend && npm run dev");
     }

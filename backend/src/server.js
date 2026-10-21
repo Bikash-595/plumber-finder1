@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { app } from "./app.js";
-import { validateAuthConfiguration } from "./config/auth.js";
+import { validateAuthConfiguration } from "./auth/shared/config/jwtConfig.js";
 import { connectDatabase, disconnectDatabase } from "./config/database.js";
 
 const port = Number(process.env.PORT || 3300);

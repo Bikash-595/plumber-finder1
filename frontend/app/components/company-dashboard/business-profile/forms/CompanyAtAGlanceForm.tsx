@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { saveProfileDraft } from "../profileStore";
+import { companyApi, toFormValues } from "../companyApi";
 
 type AtAGlance = {
   foundedYear: string;
@@ -29,11 +30,41 @@ const initialValues: AtAGlance = {
   insurance: "$2M liability",
 };
 
+const API_ENDPOINT = "/companies/company-overview";
+type Notice = { tone: "success" | "error"; text: string } | null;
+
 export default function CompanyAtAGlanceForm() {
   const [values, setValues] = useState<AtAGlance>(initialValues);
-  const [notice, setNotice] = useState("");
+  const [savedValues, setSavedValues] = useState<AtAGlance>(initialValues);
+  const [notice, setNotice] = useState<Notice>(null);
+  const [saving, setSaving] = useState(false);
   const update = (name: keyof AtAGlance, value: string) => setValues((current) => ({ ...current, [name]: value }));
-  const save = (draft = false) => setNotice(saveProfileDraft("company-overview", values, draft));
+
+  // Load the saved overview (if any) for the signed-in company.
+  useEffect(() => {
+    companyApi<Record<string, unknown> | null>(API_ENDPOINT)
+      .then(({ data }) => {
+        if (!data) return;
+        const loaded = { ...initialValues, ...toFormValues(data, Object.keys(initialValues)) } as AtAGlance;
+        setValues(loaded);
+        setSavedValues(loaded);
+      })
+      .catch(() => undefined); // Not signed in / backend offline: keep the editable defaults.
+  }, []);
+
+  const save = async (draft = false) => {
+    if (draft) return setNotice({ tone: "success", text: saveProfileDraft("company-overview", values, true) });
+    setSaving(true);
+    try {
+      await companyApi(API_ENDPOINT, { method: "PUT", body: values });
+      setSavedValues(values);
+      setNotice({ tone: "success", text: "Company overview saved to your public profile." });
+    } catch (error) {
+      setNotice({ tone: "error", text: error instanceof Error ? error.message : "Unable to save the overview." });
+    } finally {
+      setSaving(false);
+    }
+  };
   const field = (name: keyof AtAGlance, label: string, type: "text" | "number" = "text", hint?: string) => (
     <label key={name}>
       <span className="text-sm font-semibold text-gray-700">{label}</span>
@@ -70,11 +101,11 @@ export default function CompanyAtAGlanceForm() {
         </div>
       </div>
 
-      {notice && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">{notice}</p>}
+      {notice && <p className={`rounded-lg px-3 py-2 text-sm font-medium ${notice.tone === "error" ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>{notice.text}</p>}
       <div className="flex flex-wrap gap-3 border-t border-gray-100 pt-5">
-        <button type="submit" className="rounded-xl bg-[#0b1f3b] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#17345a]">Save overview</button>
+        <button type="submit" disabled={saving} className="rounded-xl bg-[#0b1f3b] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#17345a] disabled:opacity-60">{saving ? "Saving…" : "Save overview"}</button>
         <button type="button" onClick={() => save(true)} className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50">Save as draft</button>
-        <button type="button" onClick={() => { setValues(initialValues); setNotice(""); }} className="rounded-xl px-4 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-50">Reset</button>
+        <button type="button" onClick={() => { setValues(savedValues); setNotice(null); }} className="rounded-xl px-4 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-50">Reset</button>
       </div>
     </form>
   </section>;

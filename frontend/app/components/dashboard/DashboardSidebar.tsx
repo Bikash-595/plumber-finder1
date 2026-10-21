@@ -23,6 +23,7 @@ import {
   FaSearch,
   FaTools,
   FaCheckCircle,
+  FaShoppingCart,
 } from "react-icons/fa";
 import { TbSquareToggle } from "react-icons/tb";
 import { clearStoredUser } from "../utils/auth";
@@ -43,6 +44,7 @@ const navSections = [
       { label: "Find Plumbers", href: "/find", icon: FaSearch },
       { label: "Compare Companies", href: "/dashboard/compare", icon: FaBuilding },
       { label: "Saved Deals", href: "/dashboard/saved", icon: FaHeart },
+      { label: "My Cart", href: "/checkout", icon: FaShoppingCart },
       { label: "Booking History", href: "/dashboard/bookings", icon: FaHistory },
     ],
   },
@@ -59,7 +61,7 @@ const navSections = [
     label: "Support",
     items: [
       { label: "Notifications", href: "/dashboard/notifications", icon: FaBell },
-      { label: "Help & Support", href: "/dashboard/support", icon: FaQuestionCircle },
+      { label: "Help & Support", href: "/contact", icon: FaQuestionCircle },
       { label: "Security", href: "/dashboard/security", icon: FaShieldAlt },
     ],
   },

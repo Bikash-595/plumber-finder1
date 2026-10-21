@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { AppleAuthButton } from "@/components/auth/AppleAuthButton";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { authenticateAccount } from "@/components/utils/auth";
 
@@ -80,6 +81,7 @@ export default function SignupCompanyForm({ onBack, onComplete }: SignupCompanyF
       </div>
 
       <GoogleAuthButton accountType="company" companyName={companyName} onComplete={(name, accountEmail) => onComplete?.(name, accountEmail)} />
+      <AppleAuthButton accountType="company" companyName={companyName} onComplete={(name, accountEmail) => onComplete?.(name, accountEmail)} />
 
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">

@@ -1,5 +1,5 @@
-import ServicesPricingSection from "@/components/company-dashboard/sections/ServicesPricingSection";
+import { redirect } from "next/navigation";
 
 export default function FreelancerServicesPage() {
-  return <ServicesPricingSection />;
+  redirect("/freelancer/business-profile/services");
 }

@@ -3,18 +3,37 @@
 import { useState } from "react";
 import { saveProfileDraft } from "./profileStore";
 import LocalMediaUpload from "./LocalMediaUpload";
+import { toFormValues } from "./companyApi";
+import { NoticeMessage, SavedItemsList, useSavedItems } from "./SavedItems";
 
 type Project = { title: string; client: string; location: string; service: string; completedDate: string; duration: string; budget: string; description: string; challenge: string; solution: string; results: string; beforeImage: string; afterImage: string; testimonial: string; rating: string; visible: boolean };
 const emptyProject: Project = { title: "", client: "", location: "", service: "", completedDate: "", duration: "", budget: "", description: "", challenge: "", solution: "", results: "", beforeImage: "", afterImage: "", testimonial: "", rating: "5", visible: true };
 const seedProject: Project = { ...emptyProject, title: "Retail Center Pipe Repair", client: "Oak Lawn Shops", location: "Dallas, TX", service: "Commercial pipe repair", duration: "3 days", budget: "$14,600", description: "Repaired a slab leak and replaced damaged supply lines with minimal disruption to the tenants.", rating: "4.6" };
 
-export default function PreviousProjectForm() {
-  const [project, setProject] = useState<Project>(seedProject);
-  const [notice, setNotice] = useState("");
+type Props = {
+  /** Backend endpoint; freelancers use "/freelancers/previous-projects". */
+  apiEndpoint?: string;
+  /** Key for drafts saved on this device. */
+  draftKey?: string;
+  /** Start with an empty form instead of the example project. */
+  startEmpty?: boolean;
+};
+
+export default function PreviousProjectForm({ apiEndpoint = "/companies/previous-projects", draftKey = "projects", startEmpty = false }: Props) {
+  const [project, setProject] = useState<Project>(startEmpty ? emptyProject : seedProject);
+  const saved = useSavedItems(apiEndpoint, { singular: "project" });
   const update = (name: keyof Project, value: string | boolean) => setProject((current) => ({ ...current, [name]: value }));
-  const save = (draft = false) => setNotice(saveProfileDraft("projects", { items: [project] }, draft));
+  const save = (draft = false) => (draft
+    ? saved.setNotice({ tone: "success", text: saveProfileDraft(draftKey, { items: [project] }, true) })
+    : saved.save(project, saved.editingId ? "Project updated." : "Project saved to your public profile."));
+  const startNew = () => { setProject(emptyProject); saved.setEditingId(null); saved.setNotice(null); };
   return <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7">
     <p className="text-xs font-bold uppercase tracking-wider text-[#0b1f3b]">Portfolio manager</p><h2 className="mt-2 text-2xl font-bold text-gray-900">Add a previous project</h2><p className="mt-2 text-sm text-gray-500">Show customers the quality of your completed work, including the problem, solution, and outcome.</p>
+    <SavedItemsList title="Your projects" items={saved.items} editingId={saved.editingId}
+      describe={(item) => ({ heading: String(item.title), meta: [item.service, item.location].filter(Boolean).join(" · "), badge: item.visible === false ? "Hidden" : undefined })}
+      onEdit={(item) => { setProject({ ...emptyProject, ...toFormValues(item, Object.keys(emptyProject)) } as Project); saved.setEditingId(item._id); saved.setNotice(null); }}
+      onDelete={(id) => { saved.remove(id); if (saved.editingId === id) setProject(emptyProject); }} />
+    {saved.editingId && <p className="mt-4 rounded-lg bg-[#FFD60A]/15 px-3 py-2 text-sm font-medium text-[#0b1f3b]">Editing “{project.title}”. <button type="button" onClick={startNew} className="font-bold underline">Add a new project instead</button></p>}
     <form onSubmit={(event) => { event.preventDefault(); save(); }} className="mt-7 space-y-5"><div className="grid gap-4 md:grid-cols-2">
       <label className="md:col-span-2"><span className="text-sm font-semibold text-gray-700">Project title</span><input required value={project.title} onChange={(e) => update("title", e.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#FFD60A]" placeholder="e.g. Whole-home repiping" /></label>
       <label><span className="text-sm font-semibold text-gray-700">Client or property name</span><input value={project.client} onChange={(e) => update("client", e.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#FFD60A]" /></label><label><span className="text-sm font-semibold text-gray-700">Project location</span><input value={project.location} onChange={(e) => update("location", e.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#FFD60A]" placeholder="City, state" /></label>
@@ -26,6 +45,6 @@ export default function PreviousProjectForm() {
       <LocalMediaUpload label="Before photo" value={project.beforeImage} onChange={(value) => update("beforeImage", value)} /><LocalMediaUpload label="After photo" value={project.afterImage} onChange={(value) => update("afterImage", value)} />
       <label><span className="text-sm font-semibold text-gray-700">Customer rating</span><select value={project.rating} onChange={(e) => update("rating", e.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[#FFD60A]"><option value="5">5.0</option><option value="4.5">4.5</option><option value="4">4.0</option></select></label><label className="flex items-end gap-3 pb-3 text-sm font-semibold text-gray-700"><input type="checkbox" checked={project.visible} onChange={(e) => update("visible", e.target.checked)} className="h-4 w-4 accent-[#0b1f3b]" /> Show on public profile</label>
       <label className="md:col-span-2"><span className="text-sm font-semibold text-gray-700">Customer testimonial</span><textarea rows={3} value={project.testimonial} onChange={(e) => update("testimonial", e.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#FFD60A]" placeholder="Optional customer quote (with permission)." /></label>
-    </div>{notice && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">{notice}</p>}<div className="flex flex-wrap gap-3 border-t border-gray-100 pt-5"><button type="submit" className="rounded-xl bg-[#0b1f3b] px-4 py-2.5 text-sm font-bold text-white">Save project</button><button type="button" onClick={() => save(true)} className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700">Save as draft</button><button type="button" onClick={() => { setProject(emptyProject); setNotice(""); }} className="rounded-xl px-4 py-2.5 text-sm font-bold text-gray-500">Clear form</button></div></form>
+    </div><NoticeMessage notice={saved.notice} /><div className="flex flex-wrap gap-3 border-t border-gray-100 pt-5"><button type="submit" disabled={saved.saving} className="rounded-xl bg-[#0b1f3b] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60">{saved.saving ? "Saving…" : saved.editingId ? "Update project" : "Save project"}</button><button type="button" onClick={() => save(true)} className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700">Save as draft</button><button type="button" onClick={startNew} className="rounded-xl px-4 py-2.5 text-sm font-bold text-gray-500">Clear form</button></div></form>
   </section>;
 }

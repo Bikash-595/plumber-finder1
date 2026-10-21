@@ -1,9 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { plumbers } from "@/data/plumbers";
-import Image from "next/image";
+import type { Plumber } from "@/components/find/types";
+import { companyListingToPlumber, type CompanyListing } from "@/components/find/companyListing";
+import SignInPrompt from "@/components/dashboard/SignInPrompt";
+import { useUserData } from "@/components/dashboard/useUserData";
+import { API_BASE_URL } from "@/components/utils/apiClient";
+import { plumberToProvider, userApi } from "@/components/utils/userApi";
 import {
   FaStar,
   FaCheck,
@@ -26,17 +32,32 @@ import {
 } from "react-icons/fa";
 
 export default function CompareCompaniesPage() {
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  // The selection is stored in the customer's account, so it survives reloads and includes
+  // plumbers added with the Compare button on a profile page.
+  const { signedIn, data: compareItems, reload, error, setError } = useUserData(userApi.compare);
+  const [liveCompanies, setLiveCompanies] = useState<Plumber[]>([]);
+  const [busy, setBusy] = useState(false);
 
-  const toggleSelect = (id: string) => {
-    if (selectedIds.includes(id)) {
-      setSelectedIds(prev => prev.filter(i => i !== id));
-    } else if (selectedIds.length < 3) {
-      setSelectedIds(prev => [...prev, id]);
-    }
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/companies/public`)
+      .then((response) => (response.ok ? response.json() : { data: [] }))
+      .then(({ data }) => setLiveCompanies(((data || []) as CompanyListing[]).map(companyListingToPlumber)))
+      .catch(() => setLiveCompanies([]));
+  }, []);
+
+  const allPlumbers = [...liveCompanies, ...plumbers];
+  const selectedIds = (compareItems ?? []).map((item) => item.providerId);
+  const selectedPlumbers = allPlumbers.filter((plumber) => selectedIds.includes(plumber.id));
+  const candidates = [...allPlumbers.slice(0, 8), ...selectedPlumbers.filter((plumber) => !allPlumbers.slice(0, 8).includes(plumber))];
+
+  const run = async (action: () => Promise<unknown>) => {
+    setBusy(true);
+    try { await action(); await reload(); } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not update your comparison."); } finally { setBusy(false); }
   };
+  const toggleSelect = (plumber: Plumber) => run(() => (selectedIds.includes(plumber.id) ? userApi.removeFromCompare(plumberToProvider(plumber)) : userApi.addToCompare(plumberToProvider(plumber))));
+  const clearSelection = () => run(() => Promise.all((compareItems ?? []).map((item) => userApi.removeFromCompare(item))));
 
-  const selectedPlumbers = plumbers.filter(p => selectedIds.includes(p.id));
+  if (!signedIn) return <SignInPrompt what="your comparisons" />;
 
   const comparisonFeatures = [
     {
@@ -57,7 +78,7 @@ export default function CompareCompaniesPage() {
         { key: "services", label: "Services Offered", icon: FaWrench, format: (val: string[]) => val?.join(", ") || "Not specified" },
         { key: "certifications", label: "Certifications", icon: FaCertificate, format: (val: string[]) => val?.join(", ") || "Not specified" },
         { key: "warranty", label: "Warranty", icon: FaMedal, format: (val: any) => val || "Not specified" },
-        { key: "experience", label: "Years Experience", icon: FaCalendarAlt, format: (val: number) => `${val} years` },
+        { key: "yearsInBusiness", label: "Years Experience", icon: FaCalendarAlt, format: (val: number) => (val ? `${val} years` : "Not specified") },
       ]
     },
     {
@@ -90,15 +111,19 @@ export default function CompareCompaniesPage() {
         </div>
       </div>
 
+      {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-700">{error}</p>}
+
       {/* Company Selection */}
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-lg font-semibold text-gray-900">Select Companies to Compare</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {plumbers.slice(0, 8).map((plumber) => (
+          {candidates.map((plumber) => (
             <button
               key={plumber.id}
-              onClick={() => toggleSelect(plumber.id)}
-              disabled={!selectedIds.includes(plumber.id) && selectedIds.length >= 3}
+              type="button"
+              aria-pressed={selectedIds.includes(plumber.id)}
+              onClick={() => toggleSelect(plumber)}
+              disabled={busy || (!selectedIds.includes(plumber.id) && selectedIds.length >= 3)}
               className={`group relative overflow-hidden rounded-xl border-2 p-4 text-left transition-all duration-200 ${
                 selectedIds.includes(plumber.id)
                   ? "border-[#FFD60A] bg-gradient-to-br from-[#FFD60A]/10 to-[#FFD60A]/5 shadow-lg transform scale-[1.02]"
@@ -114,12 +139,8 @@ export default function CompareCompaniesPage() {
               )}
               <div className="flex items-center gap-4">
                 <div className="relative h-16 w-16 overflow-hidden rounded-xl border-2 border-white shadow-sm">
-                  <Image
-                    src={plumber.logo}
-                    alt={plumber.companyName}
-                    fill
-                    className="object-cover"
-                  />
+                  {/* eslint-disable-next-line @next/next/no-img-element -- logos may be uploads or any allowed host */}
+                  <img src={plumber.logo || "/Plumber.png"} alt="" className="h-full w-full object-cover" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate font-semibold text-gray-900 group-hover:text-[#B1A606]">
@@ -190,14 +211,16 @@ export default function CompareCompaniesPage() {
       {/* Action Buttons */}
       {selectedPlumbers.length > 0 && (
         <div className="flex flex-wrap gap-4">
-          <button className="rounded-lg bg-[#FFD60A] px-6 py-3 font-semibold text-gray-900 shadow-sm hover:bg-[#B1A606] hover:shadow-md transition-all duration-200">
-            Book with Selected Companies
-          </button>
-          <button className="rounded-lg border border-gray-300 bg-white px-6 py-3 font-semibold text-gray-700 shadow-sm hover:bg-gray-50 hover:shadow-md transition-all duration-200">
-            Save Comparison
-          </button>
+          {selectedPlumbers.map((plumber) => (
+            <Link key={plumber.id} href={`/book-plumber?plumber=${encodeURIComponent(plumber.id)}`} className="rounded-lg bg-[#FFD60A] px-6 py-3 font-semibold text-gray-900 shadow-sm transition-all duration-200 hover:bg-[#B1A606] hover:shadow-md">
+              Book {plumber.companyName}
+            </Link>
+          ))}
+          <span className="self-center text-sm text-gray-500">Your comparison is saved automatically.</span>
           <button
-            onClick={() => setSelectedIds([])}
+            type="button"
+            disabled={busy}
+            onClick={clearSelection}
             className="rounded-lg border border-red-300 bg-white px-6 py-3 font-semibold text-red-600 shadow-sm hover:bg-red-50 hover:shadow-md transition-all duration-200"
           >
             Clear Selection

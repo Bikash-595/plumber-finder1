@@ -1,5 +1,5 @@
-import ReviewsSection from "@/components/company-dashboard/sections/ReviewsSection";
+import { redirect } from "next/navigation";
 
 export default function FreelancerReviewsPage() {
-  return <ReviewsSection />;
+  redirect("/freelancer/business-profile/reviews");
 }
