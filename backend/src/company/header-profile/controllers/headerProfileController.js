@@ -16,10 +16,13 @@ export async function getHeaderProfile(req, res, next) {
 export async function saveHeaderProfile(req, res, next) {
   try {
     const values = pickHeaderProfileFields(req.body);
-    if (!values.companyName?.trim()) return res.status(400).json({ message: "Company name is required." });
+    if (typeof values.companyName !== "string" || !values.companyName.trim()) return res.status(400).json({ message: "Company name is required." });
+    const hasYears = values.yearsInBusiness !== undefined && values.yearsInBusiness !== null && values.yearsInBusiness !== "";
+    const yearsInBusiness = hasYears ? Number(values.yearsInBusiness) : undefined;
+    if (hasYears && !Number.isFinite(yearsInBusiness)) return res.status(400).json({ message: "Years in business must be a number." });
     const profile = await CompanyHeaderProfile.findOneAndUpdate(
       { company: req.auth.sub },
-      { company: req.auth.sub, ...values, yearsInBusiness: values.yearsInBusiness ? Number(values.yearsInBusiness) : undefined },
+      { company: req.auth.sub, ...values, yearsInBusiness },
       { new: true, upsert: true, runValidators: true }
     );
     await CompanyListing.findOneAndUpdate(

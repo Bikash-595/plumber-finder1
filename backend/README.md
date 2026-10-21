@@ -20,10 +20,11 @@ The API runs at `http://localhost:3300` by default. The frontend API client alre
 ## Endpoints
 
 - `GET /health` — verifies API and database connectivity
-- `GET`, `POST /api/plumbers`
-- `GET`, `PATCH`, `DELETE /api/plumbers/:id`
-- `GET`, `POST /api/bookings`
-- `PATCH /api/bookings/:id`
+- `POST /api/auth/login` — email/password login that detects the account type
+- `GET /api/companies/public` — all published company listings
+- `GET /api/companies/public/:id` — one published company listing
+- `POST /api/companies/onboarding` — create/update the signed-in company's listing (company token)
+- `GET`, `PUT /api/companies/header-profile` — signed-in company's header profile (company token)
 
 ## Authentication
 
@@ -45,4 +46,6 @@ Each account type has its own model, controller, and router. Replace `{type}` wi
 
 The client secret is not used by this ID-token flow and must never be exposed through `NEXT_PUBLIC_*` variables.
 
-`GET /api/plumbers` accepts `page`, `limit`, `q`, `service`, `area`, and `available=true` query parameters.
+## Tests
+
+`npm test` runs API integration tests against a throwaway local `mongod` (the MongoDB server binary must be on your PATH).

@@ -175,9 +175,11 @@
 
 export const dynamic = "force-dynamic";
 
-import { use, useEffect } from "react";
+import { use, useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import { plumbers } from "@/data/plumbers";
+import type { Plumber } from "@/components/find/types";
+import { companyListingToPlumber } from "@/components/find/companyListing";
 import ProfileHeader from "@/components/plumber/ProfileHeader";
 import ProfileStats from "@/components/plumber/ProfileStats";
 import ProfileServices from "@/components/plumber/ProfileServices";
@@ -196,7 +198,22 @@ const RECENT_DEALS_KEY = "plumberfinder_recent_deals";
 
 export default function PlumberProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const plumber = plumbers.find((p) => p.id === id);
+  const staticPlumber = plumbers.find((p) => p.id === id);
+  // Companies published through the dashboard live in the backend, not the static data.
+  // undefined = still loading, null = not found.
+  const [remotePlumber, setRemotePlumber] = useState<{ id: string; plumber: Plumber | null } | undefined>(undefined);
+  const remote = remotePlumber?.id === id ? remotePlumber.plumber : undefined;
+  const plumber = staticPlumber ?? remote ?? undefined;
+
+  useEffect(() => {
+    if (staticPlumber) return;
+    let cancelled = false;
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api"}/companies/public/${encodeURIComponent(id)}`)
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => { if (!cancelled) setRemotePlumber({ id, plumber: payload?.data ? companyListingToPlumber(payload.data) : null }); })
+      .catch(() => { if (!cancelled) setRemotePlumber({ id, plumber: null }); });
+    return () => { cancelled = true; };
+  }, [id, staticPlumber]);
 
   useEffect(() => {
     if (!plumber) return;
@@ -224,7 +241,10 @@ export default function PlumberProfilePage({ params }: { params: Promise<{ id: s
     }
   }, [plumber]);
 
-  if (!plumber) return notFound();
+  if (!plumber) {
+    if (remote === undefined) return <main className="min-h-screen bg-gray-50" aria-busy="true" />;
+    return notFound();
+  }
 
   return (
     <main className="min-h-screen bg-gray-50 font-sans">

@@ -229,7 +229,7 @@ export default function BlogPostPage({ params }: { params: Promise<{ id: string;
 
       <section className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[270px_minmax(0,1fr)_300px] lg:px-8">
         <aside className="hidden lg:block">
-          <div className="sticky top-24 space-y-4">
+          <div className="sticky top-24 space-y-4 lg:top-32">
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-200 dark:bg-slate-50">
               <h2 className="text-sm font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-500">Contents</h2>
               <ol className="mt-4 space-y-1 text-sm">

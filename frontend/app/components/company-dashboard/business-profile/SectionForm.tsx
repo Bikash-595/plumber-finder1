@@ -41,7 +41,16 @@ export default function SectionForm({ section, title, description, fields, defau
     if (!token) return;
     fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api"}${apiEndpoint}`, { headers: { Authorization: `Bearer ${token}` } })
       .then((response) => response.ok ? response.json() : null)
-      .then((payload) => { if (payload?.data) form.reset({ ...defaults, ...payload.data }); })
+      .then((payload) => {
+        if (!payload?.data) return;
+        // The API returns numbers (e.g. yearsInBusiness) and nulls; the form schema expects strings/booleans.
+        const saved = Object.fromEntries(Object.entries(payload.data as Record<string, unknown>).flatMap(([key, value]) => {
+          if (typeof value === "string" || typeof value === "boolean") return [[key, value]];
+          if (typeof value === "number") return [[key, String(value)]];
+          return [];
+        }));
+        form.reset({ ...defaults, ...saved });
+      })
       .catch(() => undefined);
   }, [apiEndpoint, form, defaults]);
 

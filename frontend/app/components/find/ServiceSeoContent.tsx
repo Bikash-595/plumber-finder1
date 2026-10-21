@@ -71,7 +71,7 @@
 //         <div className="rounded-2xl bg-white p-5 shadow-sm"><h3 className="font-bold text-[#0f2a4d]">When to call a plumber</h3><ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">{content.whenToCall.map((item) => <li key={item} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FFD60A]" />{item}</li>)}</ul></div>
 //         <div className="rounded-2xl bg-white p-5 shadow-sm"><h3 className="font-bold text-[#0f2a4d]">Before your appointment</h3><ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">{content.checklist.map((item) => <li key={item} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FFD60A]" />{item}</li>)}</ul></div>
 //       </div>
-//       <p className="mt-6 text-sm text-slate-600">Compare profiles, reviews, availability, and services to choose a plumber with confidence. <Link href="/post-requirement" className="font-bold text-[#0f2a4d] underline decoration-[#FFD60A] decoration-2 underline-offset-4">Request free quotes</Link>.</p>
+//       <p className="mt-6 text-sm text-slate-600">Compare profiles, reviews, availability, and services to choose a plumber with confidence. <Link href="/book-plumber" className="font-bold text-[#0f2a4d] underline decoration-[#FFD60A] decoration-2 underline-offset-4">Request free quotes</Link>.</p>
 //     </section>
 //   );
 // }
@@ -463,6 +463,166 @@ const SERVICE_CONTENT: Record<string, ServiceContent> = {
       "Share any building restrictions",
     ],
   },
+
+
+  /* =======================================================
+     HYDRO JETTING
+  ======================================================= */
+
+  "Hydro Jetting": {
+    title: "Hydro jetting services near you",
+
+    description:
+      "Compare local plumbers who use high-pressure water jetting to clear grease, scale, roots, and heavy buildup from drains and sewer lines.",
+
+    services: [
+      "Kitchen and main line hydro jetting",
+      "Sewer line jetting",
+      "Grease and scale removal",
+      "Tree root clearing",
+      "Camera inspection before and after jetting",
+      "Commercial drain jetting",
+      "Preventive drain maintenance",
+    ],
+
+    whenToCall: [
+      "Clogs return shortly after snaking",
+      "Several drains are slow at the same time",
+      "Grease buildup affects kitchen drains",
+      "A camera inspection shows roots or scale",
+      "Your business needs routine drain maintenance",
+      "Odors persist after regular cleaning",
+    ],
+
+    checklist: [
+      "Share the age and material of your pipes",
+      "List which drains are affected",
+      "Mention any recent drain cleaning",
+      "Ask whether a camera inspection is included",
+      "Confirm access to cleanouts",
+      "Ask about maintenance schedules",
+    ],
+  },
+
+
+  /* =======================================================
+     GARBAGE DISPOSAL
+  ======================================================= */
+
+  "Garbage Disposal": {
+    title: "Garbage disposal repair and installation near you",
+
+    description:
+      "Find local plumbers to repair jammed, leaking, or noisy garbage disposals and to install or replace kitchen disposal units.",
+
+    services: [
+      "Garbage disposal repair",
+      "Disposal replacement",
+      "New disposal installation",
+      "Jam and clog removal",
+      "Leak repair under the sink",
+      "Dishwasher drain connection",
+      "Disposal upgrade recommendations",
+    ],
+
+    whenToCall: [
+      "The disposal hums but will not spin",
+      "Water leaks under the kitchen sink",
+      "The unit trips its reset button often",
+      "Strong odors persist after cleaning",
+      "The kitchen sink drains slowly",
+      "You want to add a disposal to your kitchen",
+    ],
+
+    checklist: [
+      "Turn off power to the disposal",
+      "Note the brand and model number",
+      "Describe the sounds or symptoms",
+      "Check for leaks under the sink",
+      "Mention dishwasher connections",
+      "Ask about warranty on new units",
+    ],
+  },
+
+
+  /* =======================================================
+     SUMP PUMP
+  ======================================================= */
+
+  "Sump Pump": {
+    title: "Sump pump repair and installation near you",
+
+    description:
+      "Compare local plumbers for sump pump installation, repair, replacement, and battery backups that protect basements from flooding.",
+
+    services: [
+      "Sump pump installation",
+      "Sump pump repair",
+      "Pump replacement",
+      "Battery backup systems",
+      "Float switch repair",
+      "High-water alarms",
+      "Basement flood prevention",
+    ],
+
+    whenToCall: [
+      "The pump runs constantly or never turns on",
+      "Water is collecting in the basement",
+      "The pump makes grinding or rattling noises",
+      "Your pump is more than 7–10 years old",
+      "Heavy storms are expected",
+      "Your basement has flooded before",
+    ],
+
+    checklist: [
+      "Check the pump has power",
+      "Note the age of the current pump",
+      "Share past flooding history",
+      "Describe the size of your basement",
+      "Ask about backup pump options",
+      "Ask about maintenance and testing",
+    ],
+  },
+
+
+  /* =======================================================
+     WATER SOFTENER
+  ======================================================= */
+
+  "Water Softener": {
+    title: "Water softener and filtration services near you",
+
+    description:
+      "Find local plumbers who install and service water softeners, whole-home filtration, and water treatment systems for hard or poor-quality water.",
+
+    services: [
+      "Water softener installation",
+      "Whole-home water filtration",
+      "Reverse osmosis systems",
+      "Softener repair and servicing",
+      "Water quality testing",
+      "Salt and filter replacement",
+      "Hard water treatment",
+    ],
+
+    whenToCall: [
+      "Scale builds up on faucets and fixtures",
+      "Appliances wear out faster than expected",
+      "Dishes come out spotty",
+      "Tap water tastes or smells unusual",
+      "Your softener stops regenerating",
+      "You are moving into a home with hard water",
+    ],
+
+    checklist: [
+      "Test or share your water hardness",
+      "Note your household size",
+      "Share where the main water line enters",
+      "Mention any existing treatment equipment",
+      "Compare system sizes and running costs",
+      "Ask about maintenance requirements",
+    ],
+  },
 };
 
 
@@ -757,7 +917,7 @@ export default function ServiceSeoContent({
 
 
           <Link
-            href="/post-requirement"
+            href="/book-plumber"
             className="
               inline-flex
               shrink-0

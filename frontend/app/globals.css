@@ -30,8 +30,11 @@ body {
   font-family: var(--font-plus-jakarta), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-a {
-  color: inherit;
+/* Layered so Tailwind text-* utilities on links can override it (unlayered CSS always wins over layers). */
+@layer base {
+  a {
+    color: inherit;
+  }
 }
 
 @keyframes fadeInUp {
@@ -88,4 +91,40 @@ a {
 
 .animate-fadeIn {
   animation: fadeIn 0.25s ease-in-out;
+}
+
+/* Keep #anchor targets clear of the sticky public header (64px mobile, 121px desktop). */
+html {
+  scroll-padding-top: 5rem;
+}
+@media (min-width: 64rem) {
+  html {
+    scroll-padding-top: 8.5rem;
+  }
+}
+
+/* Navbar: menu / drawer motion and keyboard focus rings. */
+@keyframes nav-menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes nav-drawer-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes nav-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-nav-menu { animation: nav-menu-in 160ms ease-out; }
+.animate-nav-drawer { animation: nav-drawer-in 240ms cubic-bezier(0.22, 1, 0.36, 1); }
+.animate-nav-backdrop { animation: nav-backdrop-in 200ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-nav-menu, .animate-nav-drawer, .animate-nav-backdrop { animation: none; }
+}
+@layer base {
+  :where(.site-nav, #mobile-menu) :is(a, button):focus-visible {
+    outline: 2px solid #d4ad00;
+    outline-offset: 2px;
+  }
 }

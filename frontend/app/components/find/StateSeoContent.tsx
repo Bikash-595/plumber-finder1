@@ -73,7 +73,7 @@ export default function StateSeoContent({
             </p>
           </div>
           <Link
-            href="/post-requirement"
+            href="/book-plumber"
             className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#FFD60A] px-6 py-3 text-sm font-bold text-[#0f2a4d] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-yellow-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#FFD60A] focus:ring-offset-2"
           >
             {content.ctaLabel} <span aria-hidden="true" className="ml-2 text-base">→</span>

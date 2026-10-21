@@ -20,6 +20,16 @@ function accountTypeFromApi(accountType: string | undefined): AccountType {
   return accountType === "company" || accountType === "freelancer" ? accountType : "seeker";
 }
 
+// Error responses from proxies or a crashed server may not be JSON.
+async function readAuthPayload(response: Response): Promise<AuthResponse & { message?: string }> {
+  try {
+    return (await response.json()) as AuthResponse & { message?: string };
+  } catch {
+    if (response.ok) throw new Error("The server returned an unexpected response.");
+    return { message: `Request failed (${response.status}).` } as AuthResponse & { message?: string };
+  }
+}
+
 export const AUTH_STORAGE_KEY = "plumberfinder_user";
 
 export function getInitials(name: string) {
@@ -68,7 +78,7 @@ export async function authenticateAccount(accountType: AccountType, action: Auth
     throw new Error("Cannot reach the backend. Make sure it is running on http://localhost:3300.");
   }
 
-  const payload = (await response.json()) as AuthResponse & { message?: string };
+  const payload = await readAuthPayload(response);
   if (!response.ok) throw new Error(payload.message || "Authentication failed.");
 
   const name = payload.account.name || payload.account.companyName || "Account";
@@ -89,7 +99,7 @@ export async function loginWithEmail(email: string, password: string, selectedAc
     throw new Error("Cannot reach the backend. Make sure it is running on http://localhost:3300.");
   }
 
-  const payload = (await response.json()) as AuthResponse & { message?: string };
+  const payload = await readAuthPayload(response);
   if (!response.ok) {
     // Supports a backend that has the role-specific routes but has not yet been restarted
     // with the newer unified /api/auth/login route.

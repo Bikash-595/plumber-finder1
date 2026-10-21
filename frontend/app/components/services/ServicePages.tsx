@@ -9,6 +9,10 @@ export const PipeRepairService = () => <ServicePageLayout service={serviceBySlug
 export const BathroomPlumbingService = () => <ServicePageLayout service={serviceBySlug["bathroom-plumbing"]} />;
 export const SewerLineService = () => <ServicePageLayout service={serviceBySlug["sewer-line-service"]} />;
 export const CommercialPlumbingService = () => <ServicePageLayout service={serviceBySlug["commercial-plumbing"]} />;
+export const HydroJettingService = () => <ServicePageLayout service={serviceBySlug["hydro-jetting"]} />;
+export const GarbageDisposalService = () => <ServicePageLayout service={serviceBySlug["garbage-disposal"]} />;
+export const SumpPumpService = () => <ServicePageLayout service={serviceBySlug["sump-pump"]} />;
+export const WaterSoftenerService = () => <ServicePageLayout service={serviceBySlug["water-softener"]} />;
 
 export const servicePageComponents = {
   "emergency-plumbing": EmergencyPlumbingService,
@@ -19,4 +23,8 @@ export const servicePageComponents = {
   "bathroom-plumbing": BathroomPlumbingService,
   "sewer-line-service": SewerLineService,
   "commercial-plumbing": CommercialPlumbingService,
+  "hydro-jetting": HydroJettingService,
+  "garbage-disposal": GarbageDisposalService,
+  "sump-pump": SumpPumpService,
+  "water-softener": WaterSoftenerService,
 };

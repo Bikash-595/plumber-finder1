@@ -106,6 +106,7 @@
 import { useEffect, useState } from "react";
 import { plumbers } from "@/data/plumbers";
 import type { Plumber } from "@/components/find/types";
+import { companyListingToPlumber, type CompanyListing } from "@/components/find/companyListing";
 import PlumberCardGrid from "@/components/find/PlumberCardGrid";
 import PlumberCardList from "@/components/find/PlumberCardList";
 import ResultsHeader from "@/components/find/ResultsHeader";
@@ -121,40 +122,7 @@ export default function Home() {
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api"}/companies/public`)
       .then((response) => response.ok ? response.json() : { data: [] })
-      .then(({ data }) => setPublishedCompanies((data || []).map((company: { _id: string; companyName: string; logo?: string; coverImage?: string; services?: string[]; serviceAreas?: string[]; location?: string; city?: string; state?: string; phone?: string; email?: string; website?: string; description?: string; rating?: number; reviewCount?: number }) => ({
-        id: company._id,
-        companyName: company.companyName,
-        ownerName: company.companyName,
-        rating: company.rating || 0,
-        reviewCount: company.reviewCount || 0,
-        logo: company.logo || company.coverImage || "",
-        services: company.services || [],
-        priceRange: "Contact for pricing",
-        averageCost: 0,
-        availability: "Available",
-        isVerified: true,
-        isEmergency: false,
-        location: company.location || [company.city, company.state].filter(Boolean).join(", "),
-        city: company.city,
-        state: company.state,
-        phone: company.phone || "",
-        email: company.email || "",
-        website: company.website,
-        description: company.description || "",
-        yearsInBusiness: 0,
-        established: new Date().getFullYear(),
-        insurance: "",
-        certifications: [],
-        serviceAreas: company.serviceAreas || [],
-        specializations: company.services || [],
-        responseTime: "Contact for availability",
-        teamSize: 0,
-        warranty: "",
-        paymentMethods: [],
-        languages: [],
-        media: { images: company.coverImage ? [company.coverImage] : [], videos: [] },
-        projects: [],
-      }))))
+      .then(({ data }) => setPublishedCompanies(((data || []) as CompanyListing[]).map(companyListingToPlumber)))
       .catch(() => setPublishedCompanies([]));
   }, []);
 

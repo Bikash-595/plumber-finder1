@@ -32,10 +32,16 @@ export async function verifyGoogleCredential(credential) {
   }
 
   const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-  const ticket = await client.verifyIdToken({ idToken: credential, audience: process.env.GOOGLE_CLIENT_ID });
+  const unauthorized = (message) => Object.assign(new Error(message), { status: 401 });
+  let ticket;
+  try {
+    ticket = await client.verifyIdToken({ idToken: credential, audience: process.env.GOOGLE_CLIENT_ID });
+  } catch {
+    throw unauthorized("Google sign-in could not be verified. Please try again.");
+  }
   const profile = ticket.getPayload();
   if (!profile?.sub || !profile.email || !profile.email_verified) {
-    throw new Error("Google did not return a verified email address.");
+    throw unauthorized("Google did not return a verified email address.");
   }
 
   return { googleId: profile.sub, email: profile.email, name: profile.name || profile.email.split("@")[0], avatarUrl: profile.picture };

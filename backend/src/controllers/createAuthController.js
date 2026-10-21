@@ -6,18 +6,25 @@ function publicAccount(account) {
   return result;
 }
 
-export function createAuthController({ Model, accountType, nameField }) {
+const isFilledString = (value) => typeof value === "string" && value.trim() !== "";
+
+export function createAuthController({ Model, accountType, nameField, profileFields = [] }) {
   const respond = (res, account, status = 200) => res.status(status).json({ token: createAccessToken(account), account: publicAccount(account) });
+  // Only copy explicitly allowed string fields from the request, so clients cannot set
+  // privileged fields such as status, verificationStatus, googleId, or _id.
+  const pickProfile = (body) => Object.fromEntries(profileFields.filter((field) => typeof body[field] === "string").map((field) => [field, body[field]]));
 
   return {
     signup: async (req, res, next) => {
       try {
         const { email, password } = req.body;
-        if (!email || !password || !req.body[nameField]) return res.status(400).json({ message: `email, password, and ${nameField} are required.` });
+        if (!isFilledString(email) || typeof password !== "string" || !password || !isFilledString(req.body[nameField])) {
+          return res.status(400).json({ message: `email, password, and ${nameField} are required.` });
+        }
         if (password.length < 8) return res.status(400).json({ message: "Password must be at least 8 characters." });
         const normalizedEmail = email.trim().toLowerCase();
         if (await Model.exists({ email: normalizedEmail })) return res.status(409).json({ message: "An account with this email already exists." });
-        const account = await Model.create({ ...req.body, email: normalizedEmail, role: accountType, accountType });
+        const account = await Model.create({ ...pickProfile(req.body), [nameField]: req.body[nameField], email: normalizedEmail, password, role: accountType, accountType });
         respond(res, account, 201);
       } catch (error) { next(error); }
     },
@@ -36,11 +43,12 @@ export function createAuthController({ Model, accountType, nameField }) {
     },
     google: async (req, res, next) => {
       try {
-        if (!req.body.credential) return res.status(400).json({ message: "Google credential is required." });
+        if (!isFilledString(req.body.credential)) return res.status(400).json({ message: "Google credential is required." });
         const googleProfile = await verifyGoogleCredential(req.body.credential);
         let account = await Model.findOne({ $or: [{ googleId: googleProfile.googleId }, { email: googleProfile.email }] });
         if (!account) {
-          account = await Model.create({ ...req.body, [nameField]: req.body[nameField] || googleProfile.name, email: googleProfile.email, googleId: googleProfile.googleId, avatarUrl: googleProfile.avatarUrl, role: accountType, accountType });
+          const name = isFilledString(req.body[nameField]) ? req.body[nameField] : googleProfile.name;
+          account = await Model.create({ ...pickProfile(req.body), [nameField]: name, email: googleProfile.email, googleId: googleProfile.googleId, avatarUrl: googleProfile.avatarUrl, role: accountType, accountType });
         } else if (!account.googleId) {
           account.googleId = googleProfile.googleId;
           if (!account.avatarUrl && googleProfile.avatarUrl) account.avatarUrl = googleProfile.avatarUrl;

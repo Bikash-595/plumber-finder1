@@ -384,7 +384,9 @@ interface Props {
 
 export default function PlumberCardGrid({ plumbers }: Props) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 lg:gap-6">
+    // Container query: columns follow the space the grid actually has (e.g. beside a sidebar), not the screen width.
+    <div className="@container">
+    <div className="grid grid-cols-1 gap-4 @[26rem]:grid-cols-2 @[26rem]:gap-5 @[52rem]:grid-cols-3 @[52rem]:gap-6">
       {plumbers.map((plumber) => {
         const displayImage = plumber.media?.images?.[0] || plumber.logo || "";
         const hasDiscount = !!plumber.discount;
@@ -491,6 +493,7 @@ export default function PlumberCardGrid({ plumbers }: Props) {
           </Link>
         );
       })}
+    </div>
     </div>
   );
 }

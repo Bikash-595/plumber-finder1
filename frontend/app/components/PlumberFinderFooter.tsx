@@ -216,7 +216,7 @@ export default function PlumberFinderFooter() {
           </div>
 
           {/* Three columns: Navigation, Services, States */}
-          <div className="grid grid-cols-3 gap-20 text-left text-xs sm:text-sm">
+          <div className="grid grid-cols-3 gap-4 text-left text-xs sm:gap-10 sm:text-sm lg:gap-20">
             {/* Navigation Column */}
             <div>
               <h3 className="mb-3 font-bold uppercase tracking-wide text-gray-800">Navigation</h3>

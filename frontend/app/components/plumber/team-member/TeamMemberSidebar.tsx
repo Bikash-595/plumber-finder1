@@ -36,7 +36,7 @@ export default function TeamMemberSidebar({
 }: TeamMemberProfileProps) {
   const experience = `${member.experience} year${member.experience === 1 ? "" : "s"}${member.experienceMonths ? ` ${member.experienceMonths} month${member.experienceMonths === 1 ? "" : "s"}` : ""}`;
   return (
-    <aside className="space-y-5 lg:sticky lg:top-6 lg:h-fit">
+    <aside className="space-y-5 lg:sticky lg:top-32 lg:h-fit">
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-xl font-bold text-slate-900">
           Professional details

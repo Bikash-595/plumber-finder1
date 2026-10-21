@@ -9,12 +9,23 @@ import { CompanyServices } from "../models/CompanyServices.js";
 
 const slugify = (value) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 const nonEmpty = (items) => items.filter((item) => Object.values(item).some(Boolean));
+const isPlainObject = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value);
+const isObjectList = (value) => Array.isArray(value) && value.every(isPlainObject);
+const brandingFields = ["companyLogo", "darkLogo", "lightLogo", "favicon", "coverImage", "heroBanner", "mobileBanner", "introVideo", "brandColors", "brandTypography", "seoTitle", "seoKeywords"];
 
 export async function saveCompanyOnboarding(req, res, next) {
   try {
     const { formData = {}, services = [], locations = [], galleryImages = [], galleryVideos = [] } = req.body;
-    if (!formData.companyName?.trim()) return res.status(400).json({ message: "Company name is required." });
+    if (!isPlainObject(formData) || typeof formData.companyName !== "string" || !formData.companyName.trim()) {
+      return res.status(400).json({ message: "Company name is required." });
+    }
+    if (![services, locations, galleryImages, galleryVideos].every(isObjectList)) {
+      return res.status(400).json({ message: "services, locations, galleryImages, and galleryVideos must be lists of objects." });
+    }
+    const serviceAreasText = formData.multipleServiceAreas || formData.serviceAreas || "";
+    if (typeof serviceAreasText !== "string") return res.status(400).json({ message: "Service areas must be a comma-separated string." });
     const company = req.auth.sub;
+    const branding = Object.fromEntries(brandingFields.map((field) => [field, formData[field]]));
     const safeServices = nonEmpty(services);
     const safeLocations = nonEmpty(locations);
     const safeImages = nonEmpty(galleryImages);
@@ -23,9 +34,9 @@ export async function saveCompanyOnboarding(req, res, next) {
     const publicLocation = safeLocations[0];
 
     const [listing] = await Promise.all([
-      CompanyListing.findOneAndUpdate({ company }, { company, slug, companyName: formData.companyName, tagline: formData.tagline, description: formData.shortDescription, logo: formData.companyLogo, coverImage: formData.coverImage, phone: formData.primaryPhone, email: formData.email, website: formData.website, location: publicLocation?.address || formData.headquarters, city: publicLocation?.city, state: publicLocation?.state, services: safeServices.map((item) => item.name).filter(Boolean), serviceAreas: (formData.multipleServiceAreas || formData.serviceAreas || "").split(",").map((value) => value.trim()).filter(Boolean), isPublished: true }, { new: true, upsert: true, runValidators: true }),
+      CompanyListing.findOneAndUpdate({ company }, { company, slug, companyName: formData.companyName, tagline: formData.tagline, description: formData.shortDescription, logo: formData.companyLogo, coverImage: formData.coverImage, phone: formData.primaryPhone, email: formData.email, website: formData.website, location: publicLocation?.address || formData.headquarters, city: publicLocation?.city, state: publicLocation?.state, services: safeServices.map((item) => item.name).filter(Boolean), serviceAreas: serviceAreasText.split(",").map((value) => value.trim()).filter(Boolean), isPublished: true }, { new: true, upsert: true, runValidators: true }),
       CompanyProfile.findOneAndUpdate({ company }, { company, companyHistory: formData.companyHistory, founderStory: formData.founderStory, businessGoals: formData.businessGoals, coreValues: formData.coreValues, registration: { businessRegistrationNumber: formData.businessRegistrationNumber, taxIdentificationNumber: formData.taxIdentificationNumber, vatGstNumber: formData.vatGstNumber, employerIdentificationNumber: formData.employerIdentificationNumber }, operations: { companyType: formData.companyType, businessStructure: formData.businessStructure, yearEstablished: formData.yearEstablished, numberOfEmployees: formData.numberOfEmployees, numberOfTechnicians: formData.numberOfTechnicians, numberOfVehicles: formData.numberOfVehicles, companySize: formData.companySize, languagesSpoken: formData.languagesSpoken, serviceCapacity: formData.serviceCapacity, annualRevenueRange: formData.annualRevenueRange, operatingRegions: formData.operatingRegions } }, { new: true, upsert: true }),
-      CompanyBranding.findOneAndUpdate({ company }, { company, ...formData }, { new: true, upsert: true }),
+      CompanyBranding.findOneAndUpdate({ company }, { company, ...branding }, { new: true, upsert: true }),
       CompanyGallery.findOneAndUpdate({ company }, { company, description: formData.galleryDescription, images: safeImages, videos: safeVideos }, { new: true, upsert: true }),
       CompanyContact.findOneAndUpdate({ company }, { company, primaryPhone: formData.primaryPhone, secondaryPhone: formData.secondaryPhone, whatsapp: formData.whatsapp, smsNumber: formData.smsNumber, email: formData.email, supportEmail: formData.supportEmail, salesEmail: formData.salesEmail, emergencyHotline: formData.emergencyHotline, website: formData.website, contactPerson: formData.contactPerson, contactPersonRole: formData.contactPersonRole }, { new: true, upsert: true }),
       CompanyLocations.findOneAndUpdate({ company }, { company, headquarters: formData.headquarters, branchLocations: formData.branchLocations, franchiseLocations: formData.franchiseLocations, serviceRadius: formData.serviceRadius, serviceAreas: formData.multipleServiceAreas, cities: formData.multipleCities, states: formData.multipleStates, countries: formData.operatingCountries, mapUrl: formData.googleMapsIntegration, latitude: formData.latitude, longitude: formData.longitude, locations: safeLocations }, { new: true, upsert: true }),
@@ -38,4 +49,12 @@ export async function saveCompanyOnboarding(req, res, next) {
 
 export async function getPublishedCompanies(_req, res, next) {
   try { res.json({ data: await CompanyListing.find({ isPublished: true }).sort({ createdAt: -1 }) }); } catch (error) { next(error); }
+}
+
+export async function getPublishedCompany(req, res, next) {
+  try {
+    const listing = await CompanyListing.findOne({ _id: req.params.id, isPublished: true });
+    if (!listing) return res.status(404).json({ message: "Company listing not found." });
+    res.json({ data: listing });
+  } catch (error) { next(error); }
 }

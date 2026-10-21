@@ -2,6 +2,10 @@ export type ServiceDefinition = {
   slug: string;
   filter: string;
   name: string;
+  /** Short line used in the navbar services menu. */
+  tagline: string;
+  /** Company service/specialization names (case-insensitive) that count as offering this service. */
+  matches: string[];
   seoTitle: string;
   seoDescription: string;
   intro: string;
@@ -12,6 +16,8 @@ export type ServiceDefinition = {
 export const serviceDefinitions: ServiceDefinition[] = [
   {
     slug: "emergency-plumbing",
+    tagline: "24/7 help for burst pipes and floods",
+    matches: ["Emergency Service","Emergency Plumbing","Emergency","24/7"],
     filter: "Emergency Service",
     name: "Emergency Plumbing",
     seoTitle: "Emergency Plumbing Services Near You",
@@ -33,6 +39,8 @@ export const serviceDefinitions: ServiceDefinition[] = [
 
   {
     slug: "drain-cleaning",
+    tagline: "Clear slow, blocked, and recurring clogs",
+    matches: ["Drain Cleaning","Drain Snaking","Clog Removal","Hydro Jetting"],
     filter: "Drain Cleaning",
     name: "Drain Cleaning",
     seoTitle: "Drain Cleaning Plumbers Near You",
@@ -54,6 +62,8 @@ export const serviceDefinitions: ServiceDefinition[] = [
 
   {
     slug: "water-heater-repair",
+    tagline: "Tank and tankless repair or replacement",
+    matches: ["Water Heater","Tankless"],
     filter: "Water Heater",
     name: "Water Heater Repair",
     seoTitle: "Water Heater Repair and Replacement Near You",
@@ -75,6 +85,8 @@ export const serviceDefinitions: ServiceDefinition[] = [
 
   {
     slug: "leak-detection",
+    tagline: "Find hidden leaks before they spread",
+    matches: ["Leak Detection","Leak Repair"],
     filter: "Leak Detection",
     name: "Leak Detection",
     seoTitle: "Leak Detection Specialists Near You",
@@ -96,6 +108,8 @@ export const serviceDefinitions: ServiceDefinition[] = [
 
   {
     slug: "pipe-repair",
+    tagline: "Fix leaking, corroded, or burst pipes",
+    matches: ["Pipe Repair","Repiping","Leak Repair"],
     filter: "Pipe Repair",
     name: "Pipe Repair",
     seoTitle: "Pipe Repair and Repiping Near You",
@@ -117,6 +131,8 @@ export const serviceDefinitions: ServiceDefinition[] = [
 
   {
     slug: "bathroom-plumbing",
+    tagline: "Toilets, faucets, showers, and fixtures",
+    matches: ["Toilet Repair","Faucet Installation","Fixture Installation","Bathroom","Shower"],
     filter: "Toilet Repair",
     name: "Bathroom Plumbing",
     seoTitle: "Bathroom Plumbing and Toilet Repair Near You",
@@ -138,6 +154,8 @@ export const serviceDefinitions: ServiceDefinition[] = [
 
   {
     slug: "sewer-line-service",
+    tagline: "Backups, camera inspection, and repair",
+    matches: ["Sewer","Video Inspection","Hydro Jetting"],
     filter: "Sewer Line",
     name: "Sewer Line Service",
     seoTitle: "Sewer Line Service and Repair Near You",
@@ -159,6 +177,8 @@ export const serviceDefinitions: ServiceDefinition[] = [
 
   {
     slug: "commercial-plumbing",
+    tagline: "Plumbing for businesses and facilities",
+    matches: ["Commercial"],
     filter: "Commercial Plumbing",
     name: "Commercial Plumbing",
     seoTitle: "Commercial Plumbing Services Near You",
@@ -177,8 +197,112 @@ export const serviceDefinitions: ServiceDefinition[] = [
       "Schedule work around your operating hours",
     ],
   },
+
+  {
+    slug: "hydro-jetting",
+    tagline: "High-pressure cleaning for drains and sewers",
+    matches: ["Hydro Jetting", "Jetting"],
+    filter: "Hydro Jetting",
+    name: "Hydro Jetting",
+    seoTitle: "Hydro Jetting Services Near You",
+    seoDescription:
+      "Compare local plumbers for hydro jetting of grease, roots, scale, and stubborn buildup in drains and sewer lines.",
+    intro:
+      "Find plumbers who use high-pressure water jetting to clear heavy buildup that snaking alone cannot remove.",
+    signs: [
+      "Clogs that return soon after snaking",
+      "Grease or scale buildup in kitchen or main lines",
+      "Tree roots found during a camera inspection",
+    ],
+    process: [
+      "Ask whether a camera inspection is recommended first",
+      "Confirm your pipe material and age",
+      "Compare jetting quotes and follow-up maintenance options",
+    ],
+  },
+
+  {
+    slug: "garbage-disposal",
+    tagline: "Disposal repair, replacement, and installs",
+    matches: ["Garbage Disposal", "Disposal"],
+    filter: "Garbage Disposal",
+    name: "Garbage Disposal",
+    seoTitle: "Garbage Disposal Repair and Installation Near You",
+    seoDescription:
+      "Find plumbers for jammed, leaking, or noisy garbage disposals, plus new disposal installation and replacement.",
+    intro:
+      "Compare local plumbers for garbage disposal repairs, replacements, and new kitchen installations.",
+    signs: [
+      "Disposal hums but does not spin",
+      "Leaks under the kitchen sink",
+      "Frequent jams, resets, or bad odors",
+    ],
+    process: [
+      "Turn off power to the unit before inspecting",
+      "Note the brand, model, and symptoms",
+      "Compare repair versus replacement options",
+    ],
+  },
+
+  {
+    slug: "sump-pump",
+    tagline: "Basement flood protection and pump repair",
+    matches: ["Sump Pump", "Pump Systems"],
+    filter: "Sump Pump",
+    name: "Sump Pump",
+    seoTitle: "Sump Pump Repair and Installation Near You",
+    seoDescription:
+      "Compare plumbers for sump pump installation, repair, battery backups, and basement flood prevention.",
+    intro:
+      "Find plumbers who install, repair, and maintain sump pumps to keep basements and crawl spaces dry.",
+    signs: [
+      "Pump runs constantly or not at all",
+      "Water collecting in the basement or pit",
+      "Loud grinding or rattling during operation",
+    ],
+    process: [
+      "Check the float switch and power supply if safe",
+      "Share basement size and past flooding history",
+      "Ask about backup pumps and alarms",
+    ],
+  },
+
+  {
+    slug: "water-softener",
+    tagline: "Softeners, filtration, and water treatment",
+    matches: ["Water Softener", "Water Systems", "Water Filtration", "Water Treatment"],
+    filter: "Water Softener",
+    name: "Water Softener",
+    seoTitle: "Water Softener and Filtration Installation Near You",
+    seoDescription:
+      "Find plumbers for water softener installation, whole-home filtration, and hard-water treatment systems.",
+    intro:
+      "Compare plumbers who install and service water softeners and filtration systems for cleaner, softer water.",
+    signs: [
+      "Scale buildup on fixtures and appliances",
+      "Spotty dishes or dry skin and hair",
+      "Unusual taste, color, or odor in tap water",
+    ],
+    process: [
+      "Test your water hardness or quality",
+      "Compare softener and filtration system options",
+      "Schedule installation and ongoing maintenance",
+    ],
+  },
 ];
 
 export const serviceBySlug = Object.fromEntries(
   serviceDefinitions.map((service) => [service.slug, service]),
 );
+
+type ServiceProvider = { services: string[]; specializations?: string[]; isEmergency?: boolean };
+
+/** True when a company lists a service or specialization matching this service type. */
+export function offersService(company: ServiceProvider, service: ServiceDefinition) {
+  if (service.slug === "emergency-plumbing" && company.isEmergency) return true;
+  const terms = [service.filter, service.name, ...service.matches].map((term) => term.toLowerCase());
+  return [...company.services, ...(company.specializations ?? [])].some((offered) => {
+    const value = offered.trim().toLowerCase();
+    return terms.some((term) => value === term || value.includes(term));
+  });
+}
