@@ -13,6 +13,7 @@ import { FreelancerReview } from "../../reviews/models/FreelancerReview.js";
 import { FreelancerServiceArea } from "../../service-areas/models/FreelancerServiceArea.js";
 import { FreelancerServiceOffering } from "../../services/models/FreelancerServiceOffering.js";
 import { FreelancerSpecialOffer } from "../../special-offers/models/FreelancerSpecialOffer.js";
+import { FreelancerSocialLinks } from "../../social-links/models/FreelancerSocialLinks.js";
 
 const hidden = "-freelancer -__v";
 const byPosition = { position: 1, createdAt: 1 };
@@ -73,10 +74,17 @@ export async function cardSummaries(listings) {
   }));
 }
 
+/** Area services that no longer exist in the Services section are dropped (renamed or deleted services). */
+function withCurrentServices(serviceArea, services) {
+  if (!serviceArea?.areaDetails) return serviceArea ?? null;
+  const names = new Set(services.map((service) => service.name.toLowerCase()));
+  return { ...serviceArea, areaDetails: serviceArea.areaDetails.map((area) => ({ ...area, services: (area.services ?? []).filter((name) => names.has(name.toLowerCase())) })) };
+}
+
 /** Everything shown on a freelancer's public profile page, for one published listing. */
 export async function fullProfile(listing) {
   const freelancer = listing.freelancer;
-  const [summaries, services, gallery, projects, reviews, faqs, blogs, offers, booking, serviceArea, hours] = await Promise.all([
+  const [summaries, services, gallery, projects, reviews, faqs, blogs, offers, booking, serviceArea, hours, socialLinks] = await Promise.all([
     cardSummaries([listing]),
     FreelancerServiceOffering.find({ freelancer }).sort(byPosition).select(hidden).lean(),
     FreelancerGalleryItem.find({ freelancer }).sort(byPosition).select(hidden).lean(),
@@ -88,6 +96,7 @@ export async function fullProfile(listing) {
     FreelancerBookingSettings.findOne({ freelancer }).select(hidden).lean(),
     FreelancerServiceArea.findOne({ freelancer }).select(hidden).lean(),
     FreelancerOpeningHours.findOne({ freelancer }).select(hidden).lean(),
+    FreelancerSocialLinks.findOne({ freelancer }).select(`${hidden} -_id -createdAt -updatedAt`).lean(),
   ]);
   const { freelancer: _owner, __v, ...publicListing } = listing;
   return {
@@ -96,7 +105,8 @@ export async function fullProfile(listing) {
     services: services.length ? services : (listing.services ?? []).map((name) => ({ name })),
     gallery, projects, reviews, faqs, blogs, offers,
     booking: booking ?? null,
-    serviceArea: serviceArea ?? null,
+    serviceArea: withCurrentServices(serviceArea, services),
+    socialLinks: socialLinks ?? {},
     hours: hours ? { weeklyHours: hours.weeklyHours ?? [], availability24x7: hours.availability24x7 ? "Yes" : undefined, emergencyHours: hours.emergencyHours, holidayHours: hours.holidayHours, specialClosures: hours.specialClosures } : { weeklyHours: [] },
   };
 }

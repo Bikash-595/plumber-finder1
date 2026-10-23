@@ -48,6 +48,7 @@ Everything company-related lives in feature folders under `src/company/`:
 | Company overview | `/api/companies/company-overview` | single record |
 | Service areas | `/api/companies/service-areas` | single record: base location + `latitude`/`longitude` (for distances), `radius`, and `areaDetails` — `[{ name, services: [...] }]`, the services offered in each area (syncs listing `serviceAreas`) |
 | Booking settings | `/api/companies/booking` | single record |
+| Social links | `/api/companies/social-links` | single record: `facebook`, `instagram`, `twitter`, `linkedin`, `youtube`, `tiktok` (full https links; shown as icons in the profile header) |
 | Services | `/api/companies/services` | list (syncs listing `services`) |
 | Gallery | `/api/companies/gallery` | list (8 MB body limit for videos) |
 | Previous projects | `/api/companies/previous-projects` | list |
@@ -72,7 +73,7 @@ Every company listing has a clean, unique `slug` used for its public page `/comp
 
 ## Freelancer profile sections
 
-Freelancers get the same section structure as companies under `src/freelancer/<section>/` (`config/`, `models/`, `middleware/`, `controllers/`, `routers/`), mounted by `src/freelancer/freelancerRouter.js` at `/api/freelancers`. Sections: `header-profile`, `overview`, `service-areas`, `booking`, `opening-hours` (single records), `services`, `gallery`, `previous-projects`, `reviews`, `faqs`, `blogs`, `special-offers` (lists). There is no team section — a freelancer works alone.
+Freelancers get the same section structure as companies under `src/freelancer/<section>/` (`config/`, `models/`, `middleware/`, `controllers/`, `routers/`), mounted by `src/freelancer/freelancerRouter.js` at `/api/freelancers`. Sections: `header-profile`, `overview`, `service-areas`, `booking`, `opening-hours`, `social-links` (single records), `services`, `gallery`, `previous-projects`, `reviews`, `faqs`, `blogs`, `special-offers` (lists). There is no team section — a freelancer works alone.
 
 - **Opening hours:** `GET`/`PUT /api/freelancers/opening-hours` — `weeklyHours` (one row per weekday, same rules as the company wizard, validated by `src/shared/openingHours.js`) plus `availability24x7`, `emergencyHours`, `holidayHours`, `specialClosures`.
 - **Removing the listing:** `DELETE /api/freelancers/header-profile` deletes the header profile and the public listing; other sections are kept, and saving the header profile again re-lists the freelancer.

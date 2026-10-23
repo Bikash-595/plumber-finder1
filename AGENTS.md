@@ -14,6 +14,8 @@
 - `components/` holds shared UI components organized by feature area
 
 ## Primary commands
+- From the project root: `npm run dev` starts backend (3300), frontend (3000), and admin (3001) together; `npm run dev:backend` / `dev:frontend` / `dev:admin` start one; `npm run install:all` installs all three; `npm test` runs the backend tests
+- Inside `frontend/` or `admin/`:
 - `npm run dev` — start development server
 - `npm run build` — compile for production
 - `npm run start` — run production build

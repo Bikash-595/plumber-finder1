@@ -585,6 +585,7 @@ describe("service areas with services, card details, and the public blog feed", 
     assert.equal((await api("PUT", "/api/companies/service-areas", { token, body: { latitude: 30.2 } })).status, 400, "latitude needs longitude");
     assert.equal((await api("PUT", "/api/companies/service-areas", { token, body: { latitude: 120, longitude: 0 } })).status, 400);
     assert.equal((await api("PUT", "/api/companies/service-areas", { token, body: { areaDetails: [{ services: ["Drains"] }] } })).status, 400, "area name required");
+    for (const name of ["Drains", "Water heaters"]) await api("POST", "/api/companies/services", { token, body: { name } });
     const res = await api("PUT", "/api/companies/service-areas", { token, body: { branchLocation: "Austin, TX", latitude: 30.2672, longitude: -97.7431, areaDetails: [{ name: "Austin", services: "Drains, Water heaters" }, { name: "Round Rock", services: [] }, { name: "austin", services: [] }] } });
     assert.equal(res.status, 200);
     assert.deepEqual(res.body.data.areaDetails, [{ name: "Austin", services: ["Drains", "Water heaters"] }, { name: "Round Rock", services: [] }], "duplicate names are dropped");
@@ -624,5 +625,38 @@ describe("service areas with services, card details, and the public blog feed", 
     assert.ok(post.provider.slug);
     assert.ok(!feed.some((item) => item.title === "Hidden Draft"));
     assert.equal(feed.find((item) => item.title === "Freelancer Feed Post")?.provider.name, "Feed Fran");
+  });
+});
+
+describe("social links and up-to-date area services", () => {
+  test("social links are validated and shown on the public profile", async () => {
+    const { token, listingId } = await newCompany();
+    assert.equal((await api("PUT", "/api/companies/social-links", { body: {} })).status, 401);
+    assert.equal((await api("PUT", "/api/companies/social-links", { token, body: { facebook: "javascript:alert(1)" } })).status, 400);
+    assert.equal((await api("PUT", "/api/companies/social-links", { token, body: { instagram: "instagram.com/me" } })).status, 400, "needs a full https link");
+    const res = await api("PUT", "/api/companies/social-links", { token, body: { facebook: "https://facebook.com/abc", twitter: "https://x.com/abc", youtube: "https://youtube.com/@abc", company: "000000000000000000000000" } });
+    assert.equal(res.status, 200);
+    const profile = (await api("GET", `/api/companies/public/${listingId}/profile`)).body.data;
+    assert.deepEqual(profile.socialLinks, { facebook: "https://facebook.com/abc", twitter: "https://x.com/abc", youtube: "https://youtube.com/@abc" });
+    assert.equal((await api("DELETE", "/api/companies/social-links", { token })).status, 200);
+    assert.deepEqual((await api("GET", `/api/companies/public/${listingId}/profile`)).body.data.socialLinks, {});
+  });
+
+  test("renamed or deleted services drop out of the areas on the public profile", async () => {
+    const { token, listingId } = await newCompany();
+    const drains = (await api("POST", "/api/companies/services", { token, body: { name: "Drains" } })).body.data;
+    await api("POST", "/api/companies/services", { token, body: { name: "Heaters" } });
+    await api("PUT", "/api/companies/service-areas", { token, body: { areaDetails: [{ name: "Austin", services: ["Drains", "Heaters"] }] } });
+    await api("PUT", `/api/companies/services/${drains._id}`, { token, body: { name: "Drain Cleaning" } });
+    const area = (await api("GET", `/api/companies/public/${listingId}/profile`)).body.data.serviceArea.areaDetails[0];
+    assert.deepEqual(area.services, ["Heaters"]);
+  });
+
+  test("freelancers have social links too", async () => {
+    const { body } = await api("POST", "/api/auth/freelancers/signup", { body: { name: "Social Fran", email: `socialfran${++seq}@example.com`, password: "password123" } });
+    await api("PUT", "/api/freelancers/header-profile", { token: body.token, body: { displayName: "Social Fran" } });
+    await api("PUT", "/api/freelancers/social-links", { token: body.token, body: { linkedin: "https://linkedin.com/in/fran" } });
+    const listing = (await api("GET", "/api/freelancers/public")).body.data.find((item) => item.displayName === "Social Fran");
+    assert.equal((await api("GET", `/api/freelancers/public/${listing._id}/profile`)).body.data.socialLinks.linkedin, "https://linkedin.com/in/fran");
   });
 });

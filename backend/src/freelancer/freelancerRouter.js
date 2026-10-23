@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { blogsRouter } from "./blogs/routers/blogsRouter.js";
 import { bookingRouter } from "./booking/routers/bookingRouter.js";
+import { socialLinksRouter } from "./social-links/routers/socialLinksRouter.js";
 import { faqsRouter } from "./faqs/routers/faqsRouter.js";
 import { galleryRouter } from "./gallery/routers/galleryRouter.js";
 import { headerProfileRouter } from "./header-profile/routers/headerProfileRouter.js";
@@ -26,6 +27,7 @@ export const freelancerSections = [
   { path: "/service-areas", router: serviceAreasRouter },
   { path: "/blogs", router: blogsRouter },
   { path: "/booking", router: bookingRouter },
+  { path: "/social-links", router: socialLinksRouter },
   { path: "/opening-hours", router: openingHoursRouter },
   { path: "/special-offers", router: specialOffersRouter },
 ];

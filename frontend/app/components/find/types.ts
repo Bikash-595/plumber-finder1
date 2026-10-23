@@ -82,6 +82,8 @@ export interface Plumber {
     twitter?: string;
     instagram?: string;
     linkedin?: string;
+    youtube?: string;
+    tiktok?: string;
   };
   warranty: string;
   paymentMethods: string[];
@@ -136,6 +138,7 @@ export interface Plumber {
   coordinates?: { lat: number; lng: number }; // base location, for "x mi away"
   blogCount?: number; // cards: published posts (full posts are only loaded on the profile)
   serviceAreaDetails?: { name: string; services: string[] }[]; // areas with the services offered there
+  baseLocation?: string; // where a live company or freelancer is based (Service Areas)
   tagline?: string;
   openingHours?: OpeningHours;
   reviews?: PlumberReview[];

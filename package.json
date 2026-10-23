@@ -1,0 +1,15 @@
+{
+  "name": "plumber-finder",
+  "private": true,
+  "description": "Runs the three apps from the project root: backend (port 3300), frontend (port 3000), and admin (port 3001).",
+  "scripts": {
+    "dev": "npm --prefix backend run dev & npm --prefix frontend run dev & npm --prefix admin run dev & wait",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:admin": "npm --prefix admin run dev",
+    "install:all": "npm --prefix backend install && npm --prefix frontend install && npm --prefix admin install",
+    "build": "npm --prefix frontend run build && npm --prefix admin run build",
+    "test": "npm --prefix backend test",
+    "lint": "npm --prefix frontend run lint && npm --prefix admin run lint"
+  }
+}

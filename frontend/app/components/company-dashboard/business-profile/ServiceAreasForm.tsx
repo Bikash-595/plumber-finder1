@@ -62,6 +62,7 @@ export default function ServiceAreasForm({ apiEndpoint, servicesEndpoint }: Prop
     );
   };
 
+  // Ticks for services that were renamed or deleted are dropped when saving.
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const pending = newAreas.split(",").map((name) => name.trim()).filter(Boolean);
@@ -70,7 +71,7 @@ export default function ServiceAreasForm({ apiEndpoint, servicesEndpoint }: Prop
     setBusy(true);
     setNotice(null);
     try {
-      const { data } = await companyApi<Saved>(apiEndpoint, { method: "PUT", body: { ...values, areaDetails: allAreas.map((area) => ({ name: area.name.trim(), services: area.services })) } });
+      const { data } = await companyApi<Saved>(apiEndpoint, { method: "PUT", body: { ...values, areaDetails: allAreas.map((area) => ({ name: area.name.trim(), services: services.length ? area.services.filter((name) => services.includes(name)) : area.services })) } });
       setSaved(data);
       load(data);
       setNewAreas("");

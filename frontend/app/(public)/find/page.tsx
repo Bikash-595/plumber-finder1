@@ -4,6 +4,8 @@ import { useState, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { plumbers } from "@/data/plumbers";
 import { useDirectoryPlumbers } from "@/components/find/usePublishedPlumbers";
+import { sortByDistance } from "@/components/find/distance";
+import { useUserLocation } from "@/components/find/useUserLocation";
 import SearchHero from "@/components/find/SearchHero";
 import FilterSidebar from "@/components/find/FilterSidebar";
 import ResultsHeader from "@/components/find/ResultsHeader";
@@ -104,6 +106,7 @@ function FindPlumberPage() {
 
   // Real companies and freelancers replace the demo plumbers once any exist.
   const { plumbers: directory, loading } = useDirectoryPlumbers();
+  const { location: userLocation } = useUserLocation();
 
   const getSearchableText = useCallback((plumber: typeof plumbers[number]) =>
     [
@@ -235,9 +238,11 @@ function FindPlumberPage() {
     normalizeResponseTime,
   ]);
 
-  const totalPages = Math.ceil(filteredPlumbers.length / itemsPerPage);
+  // Nearest plumbers first once the visitor shares their location.
+  const sortedPlumbers = useMemo(() => sortByDistance(filteredPlumbers, userLocation), [filteredPlumbers, userLocation]);
+  const totalPages = Math.ceil(sortedPlumbers.length / itemsPerPage);
   const safeCurrentPage = totalPages === 0 ? 1 : Math.min(currentPage, totalPages);
-  const paginatedPlumbers = filteredPlumbers.slice(
+  const paginatedPlumbers = sortedPlumbers.slice(
     (safeCurrentPage - 1) * itemsPerPage,
     safeCurrentPage * itemsPerPage
   );

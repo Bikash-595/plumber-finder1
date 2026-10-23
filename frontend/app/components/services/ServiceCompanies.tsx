@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useDirectoryPlumbers } from "@/components/find/usePublishedPlumbers";
+import { sortByDistance } from "@/components/find/distance";
+import { useUserLocation } from "@/components/find/useUserLocation";
 import ResultsHeader from "@/components/find/ResultsHeader";
 import PlumberCardGrid from "@/components/find/PlumberCardGrid";
 import PlumberCardList from "@/components/find/PlumberCardList";
@@ -19,7 +21,9 @@ export default function ServiceCompanies({ service }: { service: ServiceDefiniti
   const [currentPage, setCurrentPage] = useState(1);
 
 
-  const companies = allCompanies.filter((company) => offersService(company, service));
+  const { location: userLocation } = useUserLocation();
+  // Nearest companies first once the visitor shares their location.
+  const companies = sortByDistance(allCompanies.filter((company) => offersService(company, service)), userLocation);
   const countsBySlug = Object.fromEntries(serviceDefinitions.map((item) => [item.slug, allCompanies.filter((company) => offersService(company, item)).length]));
 
   const totalPages = Math.ceil(companies.length / ITEMS_PER_PAGE);

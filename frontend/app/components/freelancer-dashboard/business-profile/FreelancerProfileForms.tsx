@@ -5,6 +5,7 @@ import CollectionForm from "@/components/company-dashboard/business-profile/Coll
 import CompanyBlogForm from "@/components/company-dashboard/business-profile/CompanyBlogForm";
 import PreviousProjectForm from "@/components/company-dashboard/business-profile/PreviousProjectForm";
 import SectionForm from "@/components/company-dashboard/business-profile/SectionForm";
+import { socialExamples, socialFields } from "@/components/company-dashboard/business-profile/forms/BusinessProfileForms";
 import ServiceAreasEditor from "@/components/company-dashboard/business-profile/ServiceAreasForm";
 import FreelancerDeleteListing from "./FreelancerDeleteListing";
 import FreelancerOpeningHoursForm from "./FreelancerOpeningHoursForm";
@@ -80,6 +81,10 @@ export function FreelancerOffersForm() {
   return <CollectionForm section="freelancer-offers" apiEndpoint="/freelancers/special-offers" title="Special Offers" description="Promotions customers can claim." itemName="Offer" fields={[{ name: "title", label: "Offer Title" }, { name: "description", label: "Description", type: "textarea" }, { name: "discount", label: "Discount" }, { name: "promoCode", label: "Promo Code" }, { name: "startDate", label: "Start Date", type: "date" }, { name: "endDate", label: "End Date", type: "date" }, { name: "image", label: "Offer Image", type: "image" }]} />;
 }
 
+export function FreelancerSocialLinksForm() {
+  return <SectionForm section="freelancer-social-links" apiEndpoint="/freelancers/social-links" title="Social Links" description="Add your social media pages. They appear as icons on your public profile." defaults={socialExamples} fields={socialFields} />;
+}
+
 /** Slug → page title and form, used by the menu, overview cards, and the [section] route. */
 export const freelancerProfileSections = [
   { slug: "header-profile", label: "Your Profile", Form: FreelancerHeaderProfileForm },
@@ -93,5 +98,6 @@ export const freelancerProfileSections = [
   { slug: "blogs", label: "Blogs", Form: FreelancerBlogsForm },
   { slug: "booking", label: "Booking", Form: FreelancerBookingForm },
   { slug: "opening-hours", label: "Opening Hours", Form: FreelancerOpeningHoursForm },
+  { slug: "social-links", label: "Social Links", Form: FreelancerSocialLinksForm },
   { slug: "offers", label: "Special Offers", Form: FreelancerOffersForm },
 ];

@@ -16,6 +16,7 @@ import { CompanyServiceArea } from "../../service-areas/models/CompanyServiceAre
 import { CompanyServiceOffering } from "../../services/models/CompanyServiceOffering.js";
 import { CompanySpecialOffer } from "../../special-offers/models/CompanySpecialOffer.js";
 import { CompanyTeamMember } from "../../team/models/CompanyTeamMember.js";
+import { CompanySocialLinks } from "../../social-links/models/CompanySocialLinks.js";
 import { currentOffers, publishedBlogs, visibleProjects } from "../../../shared/profileSections/publicFilters.js";
 import { firstPoint, publishedBlogCounts } from "../../../shared/profileSections/cardExtras.js";
 
@@ -104,10 +105,17 @@ export async function cardSummaries(listings) {
   }));
 }
 
+/** Area services that no longer exist in the Services section are dropped (renamed or deleted services). */
+function withCurrentServices(serviceArea, services) {
+  if (!serviceArea?.areaDetails) return serviceArea ?? null;
+  const names = new Set(services.map((service) => service.name.toLowerCase()));
+  return { ...serviceArea, areaDetails: serviceArea.areaDetails.map((area) => ({ ...area, services: (area.services ?? []).filter((name) => names.has(name.toLowerCase())) })) };
+}
+
 /** Everything shown on a company's public profile page, for one published listing. */
 export async function fullProfile(listing) {
   const company = listing.company;
-  const [summaries, header, services, gallery, projects, reviews, team, faqs, blogs, offers, booking, serviceArea, operations, locations, contact, profile, draft] = await Promise.all([
+  const [summaries, header, services, gallery, projects, reviews, team, faqs, blogs, offers, booking, serviceArea, operations, locations, contact, profile, draft, socialLinks] = await Promise.all([
     cardSummaries([listing]),
     CompanyHeaderProfile.findOne({ company }).select(hidden).lean(),
     CompanyServiceOffering.find({ company }).sort(byPosition).select(hidden).lean(),
@@ -125,6 +133,7 @@ export async function fullProfile(listing) {
     CompanyContact.findOne({ company }).lean(),
     CompanyProfile.findOne({ company }).select("companyHistory founderStory businessGoals coreValues").lean(),
     CompanyOnboardingDraft.findOne({ company }).select("formData").lean(),
+    CompanySocialLinks.findOne({ company }).select(`${hidden} -_id -createdAt -updatedAt`).lean(),
   ]);
   const { company: _owner, __v, ...publicListing } = listing;
   return {
@@ -139,6 +148,7 @@ export async function fullProfile(listing) {
     services: services.length ? services : (listing.services ?? []).map((name) => ({ name })),
     gallery, projects, reviews, team, faqs, blogs, offers,
     booking: booking ?? null,
-    serviceArea: serviceArea ?? null,
+    serviceArea: withCurrentServices(serviceArea, services),
+    socialLinks: socialLinks ?? {},
   };
 }

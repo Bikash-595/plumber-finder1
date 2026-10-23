@@ -6,6 +6,8 @@ import { use } from "react";
 import { notFound } from "next/navigation";
 import { getStateAbbr } from "@/components/utils/location";
 import { useDirectoryPlumbers } from "@/components/find/usePublishedPlumbers";
+import { sortByDistance } from "@/components/find/distance";
+import { useUserLocation } from "@/components/find/useUserLocation";
 import StateCityFilterSidebar from "@/components/find/StateCityFilterSidebar";
 import ResultsHeader from "@/components/find/ResultsHeader";
 import PlumberCardGrid from "@/components/find/PlumberCardGrid";
@@ -22,6 +24,7 @@ export default function StatePage({ params, searchParams }: { params: Promise<{ 
   const stateName = statePath.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   const stateAbbr = getStateAbbr(stateName);
   const { plumbers: directory, loading } = useDirectoryPlumbers();
+  const { location: userLocation } = useUserLocation();
 
   if (!stateAbbr) {
     notFound();
@@ -34,6 +37,8 @@ export default function StatePage({ params, searchParams }: { params: Promise<{ 
   if (city) {
     filteredPlumbers = filteredPlumbers.filter(p => p.city?.toLowerCase() === city.toLowerCase());
   }
+  // Nearest plumbers first once the visitor shares their location.
+  filteredPlumbers = sortByDistance(filteredPlumbers, userLocation);
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);

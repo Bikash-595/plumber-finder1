@@ -42,6 +42,17 @@ export function useSavedItems(apiEndpoint: string, labels: { singular: string })
     }
   };
 
+  /** Changes some fields of a saved item (e.g. publish a scheduled post now) without opening it in the editor. */
+  const patch = async (id: string, values: Record<string, unknown>, successText: string) => {
+    try {
+      await companyApi(`${apiEndpoint}/${id}`, { method: "PATCH", body: values });
+      await refresh();
+      setNotice({ tone: "success", text: successText });
+    } catch (error) {
+      setNotice({ tone: "error", text: error instanceof Error ? error.message : `Unable to update the ${labels.singular}.` });
+    }
+  };
+
   const remove = async (id: string) => {
     try {
       await companyApi(`${apiEndpoint}/${id}`, { method: "DELETE" });
@@ -53,7 +64,7 @@ export function useSavedItems(apiEndpoint: string, labels: { singular: string })
     }
   };
 
-  return { items, loading, editingId, setEditingId, notice, setNotice, saving, save, remove };
+  return { items, loading, editingId, setEditingId, notice, setNotice, saving, save, patch, remove };
 }
 
 export function NoticeMessage({ notice }: { notice: Notice }) {

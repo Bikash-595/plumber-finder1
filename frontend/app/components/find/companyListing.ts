@@ -63,6 +63,7 @@ export type CompanyProfile = Omit<CompanyListing, "services"> & {
   offers?: (Offer & { description?: string })[];
   booking?: { emergencyBooking?: boolean } | null;
   serviceArea?: { areaDetails?: { name: string; services?: string[] }[]; branchLocation?: string; latitude?: number; longitude?: number } | null;
+  socialLinks?: Partial<Record<"facebook" | "instagram" | "twitter" | "linkedin" | "youtube" | "tiktok", string>>;
 };
 
 const dayNames: OpeningHoursDay["day"][] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
@@ -129,7 +130,8 @@ export function companyListingToPlumber(company: CompanyListing): Plumber {
     availability: openNowLabel(company.weeklyHours) ?? "Available",
     isVerified: Boolean(company.verified),
     isEmergency: Boolean(company.isEmergency),
-    location: company.location || [company.city, company.state].filter(Boolean).join(", "),
+    // "Austin, TX" like the demo plumbers; a street address is only used when there is no city.
+    location: [company.city, company.state].filter(Boolean).join(", ") || company.location || "",
     city: company.city,
     state: company.state,
     phone: company.phone || "",
@@ -199,7 +201,7 @@ export function companyProfileToPlumber(profile: CompanyProfile): Plumber {
     image: displayableImage(post.coverImage) || cover || "/Plumber.png",
     video: null,
     author: post.author || card.companyName,
-    date: post.publishDate ?? "",
+    date: (post.publishDate ?? "").slice(0, 10),
     readTime: Math.max(1, Math.round(post.content.split(/\s+/).length / 200)),
     readCount: 0,
     reactions: { like: 0, love: 0, helpful: 0 },
@@ -230,6 +232,7 @@ export function companyProfileToPlumber(profile: CompanyProfile): Plumber {
       clientRating: project.rating,
       clientReview: project.testimonial,
       projectCost: numberFrom(project.budget),
+      durationDays: numberFrom(project.duration),
       clientDetails: { name: project.client || "Private client", type: project.service, location: project.location || card.location, contactPerson: project.client || "" },
       projectDetails: { category: project.service, scope: project.results || project.description, challenge: project.challenge || "", solution: project.solution || "", materials: [], teamSize: 0, warranty: card.warranty, completedAt: project.completedDate ?? "" },
     })),
@@ -248,6 +251,8 @@ export function companyProfileToPlumber(profile: CompanyProfile): Plumber {
     availability: openNowLabel(weekly) ?? card.availability,
     blogCount: blogs.length,
     coordinates: card.coordinates,
+    baseLocation: profile.serviceArea?.branchLocation || undefined,
+    socialLinks: profile.socialLinks ?? {},
     serviceAreaDetails: profile.serviceArea?.areaDetails?.length
       ? profile.serviceArea.areaDetails.map((area) => ({ name: area.name, services: area.services ?? [] }))
       : card.serviceAreas.map((name) => ({ name, services: [] })),
@@ -292,7 +297,7 @@ export type FreelancerListing = {
   blogCount?: number;
 };
 
-export type FreelancerProfile = Omit<FreelancerListing, "services"> & Pick<CompanyProfile, "services" | "gallery" | "projects" | "reviews" | "faqs" | "blogs" | "offers" | "booking" | "hours" | "serviceArea">;
+export type FreelancerProfile = Omit<FreelancerListing, "services"> & Pick<CompanyProfile, "services" | "gallery" | "projects" | "reviews" | "faqs" | "blogs" | "offers" | "booking" | "hours" | "serviceArea" | "socialLinks">;
 
 /** A freelancer in company terms, so cards and profile pages render it the same way (a team of one). */
 function freelancerAsCompany(freelancer: Omit<FreelancerListing, "services">) {
@@ -351,7 +356,7 @@ export function freelancerListingToPlumber(freelancer: FreelancerListing): Plumb
 
 /** A live freelancer's full public profile, shaped like the demo plumbers (no team section). */
 export function freelancerProfileToPlumber(profile: FreelancerProfile): Plumber {
-  const plumber = companyProfileToPlumber({ ...freelancerAsCompany(profile), services: profile.services, gallery: profile.gallery, projects: profile.projects, reviews: profile.reviews, faqs: profile.faqs, blogs: profile.blogs, offers: profile.offers, booking: profile.booking, hours: profile.hours, serviceArea: profile.serviceArea, team: [] });
+  const plumber = companyProfileToPlumber({ ...freelancerAsCompany(profile), services: profile.services, gallery: profile.gallery, projects: profile.projects, reviews: profile.reviews, faqs: profile.faqs, blogs: profile.blogs, offers: profile.offers, booking: profile.booking, hours: profile.hours, serviceArea: profile.serviceArea, socialLinks: profile.socialLinks, team: [] });
   return { ...freelancerExtras(profile, plumber), teamMembers: [], about: profile.bio ? { longDescription: profile.bio } : {} };
 }
 
@@ -403,6 +408,6 @@ export async function fetchPublicBlogFeed(): Promise<BlogFeedEntry[]> {
     href: plumberHref({ id: post.provider.id, slug: post.provider.slug, providerType: post.provider.type }),
     companyName: post.provider.name,
     companyRating: post.provider.rating,
-    post: { slug: post.slug, title: post.title, summary: post.excerpt, content: [post.category, ...(post.tags ?? [])].filter(Boolean).join(" "), image: displayableImage(post.coverImage) || "/Plumber.png", video: null, author: post.author || post.provider.name, date: post.publishDate ?? "", readTime: post.readTime, readCount: 0, reactions: { like: 0, love: 0, helpful: 0 }, comments: [] },
+    post: { slug: post.slug, title: post.title, summary: post.excerpt, content: [post.category, ...(post.tags ?? [])].filter(Boolean).join(" "), image: displayableImage(post.coverImage) || "/Plumber.png", video: null, author: post.author || post.provider.name, date: (post.publishDate ?? "").slice(0, 10), readTime: post.readTime, readCount: 0, reactions: { like: 0, love: 0, helpful: 0 }, comments: [] },
   }));
 }

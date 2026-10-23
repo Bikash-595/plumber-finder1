@@ -57,3 +57,15 @@ export function distanceLabel(plumber: Plumber, from: Point | null): string | nu
   const value = miles < 10 ? miles.toFixed(1) : Math.round(miles).toLocaleString("en-US");
   return `${where.approximate ? "~" : ""}${value} mi away`;
 }
+
+/** Nearest first when the visitor's location is known (plumbers with no known location go last); otherwise unchanged. */
+export function sortByDistance<T extends Plumber>(plumbers: T[], from: Point | null): T[] {
+  if (!from) return plumbers;
+  return plumbers
+    .map((plumber, index) => {
+      const where = plumberPoint(plumber);
+      return { plumber, index, miles: where ? milesBetween(from, where.point) : Number.POSITIVE_INFINITY };
+    })
+    .sort((a, b) => a.miles - b.miles || a.index - b.index)
+    .map(({ plumber }) => plumber);
+}

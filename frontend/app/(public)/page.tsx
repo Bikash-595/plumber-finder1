@@ -105,6 +105,8 @@
 
 import { useState } from "react";
 import { useDirectoryPlumbers } from "@/components/find/usePublishedPlumbers";
+import { sortByDistance } from "@/components/find/distance";
+import { useUserLocation } from "@/components/find/useUserLocation";
 import PlumberCardGrid from "@/components/find/PlumberCardGrid";
 import PlumberCardList from "@/components/find/PlumberCardList";
 import ResultsHeader from "@/components/find/ResultsHeader";
@@ -121,10 +123,12 @@ export default function Home() {
 
 
   // Filter plumbers based on search term
-  const filteredPlumbers = allPlumbers.filter((plumber) =>
+  const { location: userLocation } = useUserLocation();
+  // Nearest plumbers first once the visitor shares their location.
+  const filteredPlumbers = sortByDistance(allPlumbers.filter((plumber) =>
     plumber.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     plumber.services.some((s) => s.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  ), userLocation);
 
   const totalPages = Math.ceil(filteredPlumbers.length / itemsPerPage);
   const paginatedPlumbers = filteredPlumbers.slice(

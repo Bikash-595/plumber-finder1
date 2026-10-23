@@ -3,6 +3,10 @@ import SectionForm from "../SectionForm";
 import ServiceAreasEditor from "../ServiceAreasForm";
 import { companyProfileSeed } from "../profileStore";
 
+// Social media fields shared with the freelancer dashboard (full links, e.g. https://facebook.com/yourpage).
+export const socialFields = [{ name: "facebook", label: "Facebook", type: "url" as const }, { name: "instagram", label: "Instagram", type: "url" as const }, { name: "twitter", label: "X (Twitter)", type: "url" as const }, { name: "linkedin", label: "LinkedIn", type: "url" as const }, { name: "youtube", label: "YouTube", type: "url" as const }, { name: "tiktok", label: "TikTok", type: "url" as const }];
+export const socialExamples = { facebook: "https://facebook.com/yourcompany", instagram: "https://instagram.com/yourcompany", twitter: "https://x.com/yourcompany", linkedin: "https://linkedin.com/company/yourcompany", youtube: "https://youtube.com/@yourcompany", tiktok: "https://tiktok.com/@yourcompany" };
+
 export function BookingSettingsForm() {
   return <SectionForm section="booking" apiEndpoint="/companies/booking" title="Booking Settings" description="Control availability and how customers can request an appointment." defaults={{ instantBooking: true, approvalRequired: false, workingDays: "Monday–Saturday", timeSlots: "8:00 AM–6:00 PM", emergencyBooking: true, cancellationPolicy: "Please cancel at least 24 hours before your appointment." }} fields={[{ name: "instantBooking", label: "Instant Booking", type: "checkbox" }, { name: "approvalRequired", label: "Approval Required", type: "checkbox" }, { name: "workingDays", label: "Working Days" }, { name: "timeSlots", label: "Time Slots" }, { name: "emergencyBooking", label: "Emergency Booking", type: "checkbox" }, { name: "cancellationPolicy", label: "Cancellation Policy", type: "textarea" }]} />;
 }
@@ -56,7 +60,7 @@ export function ServicesForm() {
 }
 
 export function SocialLinksForm() {
-  return <SectionForm section="social-links" title="Social Links" description="Add social accounts customers can use to learn more about your work." defaults={companyProfileSeed} fields={[{ name: "facebook", label: "Facebook", type: "url" }, { name: "instagram", label: "Instagram", type: "url" }, { name: "linkedin", label: "LinkedIn", type: "url" }, { name: "youtube", label: "YouTube", type: "url" }, { name: "tiktok", label: "TikTok", type: "url" }]} />;
+  return <SectionForm section="social-links" apiEndpoint="/companies/social-links" title="Social Links" description="Add your social media pages. They appear as icons in your public profile header." defaults={socialExamples} fields={socialFields} />;
 }
 
 export function TeamMembersForm() {

@@ -506,7 +506,10 @@ import {
   // FaTwitter,
   // FaInstagram,
   FaLinkedin,
+  FaYoutube,
+  FaTiktok,
 } from "react-icons/fa";
+import { FaXTwitter } from "react-icons/fa6";
 
 
 
@@ -694,6 +697,7 @@ export default function ProfileHeader({ plumber }: { plumber: Plumber }) {
                   rel="noopener noreferrer"
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700 text-white transition hover:bg-[#FFD60A] hover:text-gray-900"
                   title="Facebook"
+                  aria-label="Facebook"
                 >
                   <FaFacebook className="h-4 w-4" />
                 </a>
@@ -707,16 +711,9 @@ export default function ProfileHeader({ plumber }: { plumber: Plumber }) {
                   rel="noopener noreferrer"
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700 text-white transition hover:bg-[#FFD60A] hover:text-gray-900"
                   title="X (Twitter)"
+                  aria-label="X (Twitter)"
                 >
-                   <Image
-                      src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png"
-                      alt="Instagram"
-                      width={24}
-                      height={24}
-                     className="object-contain"
-                  />
-                  
-                  {/* <FaTwitter className="h-4 w-4" /> */}
+                  <FaXTwitter className="h-4 w-4" />
                 </a>
               )}
 
@@ -732,7 +729,8 @@ export default function ProfileHeader({ plumber }: { plumber: Plumber }) {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700 text-white transition hover:bg-[#FFD60A] hover:text-gray-900"
-                  // title="Instagram"
+                  title="Instagram"
+                  aria-label="Instagram"
                 >
                   <Image
                       src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png"
@@ -756,15 +754,35 @@ export default function ProfileHeader({ plumber }: { plumber: Plumber }) {
                   rel="noopener noreferrer"
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700 text-white transition hover:bg-[#FFD60A] hover:text-gray-900"
                   title="LinkedIn"
+                  aria-label="LinkedIn"
                 >
-                    <Image
-                      src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png"
-                      alt="Instagram"
-                      width={24}
-                      height={24}
-                     className="object-contain"
-                  />
                   <FaLinkedin className="h-4 w-4" />
+                </a>
+              )}
+
+              {socialLinks.youtube && (
+                <a
+                  href={socialLinks.youtube}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700 text-white transition hover:bg-[#FFD60A] hover:text-gray-900"
+                  title="YouTube"
+                  aria-label="YouTube"
+                >
+                  <FaYoutube className="h-4 w-4" />
+                </a>
+              )}
+
+              {socialLinks.tiktok && (
+                <a
+                  href={socialLinks.tiktok}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700 text-white transition hover:bg-[#FFD60A] hover:text-gray-900"
+                  title="TikTok"
+                  aria-label="TikTok"
+                >
+                  <FaTiktok className="h-4 w-4" />
                 </a>
               )}
 
