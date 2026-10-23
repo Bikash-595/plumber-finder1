@@ -12,3 +12,4 @@ serviceAreasRouter.get("/public/:listingId", serviceAreasController.getPublic);
 serviceAreasRouter.get("/", requireFreelancerServiceAreasAccess, serviceAreasController.getMine);
 serviceAreasRouter.put("/", requireFreelancerServiceAreasAccess, validateServiceAreas, serviceAreasController.saveMine);
 serviceAreasRouter.post("/", requireFreelancerServiceAreasAccess, validateServiceAreas, serviceAreasController.saveMine);
+serviceAreasRouter.delete("/", requireFreelancerServiceAreasAccess, serviceAreasController.deleteMine);

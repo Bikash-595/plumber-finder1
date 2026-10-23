@@ -14,7 +14,7 @@
 //       {plumbers.map((plumber) => (
 //         <Link
 //           key={plumber.id}
-//           href={`/plumber/${plumber.id}`}
+//           href={plumberHref(plumber)}
 //           className="block rounded-2xl border border-gray-200 bg-white p-5 transition hover:shadow-md"
 //         >
 //           <div className="flex flex-col sm:flex-row gap-5">
@@ -132,7 +132,7 @@
 //         return (
 //           <Link
 //             key={plumber.id}
-//             href={`/plumber/${plumber.id}`}
+//             href={plumberHref(plumber)}
 //             className="group block rounded-2xl border border-gray-200 bg-white overflow-hidden transition hover:shadow-lg hover:-translate-y-1"
 //           >
 //             {/* Image section (larger) */}
@@ -234,24 +234,25 @@ import Link from "next/link";
 import { Plumber } from "./types";
 import { FaCheckCircle, FaClock, FaUsers, FaMapMarkerAlt, FaImages, FaVideo, FaTag, FaLocationArrow } from "react-icons/fa";
 import StarRating from "@/components/ui/StarRating";
+import { plumberHref } from "@/components/find/companyListing";
+import { distanceLabel } from "./distance";
+import { useUserLocation } from "./useUserLocation";
+import CardExtras from "./CardExtras";
 
 interface Props {
   plumbers: Plumber[];
 }
 
-// Helper to format distance
-const formatDistance = (miles: number) => {
-  if (miles < 1) return `${Math.round(miles * 10) / 10} mi`;
-  return `${Math.round(miles)} mi`;
-};
-
 export default function PlumberCardList({ plumbers }: Props) {
+  const { location: userLocation } = useUserLocation();
   return (
     <div className="space-y-4">
-      {plumbers.map((plumber) => (
+      {plumbers.map((plumber) => {
+        const distance = distanceLabel(plumber, userLocation);
+        return (
         <Link
           key={plumber.id}
-          href={`/plumber/${plumber.id}`}
+          href={plumberHref(plumber)}
           className="block rounded-2xl border border-gray-200 bg-white p-5 transition hover:shadow-md"
         >
           <div className="flex flex-col sm:flex-row gap-5">
@@ -289,12 +290,12 @@ export default function PlumberCardList({ plumbers }: Props) {
                     <span className="text-gray-300">•</span>
                     <span className="flex items-center gap-1 text-sm text-gray-600">
                       <FaMapMarkerAlt className="h-3 w-3" />
-                      {plumber.location.split(',')[0]}
+                      {plumber.location?.split(",")[0] || plumber.city}
                     </span>
-                    {plumber.distance && (
-                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                    {distance && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-gray-600">
                         <FaLocationArrow className="h-3 w-3" />
-                        {formatDistance(plumber.distance)} away
+                        {distance}
                       </span>
                     )}
                   </div>
@@ -322,11 +323,13 @@ export default function PlumberCardList({ plumbers }: Props) {
                 )}
               </div>
 
+              <CardExtras plumber={plumber} />
+
               {/* Bottom Row: Team Size, Emergency Badge, Media Preview */}
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                 <div className="flex items-center gap-1">
                   <FaUsers className="h-3 w-3" />
-                  <span>{plumber.teamSize} plumbers</span>
+                  <span>{plumber.providerType === "freelancer" ? "Independent" : `${plumber.teamSize} plumbers`}</span>
                 </div>
                 {plumber.isEmergency && (
                   <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
@@ -358,7 +361,8 @@ export default function PlumberCardList({ plumbers }: Props) {
             )}
           </div>
         </Link>
-      ))}
+        );
+      })}
     </div>
   );
 }

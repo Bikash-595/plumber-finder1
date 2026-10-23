@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { FaCheckCircle, FaCopy, FaMapMarkerAlt, FaStar } from "react-icons/fa";
 import type { Plumber } from "@/components/find/types";
+import { plumberHref } from "@/components/find/companyListing";
 
 export default function SpecialOfferCard({ plumber }: { plumber: Plumber }) {
   const [copied, setCopied] = useState(false);
@@ -48,7 +49,7 @@ export default function SpecialOfferCard({ plumber }: { plumber: Plumber }) {
           <Link href={`/book-plumber?plumber=${plumber.id}&offer=${plumber.promoCode ?? ""}`} className="flex-1 rounded-full bg-[#FFD60A] px-4 py-2.5 text-center text-sm font-bold text-slate-900 transition hover:brightness-105">
             Claim & book
           </Link>
-          <Link href={`/plumber/${plumber.id}`} className="rounded-full border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+          <Link href={plumberHref(plumber)} className="rounded-full border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
             Profile
           </Link>
         </div>

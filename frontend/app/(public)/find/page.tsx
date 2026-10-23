@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { plumbers } from "@/data/plumbers";
+import { useDirectoryPlumbers } from "@/components/find/usePublishedPlumbers";
 import SearchHero from "@/components/find/SearchHero";
 import FilterSidebar from "@/components/find/FilterSidebar";
 import ResultsHeader from "@/components/find/ResultsHeader";
@@ -101,6 +102,9 @@ function FindPlumberPage() {
     return value;
   }, [normalizeValue]);
 
+  // Real companies and freelancers replace the demo plumbers once any exist.
+  const { plumbers: directory, loading } = useDirectoryPlumbers();
+
   const getSearchableText = useCallback((plumber: typeof plumbers[number]) =>
     [
       plumber.companyName,
@@ -129,7 +133,7 @@ function FindPlumberPage() {
       .join(" ")
       .toLowerCase(), []);
 
-  const filteredPlumbers = useMemo(() => plumbers.filter((plumber) => {
+  const filteredPlumbers = useMemo(() => directory.filter((plumber) => {
     const query = searchFilters.query.trim().toLowerCase();
     const locationQuery = searchFilters.zip.trim().toLowerCase();
     const serviceCategory = searchFilters.serviceCategory.trim().toLowerCase();
@@ -211,6 +215,7 @@ function FindPlumberPage() {
       matchesAvailability
     );
   }), [
+    directory,
     searchFilters,
     activeServices,
     priceRange,
@@ -277,7 +282,7 @@ function FindPlumberPage() {
           <div className="flex-1">
             <ResultsHeader totalResults={filteredPlumbers.length} viewMode={viewMode} onViewModeChange={setViewMode} />
             {paginatedPlumbers.length === 0 ? (
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-12 text-center">No plumbers match your criteria.</div>
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-12 text-center">{loading ? "Loading plumbers…" : "No plumbers match your criteria."}</div>
             ) : viewMode === "grid" ? (
               <PlumberCardGrid plumbers={paginatedPlumbers} />
             ) : (

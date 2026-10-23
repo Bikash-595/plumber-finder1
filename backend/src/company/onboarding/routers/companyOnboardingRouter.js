@@ -1,7 +1,12 @@
 import { Router } from "express";
-import { saveCompanyOnboarding } from "../controllers/companyOnboardingController.js";
+import { clearCompanyOnboardingStep, deleteCompanyOnboarding, getCompanyOnboarding, saveCompanyOnboarding, saveCompanyOnboardingStep } from "../controllers/companyOnboardingController.js";
 import { requireCompanyOnboardingAccess } from "../middleware/onboardingAuth.js";
 
 // Mounted at /api/companies/onboarding.
 export const companyOnboardingRouter = Router();
-companyOnboardingRouter.post("/", requireCompanyOnboardingAccess, saveCompanyOnboarding);
+companyOnboardingRouter.use(requireCompanyOnboardingAccess);
+companyOnboardingRouter.get("/", getCompanyOnboarding);
+companyOnboardingRouter.post("/", saveCompanyOnboarding);
+companyOnboardingRouter.put("/steps/:stepId", saveCompanyOnboardingStep);
+companyOnboardingRouter.delete("/", deleteCompanyOnboarding);
+companyOnboardingRouter.delete("/steps/:stepId", clearCompanyOnboardingStep);

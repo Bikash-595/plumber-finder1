@@ -15,11 +15,12 @@ export function useSavedItems(apiEndpoint: string, labels: { singular: string })
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(() => companyApi<Item[]>(apiEndpoint).then(({ data }) => setItems(data)), [apiEndpoint]);
 
   useEffect(() => {
-    refresh().catch(() => undefined); // Not signed in / backend offline: the editor still works for drafts.
+    refresh().catch(() => undefined).finally(() => setLoading(false)); // Not signed in / backend offline: the editor still works for drafts.
   }, [refresh]);
 
   const save = async (values: Record<string, unknown>, successText: string) => {
@@ -52,12 +53,22 @@ export function useSavedItems(apiEndpoint: string, labels: { singular: string })
     }
   };
 
-  return { items, editingId, setEditingId, notice, setNotice, saving, save, remove };
+  return { items, loading, editingId, setEditingId, notice, setNotice, saving, save, remove };
 }
 
 export function NoticeMessage({ notice }: { notice: Notice }) {
   if (!notice) return null;
   return <p className={`rounded-lg px-3 py-2 text-sm font-medium ${notice.tone === "error" ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>{notice.text}</p>;
+}
+
+/** Demo content shown until the first real record exists; it is never saved. */
+export function ExampleCard({ itemName, children }: { itemName: string; children: React.ReactNode }) {
+  return (
+    <div className="mt-3 rounded-xl border border-dashed border-[#FFD60A] bg-[#FFD60A]/5 p-4">
+      <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#b59a00]">Example {itemName} — disappears when you start adding your own</p>
+      <div className="opacity-80">{children}</div>
+    </div>
+  );
 }
 
 /** Compact list of saved items with Edit / Delete actions. */

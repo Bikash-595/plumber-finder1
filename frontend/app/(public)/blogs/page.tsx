@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { FaArrowRight, FaBookOpen, FaClock, FaEnvelope, FaSearch, FaStar } from "react-icons/fa";
 import { plumbers } from "@/data/plumbers";
 import { BlogPost } from "@/components/find/types";
 import LatestArticleCard from "@/components/plumber/LatestArticleCard";
+import { fetchPublicBlogFeed, plumberHref } from "@/components/find/companyListing";
 
 const BLOGS_PER_PAGE = 9;
 
@@ -45,6 +46,7 @@ const BLOG_CATEGORIES = [
 
 type BlogFeedItem = {
   plumberId: string;
+  href: string; // the author's profile URL; posts live at <href>/blog/<slug>
   companyName: string;
   companyRating: number;
   post: BlogPost;
@@ -69,6 +71,7 @@ function getBlogFeed(): BlogFeedItem[] {
     .flatMap((plumber) =>
       (plumber.blogs ?? []).map((post) => ({
         plumberId: plumber.id,
+        href: plumberHref(plumber),
         companyName: plumber.companyName,
         companyRating: plumber.rating,
         post,
@@ -78,7 +81,15 @@ function getBlogFeed(): BlogFeedItem[] {
 }
 
 export default function BlogsPage() {
-  const blogFeed = useMemo(() => getBlogFeed(), []);
+  // Posts written by real companies and freelancers replace the demo articles once any exist.
+  const [liveFeed, setLiveFeed] = useState<BlogFeedItem[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetchPublicBlogFeed().then((feed) => { if (!cancelled) setLiveFeed(feed); }).catch(() => { if (!cancelled) setLiveFeed([]); });
+    return () => { cancelled = true; };
+  }, []);
+  const blogFeed = useMemo(() => (liveFeed === null ? [] : liveFeed.length ? liveFeed : getBlogFeed()), [liveFeed]);
+  const companyCount = new Set(blogFeed.map((item) => item.plumberId)).size;
   const [selectedCategory, setSelectedCategory] = useState<BlogCategoryKey>("all");
   const [visibleCount, setVisibleCount] = useState(BLOGS_PER_PAGE);
   const [query, setQuery] = useState("");
@@ -120,7 +131,7 @@ export default function BlogsPage() {
               <div className="mt-8 flex flex-wrap gap-3">
                 {[
                   [`${blogFeed.length}+`, "articles"],
-                  [`${plumbers.length}`, "verified companies"],
+                  [`${companyCount}`, companyCount === 1 ? "company" : "companies"],
                   ["4.8", "avg. expert rating"],
                 ].map(([value, label]) => (
                   <div key={label} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-slate-200 dark:bg-slate-50">
@@ -133,7 +144,7 @@ export default function BlogsPage() {
 
             {blogFeed[0] && (
               <Link
-                href={`/plumber/${blogFeed[0].plumberId}/blog/${blogFeed[0].post.slug}`}
+                href={`${blogFeed[0].href}/blog/${blogFeed[0].post.slug}`}
                 className="group overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl shadow-slate-200/80 transition hover:-translate-y-1 dark:border-slate-200 dark:bg-white dark:shadow-black/30"
               >
                 <div className="relative h-72 overflow-hidden bg-slate-100 sm:h-96 dark:bg-slate-100">
@@ -230,11 +241,11 @@ export default function BlogsPage() {
             </div>
 
             <div className="mt-7 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {visibleBlogs.map(({ plumberId, post }) => (
+              {visibleBlogs.map(({ plumberId, href, post }) => (
                 <LatestArticleCard
                   key={`${plumberId}-${post.slug}`}
                   post={post}
-                  href={`/plumber/${plumberId}/blog/${post.slug}`}
+                  href={`${href}/blog/${post.slug}`}
                 />
               ))}
             </div>

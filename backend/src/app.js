@@ -6,6 +6,7 @@ import { companyOnboardingRouter } from "./company/onboarding/routers/companyOnb
 import { companySections, companySectionsRouter } from "./company/companySectionsRouter.js";
 import { authRouter } from "./auth/authRouter.js";
 import { freelancerRouter, freelancerSections } from "./freelancer/freelancerRouter.js";
+import { publicBlogsRouter } from "./blogs/routers/publicBlogsRouter.js";
 import { userRouter, userSections } from "./user/userRouter.js";
 import { adminRouter, adminSections } from "./admin/adminRouter.js";
 
@@ -33,7 +34,7 @@ app.get("/health", (_req, res) => {
 app.get("/api", (_req, res) => {
   res.json({
     message: "Plumber Finder API is running.",
-    endpoints: ["GET /health", "POST /api/auth/login", "POST /api/auth/users/signup", "POST /api/auth/companies/signup", "POST /api/auth/freelancers/signup", "POST /api/auth/{users|companies|freelancers}/{login|google|apple}", "GET /api/companies/public", "GET /api/companies/public/:id", ...companySections.map(({ path }) => `/api/companies${path}`), "GET /api/freelancers/public", "GET /api/freelancers/public/:id", ...freelancerSections.map(({ path }) => `/api/freelancers${path}`), ...userSections.map(({ path }) => `/api/users${path}`), "POST /api/auth/admins/login", ...adminSections.map(({ path }) => `/api/admin${path}`)],
+    endpoints: ["GET /health", "POST /api/auth/login", "POST /api/auth/users/signup", "POST /api/auth/companies/signup", "POST /api/auth/freelancers/signup", "POST /api/auth/{users|companies|freelancers}/{login|google|apple}", "GET /api/companies/public", "GET /api/companies/public/:id", "GET /api/companies/public/:id/profile", ...companySections.map(({ path }) => `/api/companies${path}`), "GET /api/freelancers/public", "GET /api/freelancers/public/:id", "GET /api/freelancers/public/:id/profile", "GET /api/blogs", ...freelancerSections.map(({ path }) => `/api/freelancers${path}`), ...userSections.map(({ path }) => `/api/users${path}`), "POST /api/auth/admins/login", ...adminSections.map(({ path }) => `/api/admin${path}`)],
   });
 });
 
@@ -42,6 +43,7 @@ app.use("/api/companies", companySectionsRouter);
 app.use("/api/companies/onboarding", companyOnboardingRouter);
 app.use("/api/companies", companyListingRouter);
 app.use("/api/freelancers", freelancerRouter);
+app.use("/api/blogs", publicBlogsRouter);
 app.use("/api/users", userRouter);
 app.use("/api/admin", adminRouter);
 

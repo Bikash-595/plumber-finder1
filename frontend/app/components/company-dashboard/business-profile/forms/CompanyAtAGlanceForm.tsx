@@ -1,112 +1,20 @@
-"use client";
+import SectionForm from "../SectionForm";
 
-import { useEffect, useState } from "react";
-import { saveProfileDraft } from "../profileStore";
-import { companyApi, toFormValues } from "../companyApi";
+// Example values, shown as hints until the company saves its own.
+const examples = { foundedYear: "2016", yearsInBusiness: "10", teamSize: "8", licenseNumber: "PL-90991", insurance: "$2M liability", responseTime: "Within 1 hour", serviceAreaCount: "12", averageCost: "185", projectsCompleted: "240", certifications: "OSHA, EPA" };
 
-type AtAGlance = {
-  foundedYear: string;
-  yearsInBusiness: string;
-  teamSize: string;
-  licenseNumber: string;
-  serviceAreaCount: string;
-  averageCost: string;
-  certifications: string;
-  projectsCompleted: string;
-  responseTime: string;
-  insurance: string;
-};
-
-const initialValues: AtAGlance = {
-  foundedYear: "2016",
-  yearsInBusiness: "10",
-  teamSize: "8",
-  licenseNumber: "PL-90991",
-  serviceAreaCount: "12",
-  averageCost: "185",
-  certifications: "OSHA, EPA",
-  projectsCompleted: "240",
-  responseTime: "Within 1 hour",
-  insurance: "$2M liability",
-};
-
-const API_ENDPOINT = "/companies/company-overview";
-type Notice = { tone: "success" | "error"; text: string } | null;
-
+/** "Company at a Glance" numbers on the public profile, saved to /companies/company-overview. */
 export default function CompanyAtAGlanceForm() {
-  const [values, setValues] = useState<AtAGlance>(initialValues);
-  const [savedValues, setSavedValues] = useState<AtAGlance>(initialValues);
-  const [notice, setNotice] = useState<Notice>(null);
-  const [saving, setSaving] = useState(false);
-  const update = (name: keyof AtAGlance, value: string) => setValues((current) => ({ ...current, [name]: value }));
-
-  // Load the saved overview (if any) for the signed-in company.
-  useEffect(() => {
-    companyApi<Record<string, unknown> | null>(API_ENDPOINT)
-      .then(({ data }) => {
-        if (!data) return;
-        const loaded = { ...initialValues, ...toFormValues(data, Object.keys(initialValues)) } as AtAGlance;
-        setValues(loaded);
-        setSavedValues(loaded);
-      })
-      .catch(() => undefined); // Not signed in / backend offline: keep the editable defaults.
-  }, []);
-
-  const save = async (draft = false) => {
-    if (draft) return setNotice({ tone: "success", text: saveProfileDraft("company-overview", values, true) });
-    setSaving(true);
-    try {
-      await companyApi(API_ENDPOINT, { method: "PUT", body: values });
-      setSavedValues(values);
-      setNotice({ tone: "success", text: "Company overview saved to your public profile." });
-    } catch (error) {
-      setNotice({ tone: "error", text: error instanceof Error ? error.message : "Unable to save the overview." });
-    } finally {
-      setSaving(false);
-    }
-  };
-  const field = (name: keyof AtAGlance, label: string, type: "text" | "number" = "text", hint?: string) => (
-    <label key={name}>
-      <span className="text-sm font-semibold text-gray-700">{label}</span>
-      {hint && <span className="ml-2 text-xs text-gray-400">{hint}</span>}
-      <input type={type} min={type === "number" ? "0" : undefined} value={values[name]} onChange={(event) => update(name, event.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-[#FFD60A] focus:ring-2 focus:ring-[#FFD60A]/30" />
-    </label>
-  );
-
-  return <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7">
-    <p className="text-xs font-bold uppercase tracking-wider text-[#0b1f3b]">Company overview</p>
-    <h2 className="mt-2 text-2xl font-bold text-gray-900">Company at a Glance</h2>
-    <p className="mt-2 max-w-3xl text-sm text-gray-500">These details are used in the “Company at a Glance” section on your public plumber profile.</p>
-
-    <form onSubmit={(event) => { event.preventDefault(); save(); }} className="mt-7 space-y-7">
-      <div>
-        <h3 className="text-sm font-bold text-gray-900">Business details</h3>
-        <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {field("foundedYear", "Founded year", "number")}
-          {field("yearsInBusiness", "Years in business", "number")}
-          {field("teamSize", "Team size", "number", "number of plumbers")}
-          {field("licenseNumber", "License number")}
-          {field("insurance", "Insurance coverage")}
-          {field("responseTime", "Typical response time")}
-        </div>
-      </div>
-
-      <div className="border-t border-gray-100 pt-6">
-        <h3 className="text-sm font-bold text-gray-900">Public profile statistics</h3>
-        <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {field("serviceAreaCount", "Service areas", "number", "number of cities")}
-          {field("averageCost", "Average service cost", "number", "USD")}
-          {field("projectsCompleted", "Projects completed", "number")}
-          {field("certifications", "Certifications", "text", "separate with commas")}
-        </div>
-      </div>
-
-      {notice && <p className={`rounded-lg px-3 py-2 text-sm font-medium ${notice.tone === "error" ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>{notice.text}</p>}
-      <div className="flex flex-wrap gap-3 border-t border-gray-100 pt-5">
-        <button type="submit" disabled={saving} className="rounded-xl bg-[#0b1f3b] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#17345a] disabled:opacity-60">{saving ? "Saving…" : "Save overview"}</button>
-        <button type="button" onClick={() => save(true)} className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50">Save as draft</button>
-        <button type="button" onClick={() => { setValues(savedValues); setNotice(null); }} className="rounded-xl px-4 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-50">Reset</button>
-      </div>
-    </form>
-  </section>;
+  return <SectionForm section="company-overview" apiEndpoint="/companies/company-overview" title="Company Overview" description="These details fill the “Company at a Glance” section of your public profile." defaults={examples} fields={[
+    { name: "foundedYear", label: "Founded Year", type: "number" },
+    { name: "yearsInBusiness", label: "Years in Business", type: "number" },
+    { name: "teamSize", label: "Team Size (number of plumbers)", type: "number" },
+    { name: "licenseNumber", label: "License Number" },
+    { name: "insurance", label: "Insurance Coverage" },
+    { name: "responseTime", label: "Typical Response Time" },
+    { name: "serviceAreaCount", label: "Service Areas (number of cities)", type: "number" },
+    { name: "averageCost", label: "Average Service Cost (USD)", type: "number" },
+    { name: "projectsCompleted", label: "Projects Completed", type: "number" },
+    { name: "certifications", label: "Certifications (separate with commas)" },
+  ]} />;
 }

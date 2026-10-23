@@ -5,14 +5,16 @@ import CollectionForm from "@/components/company-dashboard/business-profile/Coll
 import CompanyBlogForm from "@/components/company-dashboard/business-profile/CompanyBlogForm";
 import PreviousProjectForm from "@/components/company-dashboard/business-profile/PreviousProjectForm";
 import SectionForm from "@/components/company-dashboard/business-profile/SectionForm";
+import ServiceAreasEditor from "@/components/company-dashboard/business-profile/ServiceAreasForm";
+import FreelancerDeleteListing from "./FreelancerDeleteListing";
+import FreelancerOpeningHoursForm from "./FreelancerOpeningHoursForm";
 
 const headerDefaults = { photo: "", coverImage: "", displayName: "", headline: "", yearsExperience: "", licenseNumber: "", insurance: "", hourlyRate: "", phone: "", city: "", state: "", isAvailable: true, published: true };
 const overviewDefaults = { bio: "", specialties: "", certifications: "", languages: "", responseTime: "", jobsCompleted: "", averageCost: "", emergencyAvailable: false };
-const serviceAreaDefaults = { areasCovered: "", radius: "", branchLocation: "" };
 const bookingDefaults = { instantBooking: true, approvalRequired: false, emergencyBooking: false, workingDays: "", timeSlots: "", cancellationPolicy: "" };
 
 export function FreelancerHeaderProfileForm() {
-  return <SectionForm section="freelancer-header-profile" apiEndpoint="/freelancers/header-profile" title="Your Profile" description="Your name, trade, and photo appear at the top of your public profile. Saving this registers you in the public freelancer directory." defaults={headerDefaults} fields={[
+  return <><SectionForm section="freelancer-header-profile" apiEndpoint="/freelancers/header-profile" title="Your Profile" description="Your name, trade, and photo appear at the top of your public profile. Saving this registers you in the public freelancer directory." defaults={headerDefaults} fields={[
     { name: "photo", label: "Profile Photo", type: "image" },
     { name: "coverImage", label: "Cover Image", type: "image" },
     { name: "displayName", label: "Display Name", placeholder: "e.g. Dana Pipes" },
@@ -26,7 +28,7 @@ export function FreelancerHeaderProfileForm() {
     { name: "state", label: "State" },
     { name: "isAvailable", label: "Available for new jobs", type: "checkbox" },
     { name: "published", label: "Show me in the public directory", type: "checkbox" },
-  ]} />;
+  ]} /><FreelancerDeleteListing /></>;
 }
 
 export function FreelancerOverviewForm() {
@@ -63,7 +65,7 @@ export function FreelancerFaqsForm() {
 }
 
 export function FreelancerServiceAreasForm() {
-  return <SectionForm section="freelancer-service-areas" apiEndpoint="/freelancers/service-areas" title="Service Areas" description="The cities and radius you cover." defaults={serviceAreaDefaults} fields={[{ name: "areasCovered", label: "Areas Covered", type: "textarea", placeholder: "Austin, Round Rock, Cedar Park" }, { name: "radius", label: "Service Radius (miles)", type: "number" }, { name: "branchLocation", label: "Home Base" }]} />;
+  return <ServiceAreasEditor apiEndpoint="/freelancers/service-areas" servicesEndpoint="/freelancers/services" />;
 }
 
 export function FreelancerBlogsForm() {
@@ -90,5 +92,6 @@ export const freelancerProfileSections = [
   { slug: "service-areas", label: "Service Areas", Form: FreelancerServiceAreasForm },
   { slug: "blogs", label: "Blogs", Form: FreelancerBlogsForm },
   { slug: "booking", label: "Booking", Form: FreelancerBookingForm },
+  { slug: "opening-hours", label: "Opening Hours", Form: FreelancerOpeningHoursForm },
   { slug: "offers", label: "Special Offers", Form: FreelancerOffersForm },
 ];

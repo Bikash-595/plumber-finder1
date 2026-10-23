@@ -103,10 +103,8 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { plumbers } from "@/data/plumbers";
-import type { Plumber } from "@/components/find/types";
-import { companyListingToPlumber, type CompanyListing } from "@/components/find/companyListing";
+import { useState } from "react";
+import { useDirectoryPlumbers } from "@/components/find/usePublishedPlumbers";
 import PlumberCardGrid from "@/components/find/PlumberCardGrid";
 import PlumberCardList from "@/components/find/PlumberCardList";
 import ResultsHeader from "@/components/find/ResultsHeader";
@@ -116,17 +114,11 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [publishedCompanies, setPublishedCompanies] = useState<Plumber[]>([]);
+  // Real companies and freelancers replace the demo plumbers once any exist.
+  const { plumbers: allPlumbers, loading } = useDirectoryPlumbers();
   const itemsPerPage = 9;
 
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api"}/companies/public`)
-      .then((response) => response.ok ? response.json() : { data: [] })
-      .then(({ data }) => setPublishedCompanies(((data || []) as CompanyListing[]).map(companyListingToPlumber)))
-      .catch(() => setPublishedCompanies([]));
-  }, []);
 
-  const allPlumbers = [...publishedCompanies, ...plumbers];
 
   // Filter plumbers based on search term
   const filteredPlumbers = allPlumbers.filter((plumber) =>
@@ -234,7 +226,7 @@ export default function Home() {
 
         {paginatedPlumbers.length === 0 ? (
           <div className="rounded-2xl border border-gray-200 bg-gray-50 p-12 text-center">
-            <p className="text-gray-500">No plumbers found. Try adjusting your search.</p>
+            <p className="text-gray-500">{loading ? "Loading plumbers…" : "No plumbers found. Try adjusting your search."}</p>
           </div>
         ) : viewMode === "grid" ? (
           <PlumberCardGrid plumbers={paginatedPlumbers} />

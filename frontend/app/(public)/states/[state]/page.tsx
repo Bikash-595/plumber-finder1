@@ -4,8 +4,8 @@ export const dynamic = "force-dynamic";
 
 import { use } from "react";
 import { notFound } from "next/navigation";
-import { plumbers } from "@/data/plumbers";
 import { getStateAbbr } from "@/components/utils/location";
+import { useDirectoryPlumbers } from "@/components/find/usePublishedPlumbers";
 import StateCityFilterSidebar from "@/components/find/StateCityFilterSidebar";
 import ResultsHeader from "@/components/find/ResultsHeader";
 import PlumberCardGrid from "@/components/find/PlumberCardGrid";
@@ -21,15 +21,18 @@ export default function StatePage({ params, searchParams }: { params: Promise<{ 
   // Convert URL slug to state name (e.g., "california" -> "California")
   const stateName = statePath.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   const stateAbbr = getStateAbbr(stateName);
+  const { plumbers: directory, loading } = useDirectoryPlumbers();
 
   if (!stateAbbr) {
     notFound();
   }
 
   // Filter plumbers by state and optionally by city
-  let filteredPlumbers = plumbers.filter(p => p.state === stateAbbr);
+  // Live companies may store the state as "CA" or "California".
+  const inState = (state?: string) => Boolean(state) && (state!.toUpperCase() === stateAbbr || getStateAbbr(state!) === stateAbbr);
+  let filteredPlumbers = directory.filter(p => inState(p.state));
   if (city) {
-    filteredPlumbers = filteredPlumbers.filter(p => p.city === city);
+    filteredPlumbers = filteredPlumbers.filter(p => p.city?.toLowerCase() === city.toLowerCase());
   }
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -61,7 +64,7 @@ export default function StatePage({ params, searchParams }: { params: Promise<{ 
             />
             {paginatedPlumbers.length === 0 ? (
               <div className="rounded-2xl border border-gray-200 bg-gray-50 p-12 text-center">
-                <p className="text-gray-500">No plumbers found in this location.</p>
+                <p className="text-gray-500">{loading ? "Loading plumbers…" : "No plumbers found in this location."}</p>
               </div>
             ) : viewMode === "grid" ? (
               <PlumberCardGrid plumbers={paginatedPlumbers} />

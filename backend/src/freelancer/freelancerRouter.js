@@ -5,6 +5,7 @@ import { faqsRouter } from "./faqs/routers/faqsRouter.js";
 import { galleryRouter } from "./gallery/routers/galleryRouter.js";
 import { headerProfileRouter } from "./header-profile/routers/headerProfileRouter.js";
 import { freelancerListingRouter } from "./listing/routers/freelancerListingRouter.js";
+import { openingHoursRouter } from "./opening-hours/routers/openingHoursRouter.js";
 import { overviewRouter } from "./overview/routers/overviewRouter.js";
 import { previousProjectsRouter } from "./previous-projects/routers/previousProjectsRouter.js";
 import { reviewsRouter } from "./reviews/routers/reviewsRouter.js";
@@ -25,6 +26,7 @@ export const freelancerSections = [
   { path: "/service-areas", router: serviceAreasRouter },
   { path: "/blogs", router: blogsRouter },
   { path: "/booking", router: bookingRouter },
+  { path: "/opening-hours", router: openingHoursRouter },
   { path: "/special-offers", router: specialOffersRouter },
 ];
 

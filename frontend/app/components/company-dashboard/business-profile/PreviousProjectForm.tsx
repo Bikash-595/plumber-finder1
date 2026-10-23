@@ -4,7 +4,7 @@ import { useState } from "react";
 import { saveProfileDraft } from "./profileStore";
 import LocalMediaUpload from "./LocalMediaUpload";
 import { toFormValues } from "./companyApi";
-import { NoticeMessage, SavedItemsList, useSavedItems } from "./SavedItems";
+import { ExampleCard, NoticeMessage, SavedItemsList, useSavedItems } from "./SavedItems";
 
 type Project = { title: string; client: string; location: string; service: string; completedDate: string; duration: string; budget: string; description: string; challenge: string; solution: string; results: string; beforeImage: string; afterImage: string; testimonial: string; rating: string; visible: boolean };
 const emptyProject: Project = { title: "", client: "", location: "", service: "", completedDate: "", duration: "", budget: "", description: "", challenge: "", solution: "", results: "", beforeImage: "", afterImage: "", testimonial: "", rating: "5", visible: true };
@@ -20,7 +20,7 @@ type Props = {
 };
 
 export default function PreviousProjectForm({ apiEndpoint = "/companies/previous-projects", draftKey = "projects", startEmpty = false }: Props) {
-  const [project, setProject] = useState<Project>(startEmpty ? emptyProject : seedProject);
+  const [project, setProject] = useState<Project>(emptyProject);
   const saved = useSavedItems(apiEndpoint, { singular: "project" });
   const update = (name: keyof Project, value: string | boolean) => setProject((current) => ({ ...current, [name]: value }));
   const save = (draft = false) => (draft
@@ -33,6 +33,8 @@ export default function PreviousProjectForm({ apiEndpoint = "/companies/previous
       describe={(item) => ({ heading: String(item.title), meta: [item.service, item.location].filter(Boolean).join(" · "), badge: item.visible === false ? "Hidden" : undefined })}
       onEdit={(item) => { setProject({ ...emptyProject, ...toFormValues(item, Object.keys(emptyProject)) } as Project); saved.setEditingId(item._id); saved.setNotice(null); }}
       onDelete={(id) => { saved.remove(id); if (saved.editingId === id) setProject(emptyProject); }} />
+    {/* The example disappears once there is a saved project or the form is being filled in. */}
+    {!startEmpty && !saved.loading && !saved.items.length && !saved.editingId && JSON.stringify(project) === JSON.stringify(emptyProject) && <ExampleCard itemName="project"><p className="font-semibold text-gray-900">{seedProject.title}</p><p className="mt-1 text-sm text-gray-600">{seedProject.description}</p></ExampleCard>}
     {saved.editingId && <p className="mt-4 rounded-lg bg-[#FFD60A]/15 px-3 py-2 text-sm font-medium text-[#0b1f3b]">Editing “{project.title}”. <button type="button" onClick={startNew} className="font-bold underline">Add a new project instead</button></p>}
     <form onSubmit={(event) => { event.preventDefault(); save(); }} className="mt-7 space-y-5"><div className="grid gap-4 md:grid-cols-2">
       <label className="md:col-span-2"><span className="text-sm font-semibold text-gray-700">Project title</span><input required value={project.title} onChange={(e) => update("title", e.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#FFD60A]" placeholder="e.g. Whole-home repiping" /></label>

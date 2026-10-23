@@ -12,3 +12,4 @@ companyOverviewRouter.get("/public/:listingId", companyOverviewController.getPub
 companyOverviewRouter.get("/", requireCompanyCompanyOverviewAccess, companyOverviewController.getMine);
 companyOverviewRouter.put("/", requireCompanyCompanyOverviewAccess, validateCompanyOverview, companyOverviewController.saveMine);
 companyOverviewRouter.post("/", requireCompanyCompanyOverviewAccess, validateCompanyOverview, companyOverviewController.saveMine);
+companyOverviewRouter.delete("/", requireCompanyCompanyOverviewAccess, companyOverviewController.deleteMine);

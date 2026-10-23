@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FaArrowRight, FaCalendarAlt, FaDollarSign } from "react-icons/fa";
 import { Plumber } from "@/components/find/types";
 import StarRating from "@/components/ui/StarRating";
+import { plumberHref } from "@/components/find/companyListing";
 
 interface ProfilePreviousProjectsProps {
   plumber: Plumber;
@@ -45,7 +46,7 @@ export default function ProfilePreviousProjects({ plumber }: ProfilePreviousProj
           return (
             <Link
               key={projectId}
-              href={`/plumber/${plumber.id}/projects/${projectId}`}
+              href={`${plumberHref(plumber)}/projects/${projectId}`}
               className="group overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:border-[#f7672c]/40 hover:shadow-lg"
             >
               <div className="relative h-52 w-full overflow-hidden bg-gray-100">

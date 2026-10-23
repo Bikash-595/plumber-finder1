@@ -1,9 +1,19 @@
 import type { MetadataRoute } from "next";
 import { plumbers } from "@/data/plumbers";
+import { fetchPublishedPlumbers } from "@/components/find/companyListing";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://plumberfinder.com";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Real company pages (/company/<slug>); the backend being offline just leaves them out.
+  const live = await fetchPublishedPlumbers().catch(() => []);
+  const companyRoutes = live.filter((plumber) => plumber.providerType === "company" && plumber.slug).map((plumber) => ({
+    url: `${siteUrl}/company/${plumber.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.9,
+  }));
+
   const staticRoutes = [
     "",
     "/about",
@@ -48,6 +58,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly" as const,
       priority: route === "" ? 1 : 0.7,
     })),
+    ...companyRoutes,
     ...plumberRoutes,
   ];
 }

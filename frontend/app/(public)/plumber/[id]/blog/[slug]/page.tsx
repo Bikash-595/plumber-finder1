@@ -23,7 +23,9 @@ import {
   FaUserTie,
 } from "react-icons/fa";
 import { plumbers } from "@/data/plumbers";
+import { usePlumber } from "@/components/plumber/usePlumber";
 import LatestArticleCard from "@/components/plumber/LatestArticleCard";
+import { plumberHref } from "@/components/find/companyListing";
 
 type TocItem = {
   id: string;
@@ -93,13 +95,15 @@ function getCategory(title: string, summary: string) {
 
 export default function BlogPostPage({ params }: { params: Promise<{ id: string; slug: string }> }) {
   const { id, slug } = use(params);
-  const plumber = plumbers.find((p) => p.id === id);
+  // Demo plumber or live company (its posts are escaped into safe HTML by the mapper).
+  const plumber = usePlumber(id);
   const post = plumber?.blogs?.find((b) => b.slug === slug);
 
   const article = useMemo(() => buildArticleMarkup(post?.content ?? ""), [post?.content]);
   const relatedPosts = useMemo(() => {
-    const allPosts = plumbers.flatMap((entry) =>
-      (entry.blogs ?? []).map((blogPost) => ({ plumberId: entry.id, post: blogPost }))
+    const sources = plumber && !plumbers.some((entry) => entry.id === plumber.id) ? [plumber, ...plumbers] : plumbers;
+    const allPosts = sources.flatMap((entry) =>
+      (entry.blogs ?? []).map((blogPost) => ({ plumberId: entry.id, href: plumberHref(entry), post: blogPost }))
     );
 
     const samePlumber = allPosts.filter(
@@ -110,7 +114,7 @@ export default function BlogPostPage({ params }: { params: Promise<{ id: string;
     return [...samePlumber, ...others]
       .filter((entry, index, array) => index === array.findIndex((item) => item.post.slug === entry.post.slug && item.plumberId === entry.plumberId))
       .slice(0, 3);
-  }, [plumber?.id, post?.slug]);
+  }, [plumber, post?.slug]);
 
   const [activeSection, setActiveSection] = useState(article.toc[0]?.id ?? "");
   const [email, setEmail] = useState("");
@@ -137,6 +141,7 @@ export default function BlogPostPage({ params }: { params: Promise<{ id: string;
     return () => window.removeEventListener("scroll", onScroll);
   }, [article.toc]);
 
+  if (plumber === undefined) return <main className="min-h-screen bg-white" aria-busy="true" />;
   if (!plumber || !post) return notFound();
 
   const category = getCategory(post.title, post.summary);
@@ -169,7 +174,7 @@ export default function BlogPostPage({ params }: { params: Promise<{ id: string;
           <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-500">
             <Link href="/blogs" className="transition hover:text-[#f7672c]">Blogs</Link>
             <span aria-hidden>/</span>
-            <Link href={`/plumber/${plumber.id}`} className="transition hover:text-[#f7672c]">{plumber.companyName}</Link>
+            <Link href={plumberHref(plumber)} className="transition hover:text-[#f7672c]">{plumber.companyName}</Link>
             <span aria-hidden>/</span>
             <span className="truncate text-slate-800 dark:text-slate-700">{post.title}</span>
           </nav>
@@ -437,7 +442,7 @@ export default function BlogPostPage({ params }: { params: Promise<{ id: string;
             <div className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-700">
               <FaStar className="text-[#f7672c]" /> {plumber.rating} rating
             </div>
-            <Link href={`/plumber/${plumber.id}`} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#f7672c] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#de5520]">
+            <Link href={plumberHref(plumber)} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#f7672c] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#de5520]">
               View profile <FaArrowRight />
             </Link>
           </section>
@@ -497,11 +502,11 @@ export default function BlogPostPage({ params }: { params: Promise<{ id: string;
               </Link>
             </div>
             <div className="mt-7 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {relatedPosts.map(({ plumberId, post: relatedPost }) => (
+              {relatedPosts.map(({ plumberId, href, post: relatedPost }) => (
                 <LatestArticleCard
                   key={`${plumberId}-${relatedPost.slug}`}
                   post={relatedPost}
-                  href={`/plumber/${plumberId}/blog/${relatedPost.slug}`}
+                  href={`${href}/blog/${relatedPost.slug}`}
                 />
               ))}
             </div>

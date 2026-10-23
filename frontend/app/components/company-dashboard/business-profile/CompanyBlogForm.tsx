@@ -4,7 +4,7 @@ import { useState } from "react";
 import { saveProfileDraft } from "./profileStore";
 import LocalMediaUpload from "./LocalMediaUpload";
 import { toFormValues } from "./companyApi";
-import { NoticeMessage, SavedItemsList, useSavedItems } from "./SavedItems";
+import { ExampleCard, NoticeMessage, SavedItemsList, useSavedItems } from "./SavedItems";
 
 type Blog = {
   title: string; category: string; excerpt: string; content: string; coverImage: string;
@@ -24,7 +24,7 @@ type Props = {
 };
 
 export default function CompanyBlogForm({ apiEndpoint = "/companies/blogs", draftKey = "blogs", startEmpty = false }: Props) {
-  const [blog, setBlog] = useState<Blog>(startEmpty ? emptyBlog : seedBlog);
+  const [blog, setBlog] = useState<Blog>(emptyBlog);
   const saved = useSavedItems(apiEndpoint, { singular: "blog post" });
   const update = (name: keyof Blog, value: string) => setBlog((current) => ({ ...current, [name]: value }));
   const save = async (status: Blog["status"]) => {
@@ -40,9 +40,11 @@ export default function CompanyBlogForm({ apiEndpoint = "/companies/blogs", draf
     <h2 className="mt-2 text-2xl font-bold text-gray-900">Write a company blog</h2>
     <p className="mt-2 text-sm text-gray-500">Create helpful articles that build trust and appear on your public company profile.</p>
     <SavedItemsList title="Your articles" items={saved.items} editingId={saved.editingId}
-      describe={(item) => ({ heading: String(item.title), meta: [item.category, item.publishDate ? String(item.publishDate).slice(0, 10) : ""].filter(Boolean).join(" · "), badge: item.status === "published" ? "Published" : "Draft" })}
+      describe={(item) => ({ heading: String(item.title), meta: [item.category, item.publishDate ? String(item.publishDate).slice(0, 10) : ""].filter(Boolean).join(" · "), badge: item.status !== "published" ? "Draft — not public" : item.publishDate && new Date(String(item.publishDate)) > new Date() ? `Scheduled for ${String(item.publishDate).slice(0, 10)}` : "Published" })}
       onEdit={(item) => { setBlog({ ...emptyBlog, ...toFormValues(item, Object.keys(emptyBlog)) } as Blog); saved.setEditingId(item._id); saved.setNotice(null); }}
       onDelete={(id) => { saved.remove(id); if (saved.editingId === id) setBlog(emptyBlog); }} />
+    {/* The example disappears once there is a saved article or the form is being filled in. */}
+    {!startEmpty && !saved.loading && !saved.items.length && !saved.editingId && JSON.stringify(blog) === JSON.stringify(emptyBlog) && <ExampleCard itemName="article"><p className="font-semibold text-gray-900">{seedBlog.title}</p><p className="mt-1 text-sm text-gray-600">{seedBlog.excerpt}</p></ExampleCard>}
     {saved.editingId && <p className="mt-4 rounded-lg bg-[#FFD60A]/15 px-3 py-2 text-sm font-medium text-[#0b1f3b]">Editing “{blog.title}”. <button type="button" onClick={startNew} className="font-bold underline">Write a new article instead</button></p>}
     <form onSubmit={(event) => { event.preventDefault(); save("published"); }} className="mt-7 space-y-5">
       <div className="grid gap-4 md:grid-cols-2">

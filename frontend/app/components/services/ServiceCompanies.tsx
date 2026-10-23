@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { plumbers } from "@/data/plumbers";
-import type { Plumber } from "@/components/find/types";
-import { companyListingToPlumber, type CompanyListing } from "@/components/find/companyListing";
+import { useState } from "react";
+import { useDirectoryPlumbers } from "@/components/find/usePublishedPlumbers";
 import ResultsHeader from "@/components/find/ResultsHeader";
 import PlumberCardGrid from "@/components/find/PlumberCardGrid";
 import PlumberCardList from "@/components/find/PlumberCardList";
@@ -15,19 +13,12 @@ import { offersService, serviceDefinitions, type ServiceDefinition } from "./ser
 const ITEMS_PER_PAGE = 6;
 
 export default function ServiceCompanies({ service }: { service: ServiceDefinition }) {
-  const [publishedCompanies, setPublishedCompanies] = useState<Plumber[]>([]);
+  // Companies published through the company dashboard live in the backend.
+  const { plumbers: allCompanies, loading } = useDirectoryPlumbers();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Companies published through the company dashboard live in the backend.
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api"}/companies/public`)
-      .then((response) => response.ok ? response.json() : { data: [] })
-      .then(({ data }) => setPublishedCompanies(((data || []) as CompanyListing[]).map(companyListingToPlumber)))
-      .catch(() => setPublishedCompanies([]));
-  }, []);
 
-  const allCompanies = useMemo(() => [...publishedCompanies, ...plumbers], [publishedCompanies]);
   const companies = allCompanies.filter((company) => offersService(company, service));
   const countsBySlug = Object.fromEntries(serviceDefinitions.map((item) => [item.slug, allCompanies.filter((company) => offersService(company, item)).length]));
 
@@ -54,7 +45,7 @@ export default function ServiceCompanies({ service }: { service: ServiceDefiniti
           <ResultsHeader totalResults={companies.length} viewMode={viewMode} onViewModeChange={setViewMode} />
           {paginated.length === 0 ? (
             <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center sm:p-12">
-              <p className="text-gray-500">No companies are listed for {service.name.toLowerCase()} yet.</p>
+              <p className="text-gray-500">{loading ? "Loading companies…" : `No companies are listed for ${service.name.toLowerCase()} yet.`}</p>
               <Link href="/find" className="mt-4 inline-flex rounded-full bg-[#FFD60A] px-5 py-2.5 text-sm font-bold text-[#0b1f3b]">
                 Browse all plumbers
               </Link>

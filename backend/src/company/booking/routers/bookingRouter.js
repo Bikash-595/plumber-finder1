@@ -12,3 +12,4 @@ bookingRouter.get("/public/:listingId", bookingController.getPublic);
 bookingRouter.get("/", requireCompanyBookingAccess, bookingController.getMine);
 bookingRouter.put("/", requireCompanyBookingAccess, validateBooking, bookingController.saveMine);
 bookingRouter.post("/", requireCompanyBookingAccess, validateBooking, bookingController.saveMine);
+bookingRouter.delete("/", requireCompanyBookingAccess, bookingController.deleteMine);

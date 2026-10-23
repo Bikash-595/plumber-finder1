@@ -588,6 +588,9 @@ export default function ProfileHeader({ plumber }: { plumber: Plumber }) {
 
 
 
+          {/* Tagline (live companies) or trade headline (freelancers) */}
+          {plumber.tagline && <p className="text-sm font-semibold text-[#0b1f3b]">{plumber.tagline}</p>}
+
           {/* Description */}
           <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
             {plumber.description}
@@ -616,7 +619,7 @@ export default function ProfileHeader({ plumber }: { plumber: Plumber }) {
 
 
               <span>
-                <span className="font-medium text-gray-800">{plumber.teamSize}</span> plumbers
+                {plumber.providerType === "freelancer" ? <span className="font-medium text-gray-800">Independent plumber</span> : <><span className="font-medium text-gray-800">{plumber.teamSize}</span> plumbers</>}
               </span>
 
 

@@ -12,3 +12,4 @@ serviceAreasRouter.get("/public/:listingId", serviceAreasController.getPublic);
 serviceAreasRouter.get("/", requireCompanyServiceAreasAccess, serviceAreasController.getMine);
 serviceAreasRouter.put("/", requireCompanyServiceAreasAccess, validateServiceAreas, serviceAreasController.saveMine);
 serviceAreasRouter.post("/", requireCompanyServiceAreasAccess, validateServiceAreas, serviceAreasController.saveMine);
+serviceAreasRouter.delete("/", requireCompanyServiceAreasAccess, serviceAreasController.deleteMine);

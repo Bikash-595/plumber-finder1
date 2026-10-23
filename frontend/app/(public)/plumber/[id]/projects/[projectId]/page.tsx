@@ -17,7 +17,10 @@ import {
   FaUsers,
 } from "react-icons/fa";
 import { plumbers } from "@/data/plumbers";
+import { fetchLiveProfile } from "@/components/find/companyListing";
+import type { Plumber } from "@/components/find/types";
 import StarRating from "@/components/ui/StarRating";
+import { plumberHref } from "@/components/find/companyListing";
 
 export const dynamic = "force-dynamic";
 
@@ -39,16 +42,10 @@ function formatDate(value?: string) {
   }).format(new Date(value));
 }
 
-function getRelatedProjects(plumberId: string, projectId: string) {
-  return plumbers
-    .flatMap((plumber) =>
-      plumber.projects.map((project, index) => ({
-        plumber,
-        project,
-        projectId: project.id ?? `project-${index + 1}`,
-      }))
-    )
-    .filter((entry) => entry.plumber.id === plumberId && entry.projectId !== projectId)
+function getRelatedProjects(plumber: Plumber, projectId: string) {
+  return plumber.projects
+    .map((project, index) => ({ plumber, project, projectId: project.id ?? `project-${index + 1}` }))
+    .filter((entry) => entry.projectId !== projectId)
     .slice(0, 3);
 }
 
@@ -58,7 +55,8 @@ export default async function ProjectDetailPage({
   params: Promise<{ id: string; projectId: string }>;
 }) {
   const { id, projectId } = await params;
-  const plumber = plumbers.find((entry) => entry.id === id);
+  // Demo plumber, or a live company's projects from the backend.
+  const plumber = plumbers.find((entry) => entry.id === id) ?? (await fetchLiveProfile(id));
   if (!plumber) return notFound();
 
   const projectEntry = plumber.projects
@@ -70,14 +68,14 @@ export default async function ProjectDetailPage({
   const { project } = projectEntry;
   const details = project.projectDetails;
   const client = project.clientDetails;
-  const relatedProjects = getRelatedProjects(plumber.id, projectId);
+  const relatedProjects = getRelatedProjects(plumber, projectId);
 
   return (
     <main className="min-h-screen bg-[#f6f8fb] text-gray-900">
       <section className="bg-white">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <Link
-            href={`/plumber/${plumber.id}`}
+            href={plumberHref(plumber)}
             className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 transition hover:text-[#f7672c]"
           >
             <FaArrowLeft className="h-3.5 w-3.5" />
@@ -248,7 +246,7 @@ export default async function ProjectDetailPage({
             </div>
 
             <Link
-              href={`/plumber/${plumber.id}`}
+              href={plumberHref(plumber)}
               className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-[#f7672c] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#de5520]"
             >
               View company profile
@@ -262,7 +260,7 @@ export default async function ProjectDetailPage({
                 {relatedProjects.map((entry) => (
                   <Link
                     key={entry.projectId}
-                    href={`/plumber/${entry.plumber.id}/projects/${entry.projectId}`}
+                    href={`${plumberHref(entry.plumber)}/projects/${entry.projectId}`}
                     className="block rounded-xl border border-gray-100 p-4 transition hover:border-[#f7672c]/40 hover:bg-gray-50"
                   >
                     <p className="font-semibold text-gray-900">{entry.project.title}</p>

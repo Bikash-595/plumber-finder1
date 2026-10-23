@@ -1,3 +1,4 @@
+import { publishedBlogs } from "../../../shared/profileSections/publicFilters.js";
 import { createCollectionController } from "../../shared/createCollectionController.js";
 import { blogsConfig } from "../config/blogsConfig.js";
 import { FreelancerBlog } from "../models/FreelancerBlog.js";
@@ -31,6 +32,5 @@ export const blogsController = createCollectionController({
       }
     }
   },
-  // Published posts whose publish date has arrived (a future date schedules the post).
-  publicFilter: () => ({ status: "published", publishDate: { $lte: new Date() } }),
+  publicFilter: publishedBlogs,
 });

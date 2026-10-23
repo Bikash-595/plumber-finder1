@@ -205,13 +205,13 @@ import {
 
 export default function ProfileStats({ plumber }: { plumber: Plumber }) {
   const stats = [
-    { icon: FaCalendarAlt, label: "Founded", value: plumber.established },
+    plumber.providerType === "freelancer" ? { icon: FaCalendarAlt, label: "Working since", value: plumber.established } : { icon: FaCalendarAlt, label: "Founded", value: plumber.established },
     { icon: FaBriefcase, label: "Experience", value: `${plumber.yearsInBusiness}+ years` },
-    { icon: FaUsers, label: "Team Size", value: `${plumber.teamSize} plumbers` },
+    plumber.providerType === "freelancer" ? { icon: FaUsers, label: "Works as", value: "Independent plumber" } : { icon: FaUsers, label: "Team Size", value: `${plumber.teamSize} plumbers` },
     // { icon: FaClock, label: "Response Time", value: plumber.responseTime },
     { icon: FaShieldAlt, label: "License #", value: plumber.licenseNumber || "—" },
     { icon: FaMapMarkerAlt, label: "Service Areas", value: `${plumber.serviceAreas.length} cities` },
-    { icon: FaMoneyBillWave, label: "Avg. Cost", value: `$${plumber.averageCost}` },
+    plumber.hourlyRate ? { icon: FaMoneyBillWave, label: "Hourly Rate", value: `$${plumber.hourlyRate}/hr` } : { icon: FaMoneyBillWave, label: "Avg. Cost", value: `$${plumber.averageCost}` },
     // { icon: FaHandshake, label: "Warranty", value: plumber.warranty },
     { icon: FaCertificate, label: "Certifications", value: plumber.certifications.length },
     // { icon: FaLanguage, label: "Languages", value: plumber.languages.length },

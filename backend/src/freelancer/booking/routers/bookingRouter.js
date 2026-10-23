@@ -12,3 +12,4 @@ bookingRouter.get("/public/:listingId", bookingController.getPublic);
 bookingRouter.get("/", requireFreelancerBookingAccess, bookingController.getMine);
 bookingRouter.put("/", requireFreelancerBookingAccess, validateBooking, bookingController.saveMine);
 bookingRouter.post("/", requireFreelancerBookingAccess, validateBooking, bookingController.saveMine);
+bookingRouter.delete("/", requireFreelancerBookingAccess, bookingController.deleteMine);

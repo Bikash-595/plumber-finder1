@@ -46,7 +46,7 @@ export type Profile = { _id: string; name: string; email: string; phone?: string
 export function plumberToProvider(plumber: Plumber): ProviderSnapshot {
   const image = plumber.logo || plumber.media?.images?.[0];
   return {
-    providerType: "company",
+    providerType: plumber.providerType ?? "company",
     providerId: plumber.id,
     name: plumber.companyName,
     // Only http(s) URLs and site paths are stored (uploaded data URLs are too large for a snapshot).

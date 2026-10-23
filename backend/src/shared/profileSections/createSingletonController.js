@@ -6,8 +6,9 @@
  * Hooks:
  *  - beforeSave(values, ctx) may add derived fields.
  *  - afterSave(doc, ctx) may sync other collections (e.g. the public listing).
+ *  - afterDelete(ctx) runs after the record is deleted (e.g. to clear synced listing fields).
  */
-export function createSingletonController({ Model, config, ownerField, resolvePublishedOwner, beforeSave, afterSave }) {
+export function createSingletonController({ Model, config, ownerField, resolvePublishedOwner, beforeSave, afterSave, afterDelete }) {
   const context = (ownerId) => ({ owner: ownerId, [ownerField]: ownerId });
 
   return {
@@ -29,6 +30,16 @@ export function createSingletonController({ Model, config, ownerField, resolvePu
         );
         await afterSave?.(doc, context(ownerId));
         res.json({ message: `${config.label} saved.`, data: doc });
+      } catch (error) { next(error); }
+    },
+
+    deleteMine: async (req, res, next) => {
+      try {
+        const ownerId = req.auth.sub;
+        const deleted = await Model.findOneAndDelete({ [ownerField]: ownerId });
+        if (!deleted) return res.status(404).json({ message: `No ${config.label.toLowerCase()} saved yet.` });
+        await afterDelete?.(context(ownerId));
+        res.json({ message: `${config.label} deleted.`, data: null });
       } catch (error) { next(error); }
     },
 

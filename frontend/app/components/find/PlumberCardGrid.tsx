@@ -15,7 +15,7 @@
 //       {plumbers.map((plumber) => (
 //         <Link
 //           key={plumber.id}
-//           href={`/plumber/${plumber.id}`}
+//           href={plumberHref(plumber)}
 //           className="group rounded-2xl border border-gray-200 bg-white p-5 transition hover:shadow-lg hover:-translate-y-1"
 //         >
 //           <div className="flex items-start gap-4">
@@ -111,7 +111,7 @@
 //         return (
 //           <Link
 //             key={plumber.id}
-//             href={`/plumber/${plumber.id}`}
+//             href={plumberHref(plumber)}
 //             className="group block rounded-2xl border border-gray-200 bg-white overflow-hidden transition hover:shadow-lg hover:-translate-y-1"
 //           >
 //             {/* Image section */}
@@ -258,7 +258,7 @@
 //         return (
 //           <Link
 //             key={plumber.id}
-//             href={`/plumber/${plumber.id}`}
+//             href={plumberHref(plumber)}
 //             className="group block rounded-2xl border border-gray-200 bg-white overflow-hidden transition hover:shadow-lg hover:-translate-y-1"
 //           >
 //             {/* Image section */}
@@ -377,12 +377,17 @@ import Link from "next/link";
 import { Plumber } from "./types";
 import { FaCheckCircle, FaMapMarkerAlt, FaTag, FaImage, FaVideo, FaClock, FaUsers } from "react-icons/fa";
 import StarRating from "@/components/ui/StarRating";
+import { plumberHref } from "@/components/find/companyListing";
+import { distanceLabel } from "./distance";
+import { useUserLocation } from "./useUserLocation";
+import CardExtras from "./CardExtras";
 
 interface Props {
   plumbers: Plumber[];
 }
 
 export default function PlumberCardGrid({ plumbers }: Props) {
+  const { location: userLocation } = useUserLocation();
   return (
     // Container query: columns follow the space the grid actually has (e.g. beside a sidebar), not the screen width.
     <div className="@container">
@@ -390,13 +395,14 @@ export default function PlumberCardGrid({ plumbers }: Props) {
       {plumbers.map((plumber) => {
         const displayImage = plumber.media?.images?.[0] || plumber.logo || "";
         const hasDiscount = !!plumber.discount;
-        const fallbackDistance = (Number(plumber.id) % 30) + 1;
-        const distance = plumber.distance || fallbackDistance;
+        // Real distance from the visitor when both locations are known; otherwise the plumber's city.
+        const distance = distanceLabel(plumber, userLocation);
+        const place = plumber.location?.split(",")[0] || plumber.city || "";
 
         return (
           <Link
             key={plumber.id}
-            href={`/plumber/${plumber.id}`}
+            href={plumberHref(plumber)}
             className="group block min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg sm:rounded-2xl"
           >
             {/* Image section */}
@@ -420,10 +426,12 @@ export default function PlumberCardGrid({ plumbers }: Props) {
                   {plumber.discount}
                 </div>
               )}
-              <div className="absolute bottom-2 left-2 z-10 flex max-w-[calc(100%-1rem)] items-center gap-1 truncate rounded-full bg-black/60 px-2 py-1 text-[10px] text-white backdrop-blur-sm sm:bottom-3 sm:left-3 sm:text-xs">
-                <FaMapMarkerAlt className="h-2 w-2" />
-                {distance} mi away
-              </div>
+              {(distance || place) && (
+                <div className="absolute bottom-2 left-2 z-10 flex max-w-[calc(100%-1rem)] items-center gap-1 truncate rounded-full bg-black/60 px-2 py-1 text-[10px] text-white backdrop-blur-sm sm:bottom-3 sm:left-3 sm:text-xs">
+                  <FaMapMarkerAlt className="h-2 w-2" />
+                  {distance ?? place}
+                </div>
+              )}
             </div>
 
             {/* Content section */}
@@ -440,10 +448,8 @@ export default function PlumberCardGrid({ plumbers }: Props) {
                       <span className="text-sm font-medium text-gray-800">{plumber.rating ?? 0}</span>
                       <span className="text-xs text-gray-500">({plumber.reviewCount ?? 0})</span>
                     </div>
-                    <span className="hidden text-gray-300 sm:inline">•</span>
-                    <span className="hidden text-xs text-gray-600 sm:inline">
-                      {plumber.location?.split(",")[0] || plumber.city || ""}
-                    </span>
+                    {place && <span className="text-gray-300">•</span>}
+                    <span className="text-xs text-gray-600">{place}</span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between gap-2 sm:block sm:text-right">
@@ -466,6 +472,8 @@ export default function PlumberCardGrid({ plumbers }: Props) {
                   <span className="text-xs text-gray-400">+{(plumber.services ?? []).length - 2}</span>
                 )}
               </div>
+
+              <CardExtras plumber={plumber} compact />
 
               {/* Bottom row: media, emergency, team size */}
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-500 sm:mt-3 sm:text-xs">
@@ -559,7 +567,7 @@ export default function PlumberCardGrid({ plumbers }: Props) {
 //         return (
 //           <Link
 //             key={plumber.id}
-//             href={`/plumber/${plumber.id}`}
+//             href={plumberHref(plumber)}
 //             className="group block rounded-2xl border border-gray-200 bg-white overflow-hidden transition hover:shadow-lg hover:-translate-y-1"
 //             onMouseEnter={() => setIsPaused(true)}
 //             onMouseLeave={() => setIsPaused(false)}
@@ -729,7 +737,7 @@ export default function PlumberCardGrid({ plumbers }: Props) {
 
 //   return (
 //     <Link
-//       href={`/plumber/${plumber.id}`}
+//       href={plumberHref(plumber)}
 //       className="group block rounded-2xl border bg-white overflow-hidden hover:shadow-lg"
 //       onMouseEnter={() => setIsPaused(true)}
 //       onMouseLeave={() => setIsPaused(false)}

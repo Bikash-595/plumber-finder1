@@ -21,9 +21,15 @@ The API runs at `http://localhost:3300` by default. The frontend API client alre
 
 - `GET /health` — verifies API and database connectivity
 - `POST /api/auth/login` — email/password login that detects the account type
-- `GET /api/companies/public` — all published company listings
+- `GET /api/companies/public` — all published company listings, each with card details (average rating and review count, verified, years in business, team size, team preview (names and roles), published blog count, current offer, emergency service, weekly hours, base `coordinates`)
+- `GET /api/blogs` — every published blog post from published companies and freelancers, newest first (without the article text; with `readTime` and the author's `provider` id/slug/name)
 - `GET /api/companies/public/:id` — one published company listing
-- `POST /api/companies/onboarding` — create/update the signed-in company's listing (company token)
+- `GET /api/companies/public/:idOrSlug/profile` — a published company's full public profile, by listing id or URL slug (an old slug from before a rename also works; the response's `slug` is the current one): the listing plus services, gallery, team, visible projects, reviews (with average rating), FAQs, published blogs, current offers, booking settings, opening hours, branches, and the public parts of the wizard (mission, history, ...). Registration and tax numbers are never included.
+- `GET /api/companies/onboarding` — the signed-in company's saved Add Company wizard data (company token)
+- `PUT /api/companies/onboarding/steps/:stepId` — save one wizard step (company token)
+- `POST /api/companies/onboarding` — submit the whole wizard and create/update the listing (company token)
+- `DELETE /api/companies/onboarding/steps/:stepId` — clear one step's saved answers; on a live listing the change is published (Company Information can't be cleared while live)
+- `DELETE /api/companies/onboarding` — delete the listing and everything the wizard saved; Business Profile sections (team, blogs, ...) are kept
 - `GET`, `PUT /api/companies/header-profile` — signed-in company's header profile (company token)
 
 ## Company business-profile sections
@@ -32,15 +38,15 @@ Everything company-related lives in feature folders under `src/company/`:
 
 - `account/` — the `Company` account model and company signup/login/Google/me (`/api/auth/companies`).
 - `listing/` — the public `CompanyListing` model and `GET /api/companies/public[/:id]`.
-- `onboarding/` — the Add Company wizard (`POST /api/companies/onboarding`) and the wizard-only models (branding, contact, locations, operations, profile). The wizard seeds the Services and Gallery sections once, and never overwrites listing fields managed by the dashboard sections.
+- `onboarding/` — the Add Company wizard and the wizard-only models (branding, contact, locations, operations, profile, plus `CompanyOnboardingDraft`). Each of the 8 steps (`config/onboardingSteps.js`: `company-information`, `business-profile`, `branding`, `gallery`, `contact`, `location`, `operations`, `services`) is saved to the database with `PUT /steps/:stepId`, and `GET /` loads it back so the wizard resumes where the company left off. The Business Hours step also saves `weeklyHours` — one row per weekday `{ day, isOpen, opensAt, closesAt }` in 24-hour `HH:MM` (a closing time before the opening time means open past midnight). `POST /` publishes the listing; after that, saving any step updates the live listing immediately. The wizard seeds the Services and Gallery sections once, and never overwrites listing fields managed by the dashboard sections (header profile name/logo/cover, services, service areas).
 - One folder per business-profile section (below), each with `config/` (allowed fields and limits), `models/`, `middleware/` (company-only access + validation), `controllers/`, and `routers/`.
 - `shared/` — validation and controller factories used by every section; all sections are mounted by `companySectionsRouter.js`.
 
 | Section | Path | Type |
 | --- | --- | --- |
-| Header profile | `/api/companies/header-profile` | single record |
+| Header profile | `/api/companies/header-profile` | single record (creates/updates the public listing and its URL slug) |
 | Company overview | `/api/companies/company-overview` | single record |
-| Service areas | `/api/companies/service-areas` | single record (syncs listing `serviceAreas`) |
+| Service areas | `/api/companies/service-areas` | single record: base location + `latitude`/`longitude` (for distances), `radius`, and `areaDetails` — `[{ name, services: [...] }]`, the services offered in each area (syncs listing `serviceAreas`) |
 | Booking settings | `/api/companies/booking` | single record |
 | Services | `/api/companies/services` | list (syncs listing `services`) |
 | Gallery | `/api/companies/gallery` | list (8 MB body limit for videos) |
@@ -53,21 +59,29 @@ Everything company-related lives in feature folders under `src/company/`:
 
 Company token required (Bearer):
 
-- Single record: `GET /`, `PUT /` (or `POST /`) — create or update the company's record.
+- Single record: `GET /`, `PUT /` (or `POST /`) — create or update the company's record; `DELETE /` — delete it.
 - List: `GET /`, `POST /`, `GET /:id`, `PUT|PATCH /:id` (partial update), `DELETE /:id`.
 
 Public (no token), by public listing id: `GET /api/companies/<section>/public/:listingId`. Only public content is returned — published blogs, visible projects, and active offers within their dates.
 
 Validation errors return `400` with field-level messages, e.g. `{ "message": "...", "errors": { "rating": "must be at most 5" } }`. Fields not listed in a section config (such as `company` or `_id`) are ignored.
 
+## Company URLs
+
+Every company listing has a clean, unique `slug` used for its public page `/company/<slug>` (e.g. `abc-plumbing`, then `abc-plumbing-2` for the next company with the same name). The slug follows the Company Profile name (or the wizard's name if there is no profile). After a rename, the old slug is kept in `previousSlugs`: it still resolves, so old links redirect to the new URL, and other companies can't take it. Saving the Company Profile creates the listing if the company hasn't used the Add Company wizard; deleting the profile removes a listing that only the profile created.
+
 ## Freelancer profile sections
 
-Freelancers get the same section structure as companies under `src/freelancer/<section>/` (`config/`, `models/`, `middleware/`, `controllers/`, `routers/`), mounted by `src/freelancer/freelancerRouter.js` at `/api/freelancers`. Sections: `header-profile`, `overview` (single records), `service-areas`, `booking` (single records), `services`, `gallery`, `previous-projects`, `reviews`, `faqs`, `blogs`, `special-offers` (lists). There is no team section — a freelancer works alone.
+Freelancers get the same section structure as companies under `src/freelancer/<section>/` (`config/`, `models/`, `middleware/`, `controllers/`, `routers/`), mounted by `src/freelancer/freelancerRouter.js` at `/api/freelancers`. Sections: `header-profile`, `overview`, `service-areas`, `booking`, `opening-hours` (single records), `services`, `gallery`, `previous-projects`, `reviews`, `faqs`, `blogs`, `special-offers` (lists). There is no team section — a freelancer works alone.
+
+- **Opening hours:** `GET`/`PUT /api/freelancers/opening-hours` — `weeklyHours` (one row per weekday, same rules as the company wizard, validated by `src/shared/openingHours.js`) plus `availability24x7`, `emergencyHours`, `holidayHours`, `specialClosures`.
+- **Removing the listing:** `DELETE /api/freelancers/header-profile` deletes the header profile and the public listing; other sections are kept, and saving the header profile again re-lists the freelancer.
+- **Public profile:** `GET /api/freelancers/public` includes card details (rating, verified, specialties, current offer, emergency, weekly hours); `GET /api/freelancers/public/:id/profile` returns everything public in one response, like the company profile endpoint.
 
 - **Registering publicly:** saving the header profile creates/updates the freelancer's public listing (`GET /api/freelancers/public`, `GET /api/freelancers/public/:id`). Its `published` flag hides or shows the freelancer; services and service areas sync to the listing.
 - Same rules as companies: freelancer token required (company/user tokens get `403`), every query scoped to the signed-in freelancer, field-level validation, and public read endpoints at `GET /api/freelancers/<section>/public/:listingId`.
 
-The section controllers and validator are shared by companies and freelancers in `src/shared/profileSections/` (the owner field is `company` or `freelancer`); `src/company/shared/` and `src/freelancer/shared/` hold thin wrappers that set the owner.
+The section controllers, validator, and public filters (published blogs, visible projects, current offers — `publicFilters.js`) are shared by companies and freelancers in `src/shared/profileSections/` (the owner field is `company` or `freelancer`); `src/company/shared/` and `src/freelancer/shared/` hold thin wrappers that set the owner.
 
 ## Customer (user) dashboard
 

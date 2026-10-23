@@ -1,5 +1,6 @@
 import CollectionForm from "../CollectionForm";
 import SectionForm from "../SectionForm";
+import ServiceAreasEditor from "../ServiceAreasForm";
 import { companyProfileSeed } from "../profileStore";
 
 export function BookingSettingsForm() {
@@ -23,11 +24,11 @@ export function ContactInformationForm() {
 }
 
 export function FaqsForm() {
-  return <CollectionForm section="faqs" apiEndpoint="/companies/faqs" title="Frequently Asked Questions" description="Answer booking questions before customers need to ask them." itemName="Question" initial={{ question: "Do you offer emergency service?", answer: "Yes, our team handles urgent plumbing calls." }} fields={[{ name: "question", label: "Question" }, { name: "answer", label: "Answer", type: "textarea" }]} />;
+  return <CollectionForm section="faqs" apiEndpoint="/companies/faqs" title="Frequently Asked Questions" description="Answer booking questions before customers need to ask them." itemName="Question" initial={{ question: "Do you offer emergency service?", answer: "Yes, our team handles urgent plumbing calls." }} fields={[{ name: "question", label: "Question", required: true }, { name: "answer", label: "Answer", type: "textarea", required: true }]} />;
 }
 
 export function HeaderProfileForm() {
-  return <SectionForm section="header-profile" apiEndpoint="/companies/header-profile" title="Header Profile" description="Set the essential identity displayed at the top of your public listing." defaults={companyProfileSeed} fields={[{ name: "logo", label: "Company Logo", type: "image" }, { name: "coverImage", label: "Cover Image", type: "image" }, { name: "companyName", label: "Company Name" }, { name: "ownerName", label: "Owner Name" }, { name: "companyType", label: "Company Type" }, { name: "yearsInBusiness", label: "Years in Business", type: "number" }, { name: "licenseNumber", label: "License Number" }, { name: "insurance", label: "Insurance" }, { name: "certifications", label: "Certifications" }]} />;
+  return <SectionForm section="header-profile" apiEndpoint="/companies/header-profile" title="Company Profile" description="Your company name, logo, and credentials at the top of your public profile. Saving this creates your public page at /company/your-company-name." defaults={companyProfileSeed} fields={[{ name: "logo", label: "Company Logo", type: "image" }, { name: "coverImage", label: "Cover Image", type: "image" }, { name: "companyName", label: "Company Name", required: true }, { name: "ownerName", label: "Owner Name" }, { name: "companyType", label: "Company Type" }, { name: "yearsInBusiness", label: "Years in Business", type: "number" }, { name: "licenseNumber", label: "License Number" }, { name: "insurance", label: "Insurance" }, { name: "certifications", label: "Certifications" }]} />;
 }
 
 export function MapsForm() {
@@ -35,23 +36,23 @@ export function MapsForm() {
 }
 
 export function MediaGalleryForm() {
-  return <CollectionForm section="media" apiEndpoint="/companies/gallery" title="Media Gallery" description="Choose photos or videos from your device to build your company gallery." itemName="Media item" initial={{ type: "Image or video", media: "", caption: "Emergency repair team" }} fields={[{ name: "type", label: "Media type" }, { name: "media", label: "Image or Video", type: "media" }, { name: "caption", label: "Caption", type: "textarea" }]} />;
+  return <CollectionForm section="media" apiEndpoint="/companies/gallery" title="Media Gallery" description="Choose photos or videos from your device to build your company gallery." itemName="Media item" initial={{ type: "Image or video", media: "", caption: "Emergency repair team" }} fields={[{ name: "type", label: "Media type" }, { name: "media", label: "Image or Video", type: "media", required: true }, { name: "caption", label: "Caption", type: "textarea" }]} />;
 }
 
 export function SpecialOffersForm() {
-  return <CollectionForm section="offers" apiEndpoint="/companies/special-offers" title="Special Offers" description="Set the details and dates for offers customers can claim." itemName="Offer" initial={{ title: "Free estimate", description: "Free estimate for qualifying repairs.", discount: "", promoCode: "RAPIDFREE", startDate: "", endDate: "", image: "" }} fields={[{ name: "title", label: "Offer Title" }, { name: "description", label: "Description", type: "textarea" }, { name: "discount", label: "Discount" }, { name: "promoCode", label: "Promo Code" }, { name: "startDate", label: "Start Date", type: "date" }, { name: "endDate", label: "End Date", type: "date" }, { name: "image", label: "Offer Image", type: "image" }]} />;
+  return <CollectionForm section="offers" apiEndpoint="/companies/special-offers" title="Special Offers" description="Set the details and dates for offers customers can claim." itemName="Offer" initial={{ title: "Free estimate", description: "Free estimate for qualifying repairs.", discount: "", promoCode: "RAPIDFREE", startDate: "", endDate: "", image: "" }} fields={[{ name: "title", label: "Offer Title", required: true }, { name: "description", label: "Description", type: "textarea" }, { name: "discount", label: "Discount" }, { name: "promoCode", label: "Promo Code" }, { name: "startDate", label: "Start Date", type: "date" }, { name: "endDate", label: "End Date", type: "date" }, { name: "image", label: "Offer Image", type: "image" }]} />;
 }
 
 export function CustomerReviewsForm() {
-  return <CollectionForm section="reviews" apiEndpoint="/companies/reviews" title="Customer Reviews" description="Manage approved manual reviews while API-sourced reviews are being connected." itemName="Review" initial={{ customer: "Jordan Smith", rating: "5", review: "Fast and professional emergency repair.", photo: "" }} fields={[{ name: "customer", label: "Customer Name" }, { name: "rating", label: "Rating (1–5)", type: "number" }, { name: "review", label: "Review", type: "textarea" }, { name: "photo", label: "Customer Photo", type: "image" }]} />;
+  return <CollectionForm section="reviews" apiEndpoint="/companies/reviews" title="Customer Reviews" description="Manage approved manual reviews while API-sourced reviews are being connected." itemName="Review" initial={{ customer: "Jordan Smith", rating: "5", review: "Fast and professional emergency repair.", photo: "" }} fields={[{ name: "customer", label: "Customer Name", required: true }, { name: "rating", label: "Rating (1–5)", type: "number", required: true }, { name: "review", label: "Review", type: "textarea", required: true }, { name: "photo", label: "Customer Photo", type: "image" }]} />;
 }
 
 export function ServiceAreasForm() {
-  return <SectionForm section="service-areas" apiEndpoint="/companies/service-areas" title="Service Areas" description="Define the cities, neighbourhoods, and service radius customers can book." defaults={{ areasCovered: "Dallas, Plano, Irving", radius: "25", branchLocation: "Dallas, TX" }} fields={[{ name: "areasCovered", label: "Areas Covered", type: "textarea" }, { name: "radius", label: "Service Radius (miles)", type: "number" }, { name: "branchLocation", label: "Primary Branch Location" }]} />;
+  return <ServiceAreasEditor apiEndpoint="/companies/service-areas" servicesEndpoint="/companies/services" />;
 }
 
 export function ServicesForm() {
-  return <CollectionForm section="services" apiEndpoint="/companies/services" title="Services Offered" description="Add every service your business offers. Mark emergency and featured services for prominence." itemName="Service" initial={{ name: "Emergency Plumbing", description: "Rapid response for urgent plumbing issues.", price: "$105/hr", duration: "1 hour", emergency: true, featured: true, image: "" }} fields={[{ name: "name", label: "Service Name" }, { name: "description", label: "Description", type: "textarea" }, { name: "price", label: "Price" }, { name: "duration", label: "Duration" }, { name: "emergency", label: "Emergency Service", type: "checkbox" }, { name: "featured", label: "Featured", type: "checkbox" }, { name: "image", label: "Service Image", type: "image" }]} />;
+  return <CollectionForm section="services" apiEndpoint="/companies/services" title="Services Offered" description="Add every service your business offers. Mark emergency and featured services for prominence." itemName="Service" initial={{ name: "Emergency Plumbing", description: "Rapid response for urgent plumbing issues.", price: "$105/hr", duration: "1 hour", emergency: true, featured: true, image: "" }} fields={[{ name: "name", label: "Service Name", required: true }, { name: "description", label: "Description", type: "textarea" }, { name: "price", label: "Price" }, { name: "duration", label: "Duration" }, { name: "emergency", label: "Emergency Service", type: "checkbox" }, { name: "featured", label: "Featured", type: "checkbox" }, { name: "image", label: "Service Image", type: "image" }]} />;
 }
 
 export function SocialLinksForm() {
@@ -59,7 +60,7 @@ export function SocialLinksForm() {
 }
 
 export function TeamMembersForm() {
-  return <CollectionForm section="team" apiEndpoint="/companies/team" title="Team Members" description="Add the people customers may see on your public profile." itemName="Team member" initial={{ name: "Chris Bennett", role: "Owner", bio: "Licensed plumbing professional.", photo: "" }} fields={[{ name: "name", label: "Name" }, { name: "role", label: "Role" }, { name: "bio", label: "Bio", type: "textarea" }, { name: "photo", label: "Photo", type: "image" }]} />;
+  return <CollectionForm section="team" apiEndpoint="/companies/team" title="Team Members" description="Add the people customers may see on your public profile." itemName="Team member" initial={{ name: "Chris Bennett", role: "Owner", bio: "Licensed plumbing professional.", photo: "", specialties: "Leak repair, Water heaters", experienceYears: "12", certificates: "Master Plumber License", licenseNumber: "", availability: "Mon–Fri", joinedYear: "" }} fields={[{ name: "name", label: "Name", required: true }, { name: "role", label: "Role" }, { name: "specialties", label: "Specialties (comma-separated)" }, { name: "experienceYears", label: "Years of experience", type: "number" }, { name: "certificates", label: "Certificates (comma-separated)" }, { name: "licenseNumber", label: "License number" }, { name: "availability", label: "Availability" }, { name: "joinedYear", label: "Year joined the company", type: "number" }, { name: "bio", label: "Bio", type: "textarea" }, { name: "photo", label: "Photo", type: "image" }]} />;
 }
 
 export function VerificationForm() {

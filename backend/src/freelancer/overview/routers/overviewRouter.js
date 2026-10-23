@@ -12,3 +12,4 @@ overviewRouter.get("/public/:listingId", overviewController.getPublic);
 overviewRouter.get("/", requireFreelancerOverviewAccess, overviewController.getMine);
 overviewRouter.put("/", requireFreelancerOverviewAccess, validateOverview, overviewController.saveMine);
 overviewRouter.post("/", requireFreelancerOverviewAccess, validateOverview, overviewController.saveMine);
+overviewRouter.delete("/", requireFreelancerOverviewAccess, overviewController.deleteMine);

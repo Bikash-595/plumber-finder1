@@ -1,9 +1,8 @@
-// Where the freelancer works. `areasCovered` is a comma-separated list typed by the freelancer.
+import { serviceAreaFields, validateServiceAreas } from "../../../shared/profileSections/serviceAreas.js";
+
+// Where the freelancer works. each area can list the services offered there; `areasCovered` is the comma-separated text, as typed by the freelancer.
 export const serviceAreasConfig = {
   label: "Service areas",
-  fields: {
-    areasCovered: { type: "text", max: 5000 },
-    radius: { type: "number", min: 0, max: 500 },
-    branchLocation: { type: "string", max: 200 },
-  },
+  fields: serviceAreaFields,
+  validate: validateServiceAreas,
 };

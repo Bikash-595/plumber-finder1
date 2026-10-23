@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { headerProfileController } from "../controllers/headerProfileController.js";
+import { deleteHeaderProfile, headerProfileController } from "../controllers/headerProfileController.js";
 import { requireFreelancerHeaderProfileAccess } from "../middleware/headerProfileAuth.js";
 import { validateHeaderProfile } from "../middleware/validateHeaderProfile.js";
 
@@ -12,3 +12,4 @@ headerProfileRouter.get("/public/:listingId", headerProfileController.getPublic)
 headerProfileRouter.get("/", requireFreelancerHeaderProfileAccess, headerProfileController.getMine);
 headerProfileRouter.put("/", requireFreelancerHeaderProfileAccess, validateHeaderProfile, headerProfileController.saveMine);
 headerProfileRouter.post("/", requireFreelancerHeaderProfileAccess, validateHeaderProfile, headerProfileController.saveMine);
+headerProfileRouter.delete("/", requireFreelancerHeaderProfileAccess, deleteHeaderProfile);

@@ -12,3 +12,4 @@ headerProfileRouter.get("/public/:listingId", headerProfileController.getPublic)
 headerProfileRouter.get("/", requireCompanyHeaderProfileAccess, headerProfileController.getMine);
 headerProfileRouter.put("/", requireCompanyHeaderProfileAccess, validateHeaderProfile, headerProfileController.saveMine);
 headerProfileRouter.post("/", requireCompanyHeaderProfileAccess, validateHeaderProfile, headerProfileController.saveMine);
+headerProfileRouter.delete("/", requireCompanyHeaderProfileAccess, headerProfileController.deleteMine);

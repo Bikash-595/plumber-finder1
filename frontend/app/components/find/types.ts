@@ -129,6 +129,17 @@ export interface Plumber {
     question: string;
     answer: string;
   }[];
+  // Companies added through the dashboard (live listings) also carry these.
+  providerType?: "company" | "freelancer"; // demo plumbers are companies
+  hourlyRate?: number; // freelancers
+  slug?: string; // live companies: public URL is /company/<slug>
+  coordinates?: { lat: number; lng: number }; // base location, for "x mi away"
+  blogCount?: number; // cards: published posts (full posts are only loaded on the profile)
+  serviceAreaDetails?: { name: string; services: string[] }[]; // areas with the services offered there
+  tagline?: string;
+  openingHours?: OpeningHours;
+  reviews?: PlumberReview[];
+  about?: Partial<Record<"slogan" | "longDescription" | "missionStatement" | "visionStatement" | "companyHistory" | "founderStory" | "coreValues", string>>;
 
 
 }
@@ -168,4 +179,24 @@ export interface BlogPost {
   readCount: number;
   reactions: { like: number; love: number; helpful: number };
   comments: { name: string; comment: string; date: string }[];
+}
+
+export interface OpeningHoursDay {
+  day: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+  isOpen: boolean;
+  opensAt: string; // "HH:MM", 24-hour
+  closesAt: string;
+}
+
+export interface OpeningHours {
+  weekly: OpeningHoursDay[];
+  notes: { label: string; value: string }[];
+}
+
+export interface PlumberReview {
+  name: string;
+  rating: number;
+  text: string;
+  date: string;
+  photo?: string;
 }

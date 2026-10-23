@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { plumbers } from "@/data/plumbers";
 import type { Plumber } from "@/components/find/types";
-import { companyListingToPlumber, type CompanyListing } from "@/components/find/companyListing";
+import { usePublishedPlumbers } from "@/components/find/usePublishedPlumbers";
 import SignInPrompt from "@/components/dashboard/SignInPrompt";
 import { useUserData } from "@/components/dashboard/useUserData";
-import { API_BASE_URL } from "@/components/utils/apiClient";
 import { plumberToProvider, userApi } from "@/components/utils/userApi";
 import {
   FaStar,
@@ -35,15 +34,9 @@ export default function CompareCompaniesPage() {
   // The selection is stored in the customer's account, so it survives reloads and includes
   // plumbers added with the Compare button on a profile page.
   const { signedIn, data: compareItems, reload, error, setError } = useUserData(userApi.compare);
-  const [liveCompanies, setLiveCompanies] = useState<Plumber[]>([]);
+  const liveCompanies = usePublishedPlumbers();
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/companies/public`)
-      .then((response) => (response.ok ? response.json() : { data: [] }))
-      .then(({ data }) => setLiveCompanies(((data || []) as CompanyListing[]).map(companyListingToPlumber)))
-      .catch(() => setLiveCompanies([]));
-  }, []);
 
   const allPlumbers = [...liveCompanies, ...plumbers];
   const selectedIds = (compareItems ?? []).map((item) => item.providerId);

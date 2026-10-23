@@ -42,3 +42,12 @@ export const headerProfileController = createSingletonController({
   config: headerProfileConfig,
   afterSave: syncListing,
 });
+
+/** DELETE — removes the freelancer from the public directory (header profile and listing). Other sections are kept. */
+export async function deleteHeaderProfile(req, res, next) {
+  try {
+    const freelancer = req.auth.sub;
+    const [listing] = await Promise.all([FreelancerListing.findOneAndDelete({ freelancer }), FreelancerHeaderProfile.deleteOne({ freelancer })]);
+    res.json({ message: listing ? "Your public listing has been deleted." : "There was no listing to delete.", data: { deleted: Boolean(listing) } });
+  } catch (error) { next(error); }
+}

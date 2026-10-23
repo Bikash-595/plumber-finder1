@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { serviceAreaSchemaFields } from "../../../shared/profileSections/serviceAreas.js";
 
 const companyServiceAreaSchema = new mongoose.Schema({
   company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true, unique: true },
@@ -7,6 +8,7 @@ const companyServiceAreaSchema = new mongoose.Schema({
   areas: [{ type: String, trim: true }],
   radius: { type: Number, min: 0, max: 500 },
   branchLocation: { type: String, trim: true, maxlength: 200 },
+  ...serviceAreaSchemaFields,
 }, { timestamps: true, collection: "company_service_areas" });
 
 export const CompanyServiceArea = mongoose.model("CompanyServiceArea", companyServiceAreaSchema);

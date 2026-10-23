@@ -1,12 +1,14 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useState } from "react";
-import { FaArrowRight, FaChevronLeft, FaPlus, FaSave } from "react-icons/fa";
-import { readStoredUser } from "@/components/utils/auth";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { FaArrowRight, FaCheck, FaChevronLeft, FaPlus, FaSave, FaTrash } from "react-icons/fa";
+import { apiRequest } from "@/components/utils/apiClient";
 import LocationPicker from "@/components/company-dashboard/LocationPicker";
+import WeeklyHoursEditor, { hoursPayload, initialWeeklyHours, withAllDays, type HoursRow } from "@/components/company-dashboard/business-profile/WeeklyHoursEditor";
 
 const steps = [
   {
+    id: "company-information",
     title: "Company Information",
     description: "Capture the public profile and business identity details.",
     fields: [
@@ -68,6 +70,7 @@ const steps = [
 
 
   {
+    id: "business-profile",
     title: "Business Profile",
     description: "Add the company background, operations, and scale details.",
     fields: [
@@ -201,6 +204,7 @@ const steps = [
 
 
   {
+    id: "branding",
     title: "Branding & Media",
     description: "Capture the visual identity, marketing assets, and SEO metadata.",
     fields: [
@@ -290,6 +294,7 @@ const steps = [
 
 
   {
+    id: "gallery",
     title: "Gallery & Media",
     description: "Upload multiple images and videos that showcase the company, service work, and video stories.",
     fields: [
@@ -303,6 +308,7 @@ const steps = [
     ],
   },
   {
+    id: "contact",
     title: "Contact & Location",
     description: "Add phone, email, support channels and the primary address.",
     fields: [
@@ -386,6 +392,7 @@ const steps = [
 
 
   {
+    id: "location",
     title: "Location & Service Area",
     description: "Define all operating locations, service cities, and mapping details.",
     fields: [
@@ -478,6 +485,7 @@ const steps = [
 
 
   {
+    id: "operations",
     title: "Business Hours & Operations",
     description: "Add working hours, emergency availability and special closures.",
     fields: [
@@ -540,6 +548,7 @@ const steps = [
 
 
   {
+    id: "services",
     title: "Services & Categories",
     description: "Create service packages and categories used on the public profile.",
     fields: [
@@ -623,6 +632,28 @@ const initialService = { name: "", category: "", description: "", pricing: "", d
 const initialLocation = { label: "", address: "", city: "", state: "", country: "", zipCode: "", latitude: "", longitude: "", radius: "" };
 const initialGalleryImage = { url: "", caption: "" };
 const initialGalleryVideo = { url: "", title: "" };
+type Service = typeof initialService;
+type Location = typeof initialLocation;
+type GalleryImage = typeof initialGalleryImage;
+type GalleryVideo = typeof initialGalleryVideo;
+type ListName = "services" | "locations" | "galleryImages" | "galleryVideos" | "weeklyHours";
+type OnboardingData = {
+  formData: Record<string, string>;
+  services: Service[];
+  locations: Location[];
+  galleryImages: GalleryImage[];
+  galleryVideos: GalleryVideo[];
+  weeklyHours: HoursRow[];
+  completedSteps: string[];
+  submittedAt: string | null;
+  listing: { _id: string; companyName: string; isPublished: boolean } | null;
+};
+
+// The repeatable lists each step owns (saved together with that step's fields).
+const stepLists: Record<string, ListName[]> = { gallery: ["galleryImages", "galleryVideos"], location: ["locations"], operations: ["weeklyHours"], services: ["services"] };
+const loginMessage = "Please log in with your company account to add or edit your listing.";
+// Saved lists come back without empty rows; keep one blank row so the form always has inputs.
+const withBlankRow = <T,>(items: T[] | undefined, blank: T) => (items?.length ? items.map((item) => ({ ...blank, ...item })) : [{ ...blank }]);
 
 export default function AddCompanyWizard() {
   const [stepIndex, setStepIndex] = useState(0);
@@ -631,11 +662,45 @@ export default function AddCompanyWizard() {
   const [locations, setLocations] = useState([initialLocation]);
   const [galleryImages, setGalleryImages] = useState([initialGalleryImage]);
   const [galleryVideos, setGalleryVideos] = useState([initialGalleryVideo]);
+  const [weeklyHours, setWeeklyHours] = useState<HoursRow[]>(initialWeeklyHours);
+  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+  const [isLive, setIsLive] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
 
   const step = steps[stepIndex];
+  const isLastStep = stepIndex === steps.length - 1;
+
+  // Load whatever the company already saved, so the wizard resumes (or edits a published listing).
+  useEffect(() => {
+    let cancelled = false;
+    apiRequest<OnboardingData>("/companies/onboarding", { loginMessage })
+      .then(({ data }) => {
+        if (cancelled) return;
+        setFormData({ ...initialFormData, ...data.formData });
+        setServices(withBlankRow(data.services, initialService));
+        setLocations(withBlankRow(data.locations, initialLocation));
+        setGalleryImages(withBlankRow(data.galleryImages, initialGalleryImage));
+        setGalleryVideos(withBlankRow(data.galleryVideos, initialGalleryVideo));
+        setWeeklyHours(withAllDays(data.weeklyHours));
+        setCompletedSteps(data.completedSteps);
+        setIsLive(Boolean(data.submittedAt));
+        // Resume at the first unfinished step.
+        const nextStep = steps.findIndex((item) => !data.completedSteps.includes(item.id));
+        if (!data.submittedAt && nextStep > 0) setStepIndex(nextStep);
+      })
+      .catch((error) => { if (!cancelled) setSubmitError(error instanceof Error ? error.message : "Unable to load your saved listing."); })
+      .finally(() => { if (!cancelled) setIsLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const changeStep = (index: number) => {
+    setStepIndex(Math.min(Math.max(index, 0), steps.length - 1));
+    setSubmitError("");
+    setSubmitSuccess("");
+  };
 
   const updateField = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
@@ -670,52 +735,111 @@ export default function AddCompanyWizard() {
   const addGalleryVideo = () => setGalleryVideos((current) => [...current, { ...initialGalleryVideo }]);
   const removeGalleryVideo = (index: number) => setGalleryVideos((current) => current.filter((_, idx) => idx !== index));
 
-  const goNext = () => setStepIndex((current) => Math.min(current + 1, steps.length - 1));
-  const goBack = () => setStepIndex((current) => Math.max(current - 1, 0));
+  const goBack = () => changeStep(stepIndex - 1);
+  const lists = { services, locations, galleryImages, galleryVideos, weeklyHours: hoursPayload(weeklyHours) };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const token = readStoredUser()?.accessToken;
-    if (!token) {
-      setSubmitError("Please log in with your company account before publishing a listing.");
-      return;
-    }
+  /** Saves the current step to the database. Once the listing is live, the change is published immediately. */
+  const saveStep = async () => {
+    if (step.id === "company-information" && !formData.companyName?.trim()) throw new Error("Company Name is required.");
+    const body = {
+      formData: Object.fromEntries(step.fields.map((field) => [field.name, formData[field.name] ?? ""])),
+      ...Object.fromEntries((stepLists[step.id] ?? []).map((name) => [name, lists[name]])),
+    };
+    const response = await apiRequest<OnboardingData>(`/companies/onboarding/steps/${step.id}`, { method: "PUT", body, loginMessage });
+    setCompletedSteps(response.data.completedSteps);
+    return response.message;
+  };
+
+  const run = async (action: () => Promise<string | undefined>) => {
     setIsSubmitting(true);
     setSubmitError("");
+    setSubmitSuccess("");
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api"}/companies/onboarding`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ formData, services, locations, galleryImages, galleryVideos }),
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.message || "Unable to publish the company listing.");
-      setSubmitSuccess("Company listing published. It is now available on the public listings API.");
+      const message = await action();
+      if (message) setSubmitSuccess(message);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Unable to publish the company listing.");
+      setSubmitError(error instanceof Error ? error.message : "Unable to save this step.");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const resetStepFields = (stepId: string) => {
+    const target = steps.find((item) => item.id === stepId)!;
+    setFormData((current) => ({ ...current, ...Object.fromEntries(target.fields.map((field) => [field.name, ""])) }));
+    if (stepId === "gallery") { setGalleryImages([{ ...initialGalleryImage }]); setGalleryVideos([{ ...initialGalleryVideo }]); }
+    if (stepId === "location") setLocations([{ ...initialLocation }]);
+    if (stepId === "operations") setWeeklyHours(initialWeeklyHours);
+    if (stepId === "services") setServices([{ ...initialService }]);
+  };
+
+  // Deletes what was saved for this step (and empties its form).
+  const handleClearStep = () => {
+    if (!window.confirm(`Clear everything saved in "${step.title}"?${isLive ? " Your live listing will be updated." : ""}`)) return;
+    run(async () => {
+      const response = await apiRequest<OnboardingData>(`/companies/onboarding/steps/${step.id}`, { method: "DELETE", loginMessage });
+      resetStepFields(step.id);
+      setCompletedSteps(response.data.completedSteps);
+      return response.message;
+    });
+  };
+
+  // Removes the listing from the directory and everything saved in the wizard.
+  const handleDeleteListing = () => {
+    if (!window.confirm("Delete your company listing? It will disappear from the public directory and all wizard steps will be cleared. Your team, blogs, projects and other Business Profile sections are kept.")) return;
+    run(async () => {
+      const response = await apiRequest("/companies/onboarding", { method: "DELETE", loginMessage });
+      steps.forEach((item) => resetStepFields(item.id));
+      setCompletedSteps([]);
+      setIsLive(false);
+      setStepIndex(0);
+      return response.message;
+    });
+  };
+
+  // "Save" keeps the company on the current step.
+  const handleSave = () => run(saveStep);
+
+  // The main button saves the step, then moves on; the last step also publishes the listing.
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    run(async () => {
+      const message = await saveStep();
+      if (isLive) return message;
+      if (!isLastStep) {
+        changeStep(stepIndex + 1);
+        return `Step ${stepIndex + 1} saved.`;
+      }
+      await apiRequest("/companies/onboarding", { method: "POST", body: { formData, ...lists }, loginMessage });
+      setIsLive(true);
+      setCompletedSteps(steps.map((item) => item.id));
+      return "Company listing published. You can come back to any step to edit it — changes go live when you save.";
+    });
   };
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-4 border-b border-gray-100 pb-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#0b1f3b]">Company Onboarding</p>
-          <h2 className="mt-2 text-2xl font-bold text-gray-900">Add Company Listing</h2>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#0b1f3b]">{isLive ? "Your Listing Is Live" : "Company Onboarding"}</p>
+          <h2 className="mt-2 text-2xl font-bold text-gray-900">{isLive ? "Edit Company Listing" : "Add Company Listing"}</h2>
           <p className="mt-2 text-sm text-gray-500">Step {stepIndex + 1} of {steps.length}: {step.title}</p>
+          <p className="mt-1 text-xs text-gray-400">{isLoading ? "Loading your saved details…" : isLive ? "Edit any step and save — changes update your public listing right away." : `${completedSteps.length} of ${steps.length} steps saved. Each step is saved when you continue.`}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {steps.map((item, index) => (
             <button
               type="button"
-              key={item.title}
-              onClick={() => setStepIndex(index)}
-              className={`rounded-full px-3 py-2 text-xs font-semibold transition ${
-                index === stepIndex ? "bg-[#0b1f3b] text-white" : "bg-gray-100 text-gray-600 hover:bg-[#FFD60A]/20"
+              key={item.id}
+              onClick={() => changeStep(index)}
+              title={`${item.title}${completedSteps.includes(item.id) ? " (saved)" : ""}`}
+              aria-label={`Step ${index + 1}: ${item.title}${completedSteps.includes(item.id) ? ", saved" : ""}`}
+              aria-current={index === stepIndex ? "step" : undefined}
+              className={`inline-flex items-center gap-1 rounded-full px-3 py-2 text-xs font-semibold transition ${
+                index === stepIndex ? "bg-[#0b1f3b] text-white" : completedSteps.includes(item.id) ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "bg-gray-100 text-gray-600 hover:bg-[#FFD60A]/20"
               }`}
             >
+              {completedSteps.includes(item.id) && index !== stepIndex && <FaCheck className="h-2.5 w-2.5" aria-hidden />}
               {index + 1}
             </button>
           ))}
@@ -723,6 +847,7 @@ export default function AddCompanyWizard() {
       </div>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-8">
+        <fieldset disabled={isLoading} className="space-y-8 disabled:opacity-60">
         <div className="grid gap-6 md:grid-cols-2">
           {step.fields.map((field) => (
             <label key={field.name} className={`${field.type === "textarea" ? "md:col-span-2" : ""}`}>
@@ -1101,6 +1226,8 @@ export default function AddCompanyWizard() {
           </div>
         )}
 
+        {step.id === "operations" && <WeeklyHoursEditor rows={weeklyHours} onChange={setWeeklyHours} />}
+
         <div className="flex flex-col gap-3 border-t border-gray-100 pt-6 sm:flex-row sm:justify-between">
           <button
             type="button"
@@ -1110,35 +1237,57 @@ export default function AddCompanyWizard() {
           >
             <FaChevronLeft className="mr-2 h-4 w-4" /> Back
           </button>
+          {completedSteps.includes(step.id) && !(isLive && step.id === "company-information") && (
+            <button
+              type="button"
+              onClick={handleClearStep}
+              disabled={isSubmitting || isLoading}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50 sm:mr-auto"
+            >
+              <FaTrash className="mr-2 h-3.5 w-3.5" /> Clear step
+            </button>
+          )}
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => alert("Draft saved locally. Connect this to API storage when ready.")}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition hover:border-[#FFD60A] hover:text-[#0b1f3b]"
+              onClick={handleSave}
+              disabled={isSubmitting || isLoading}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition hover:border-[#FFD60A] hover:text-[#0b1f3b] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <FaSave className="mr-2 h-4 w-4" /> Save Draft
+              <FaSave className="mr-2 h-4 w-4" /> {isLive ? "Save Changes" : "Save"}
             </button>
-            {stepIndex < steps.length - 1 ? (
-              <button
-                type="button"
-                onClick={goNext}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#0b1f3b] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#111b35]"
-              >
-                Next Step <FaArrowRight className="ml-2 h-4 w-4" />
-              </button>
+            {isLive ? (
+              !isLastStep && (
+                <button
+                  type="button"
+                  onClick={() => changeStep(stepIndex + 1)}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#0b1f3b] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#111b35]"
+                >
+                  Next Step <FaArrowRight className="ml-2 h-4 w-4" />
+                </button>
+              )
             ) : (
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#FFD60A] px-5 py-3 text-sm font-semibold text-[#0b1f3b] transition hover:bg-[#e6c000]"
+                disabled={isSubmitting || isLoading}
+                className={`inline-flex min-h-11 items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${isLastStep ? "bg-[#FFD60A] text-[#0b1f3b] hover:bg-[#e6c000]" : "bg-[#0b1f3b] text-white hover:bg-[#111b35]"}`}
               >
-                {isSubmitting ? "Publishing…" : "Submit Listing"}
+                {isSubmitting ? (isLastStep ? "Publishing…" : "Saving…") : isLastStep ? "Save & Submit Listing" : <>Save & Continue <FaArrowRight className="ml-2 h-4 w-4" /></>}
               </button>
             )}
           </div>
         </div>
-        {submitError && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{submitError}</p>}
-        {submitSuccess && <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">{submitSuccess}</p>}
+        </fieldset>
+        {submitError && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{submitError}</p>}
+        {isLive && (
+          <div className="flex flex-col gap-3 rounded-2xl border border-red-100 bg-red-50/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-gray-700"><span className="font-bold text-red-700">Delete listing.</span> Removes your company from the public directory and clears every wizard step.</p>
+            <button type="button" onClick={handleDeleteListing} disabled={isSubmitting} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-600 hover:text-white disabled:opacity-50">
+              <FaTrash className="mr-2 h-3.5 w-3.5" /> Delete listing
+            </button>
+          </div>
+        )}
+        {submitSuccess && <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">{submitSuccess}</p>}
       </form>
     </section>
   );

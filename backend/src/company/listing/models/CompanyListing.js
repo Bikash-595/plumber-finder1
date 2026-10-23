@@ -4,6 +4,8 @@ const companyListingSchema = new mongoose.Schema({
   company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true, unique: true },
   companyName: { type: String, required: true, trim: true },
   slug: { type: String, required: true, unique: true, lowercase: true },
+  // Slugs used before a rename; /company/<old slug> redirects to the current one.
+  previousSlugs: { type: [{ type: String, lowercase: true }], default: [], index: true },
   tagline: String,
   description: String,
   logo: String,

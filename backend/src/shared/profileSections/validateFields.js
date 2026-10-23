@@ -75,6 +75,19 @@ function coerce(spec, raw) {
       if (value.some((item) => item.length > (spec.max ?? 80))) return { error: `items must be ${spec.max ?? 80} characters or fewer` };
       return { value };
     }
+    case "objects": {
+      // A list of small records, each validated against `spec.fields` (e.g. service areas with their services).
+      if (!Array.isArray(raw) || !raw.every(isPlainObject)) return { error: "must be a list of objects" };
+      if (raw.length > (spec.maxItems ?? 50)) return { error: `must have ${spec.maxItems ?? 50} items or fewer` };
+      const value = [];
+      for (const [index, item] of raw.entries()) {
+        const result = validateFields(spec.fields, item);
+        const [field, problem] = Object.entries(result.errors)[0] ?? [];
+        if (field) return { error: `item ${index + 1}: ${field} ${problem}` };
+        value.push(result.values);
+      }
+      return { value };
+    }
     default:
       throw new Error(`Unknown field type: ${spec.type}`);
   }
@@ -99,7 +112,7 @@ export function validateFields(fields, body, { partial = false } = {}) {
     const isEmpty = raw === null || (typeof raw === "string" && raw.trim() === "") || (Array.isArray(raw) && raw.length === 0);
     if (isEmpty) {
       if (spec.required) errors[name] = "is required";
-      else values[name] = spec.default !== undefined ? spec.default : spec.type === "list" ? [] : null;
+      else values[name] = spec.default !== undefined ? spec.default : spec.type === "list" || spec.type === "objects" ? [] : null;
       continue;
     }
     const result = coerce(spec, raw);

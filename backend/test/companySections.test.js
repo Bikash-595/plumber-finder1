@@ -231,6 +231,165 @@ describe("onboarding wizard", () => {
   });
 });
 
+describe("onboarding wizard steps", () => {
+  test("each step is saved to the database and loads back to resume the wizard", async () => {
+    const { token } = await newCompany({ publish: false });
+    const empty = (await api("GET", "/api/companies/onboarding", { token })).body.data;
+    assert.deepEqual([empty.completedSteps, empty.listing, empty.submittedAt], [[], null, null]);
+
+    const step1 = await api("PUT", "/api/companies/onboarding/steps/company-information", { token, body: { formData: { companyName: "  Step Co ", tagline: "Fast", contactPerson: "not in this step" } } });
+    assert.equal(step1.status, 200);
+    assert.equal(step1.body.listing, null, "nothing is published before the final submit");
+    await api("PUT", "/api/companies/onboarding/steps/contact", { token, body: { formData: { primaryPhone: "555-0100", email: "hi@step.co" } } });
+    await api("PUT", "/api/companies/onboarding/steps/location", { token, body: { formData: { headquarters: "NYC" }, locations: [{ city: "Albany", state: "NY", evil: "dropped" }] } });
+
+    const saved = (await api("GET", "/api/companies/onboarding", { token })).body.data;
+    assert.equal(saved.formData.companyName, "Step Co");
+    assert.equal(saved.formData.tagline, "Fast");
+    assert.equal(saved.formData.contactPerson, "", "fields from other steps are ignored");
+    assert.equal(saved.formData.primaryPhone, "555-0100");
+    assert.equal(saved.locations[0].city, "Albany");
+    assert.equal(saved.locations[0].evil, undefined);
+    assert.deepEqual(saved.completedSteps, ["company-information", "contact", "location"]);
+    assert.equal((await api("GET", "/api/companies/public?search=Step%20Co")).body.data?.some?.((l) => l.companyName === "Step Co") ?? false, false);
+  });
+
+  test("validates each step", async () => {
+    const { token } = await newCompany({ publish: false });
+    assert.equal((await api("PUT", "/api/companies/onboarding/steps/company-information", { token, body: { formData: { companyName: "  " } } })).status, 400);
+    assert.equal((await api("PUT", "/api/companies/onboarding/steps/company-information", { token, body: { formData: { companyName: { $gt: "" } } } })).status, 400);
+    assert.equal((await api("PUT", "/api/companies/onboarding/steps/branding", { token, body: { formData: { companyLogo: "javascript:alert(1)" } } })).status, 400);
+    assert.equal((await api("PUT", "/api/companies/onboarding/steps/services", { token, body: { services: "nope" } })).status, 400);
+    assert.equal((await api("PUT", "/api/companies/onboarding/steps/nope", { token, body: {} })).status, 404);
+    assert.equal((await api("PUT", "/api/companies/onboarding/steps/contact", { body: {} })).status, 401);
+  });
+
+  test("after publishing, editing any step updates the live listing directly", async () => {
+    const { token } = await newCompany({ publish: false });
+    await api("PUT", "/api/companies/onboarding/steps/company-information", { token, body: { formData: { companyName: "Live Co", tagline: "Old tagline" } } });
+    await api("PUT", "/api/companies/onboarding/steps/contact", { token, body: { formData: { primaryPhone: "555-0001" } } });
+    const draft = (await api("GET", "/api/companies/onboarding", { token })).body.data;
+    const published = await api("POST", "/api/companies/onboarding", { token, body: draft });
+    assert.equal(published.status, 201);
+    const listingId = published.body.data._id;
+
+    const loaded = (await api("GET", "/api/companies/onboarding", { token })).body.data;
+    assert.ok(loaded.submittedAt);
+    assert.equal(loaded.listing._id, listingId);
+    assert.equal(loaded.completedSteps.length, 8);
+
+    const edit = await api("PUT", "/api/companies/onboarding/steps/company-information", { token, body: { formData: { companyName: "Live Co", tagline: "New tagline" } } });
+    assert.equal(edit.status, 200);
+    assert.equal(edit.body.listing.tagline, "New tagline");
+    await api("PUT", "/api/companies/onboarding/steps/contact", { token, body: { formData: { primaryPhone: "555-0002" } } });
+    const pub = (await api("GET", `/api/companies/public/${listingId}`)).body.data;
+    assert.equal(pub.tagline, "New tagline");
+    assert.equal(pub.phone, "555-0002");
+  });
+
+  test("a listing published before step saves existed can still be loaded and edited", async () => {
+    const { token } = await newCompany({ publish: false });
+    const { CompanyOnboardingDraft } = await import("../src/company/onboarding/models/CompanyOnboardingDraft.js");
+    const res = await api("POST", "/api/companies/onboarding", { token, body: { formData: { companyName: "Legacy Co", tagline: "Since 1990", primaryPhone: "555-0003", companyHistory: "Long" }, services: [{ name: "Drains" }] } });
+    await CompanyOnboardingDraft.deleteOne({ company: res.body.data.company });
+
+    const loaded = (await api("GET", "/api/companies/onboarding", { token })).body.data;
+    assert.equal(loaded.formData.companyName, "Legacy Co");
+    assert.equal(loaded.formData.primaryPhone, "555-0003");
+    assert.equal(loaded.formData.companyHistory, "Long");
+    assert.equal(loaded.services[0].name, "Drains");
+    assert.ok(loaded.submittedAt);
+
+    const edit = await api("PUT", "/api/companies/onboarding/steps/contact", { token, body: { formData: { primaryPhone: "555-0004" } } });
+    assert.equal(edit.body.listing.phone, "555-0004");
+    assert.equal(edit.body.listing.tagline, "Since 1990", "other steps keep their saved values");
+  });
+});
+
+describe("opening hours, deleting, and the public profile", () => {
+  const week = [
+    { day: "Monday", isOpen: true, opensAt: "08:00", closesAt: "18:00" },
+    { day: "saturday", isOpen: "true", opensAt: "09:00", closesAt: "13:00" },
+    { day: "sunday", isOpen: false, opensAt: "10:00", closesAt: "12:00" },
+  ];
+
+  test("weekly opening hours are validated, saved in day order, and published", async () => {
+    const { token, listingId } = await newCompany();
+    const bad = [
+      [{ day: "funday", isOpen: true, opensAt: "08:00", closesAt: "18:00" }],
+      [{ day: "monday", isOpen: true, opensAt: "8am", closesAt: "18:00" }],
+      [{ day: "monday", isOpen: true, opensAt: "08:00", closesAt: "08:00" }],
+      [{ day: "monday", isOpen: false }, { day: "monday", isOpen: false }],
+    ];
+    for (const weeklyHours of bad) assert.equal((await api("PUT", "/api/companies/onboarding/steps/operations", { token, body: { weeklyHours } })).status, 400, JSON.stringify(weeklyHours));
+
+    const res = await api("PUT", "/api/companies/onboarding/steps/operations", { token, body: { formData: { emergencyHours: "24/7 by phone" }, weeklyHours: [...week].reverse() } });
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body.data.weeklyHours, [
+      { day: "monday", isOpen: true, opensAt: "08:00", closesAt: "18:00" },
+      { day: "saturday", isOpen: true, opensAt: "09:00", closesAt: "13:00" },
+      { day: "sunday", isOpen: false, opensAt: "", closesAt: "" },
+    ]);
+    const profile = (await api("GET", `/api/companies/public/${listingId}/profile`)).body.data;
+    assert.equal(profile.hours.weeklyHours.length, 3);
+    assert.equal(profile.hours.emergencyHours, "24/7 by phone");
+    const card = (await api("GET", "/api/companies/public")).body.data.find((item) => item._id === listingId);
+    assert.equal(card.weeklyHours[0].opensAt, "08:00");
+  });
+
+  test("the public profile includes every public section, and nothing private", async () => {
+    const { token, listingId } = await newCompany();
+    await api("PUT", "/api/companies/onboarding/steps/business-profile", { token, body: { formData: { companyHistory: "Since 1999", taxIdentificationNumber: "SECRET-TAX", yearEstablished: "1999" } } });
+    await api("POST", "/api/companies/team", { token, body: { name: "Sam", role: "Lead", specialties: "Drains, Heaters", experienceYears: 12, certificates: ["Master Plumber"] } });
+    await api("POST", "/api/companies/reviews", { token, body: { customer: "Ann", rating: 5, review: "Great" } });
+    await api("POST", "/api/companies/reviews", { token, body: { customer: "Bob", rating: 4, review: "Good" } });
+    await api("POST", "/api/companies/blogs", { token, body: { title: "Live post", excerpt: "E", content: "C", status: "published" } });
+    await api("POST", "/api/companies/blogs", { token, body: { title: "Draft post", excerpt: "E", content: "C" } });
+    await api("POST", "/api/companies/previous-projects", { token, body: { title: "Shown", service: "Repipe", description: "D" } });
+    await api("POST", "/api/companies/previous-projects", { token, body: { title: "Hidden", service: "Repipe", description: "D", visible: false } });
+    await api("POST", "/api/companies/special-offers", { token, body: { title: "Spring", discount: "10% off", promoCode: "spring10" } });
+    await api("POST", "/api/companies/faqs", { token, body: { question: "Q?", answer: "A" } });
+
+    const res = await api("GET", `/api/companies/public/${listingId}/profile`);
+    assert.equal(res.status, 200);
+    const p = res.body.data;
+    assert.deepEqual(p.team.map((m) => [m.name, m.specialties, m.experienceYears, m.certificates]), [["Sam", ["Drains", "Heaters"], 12, ["Master Plumber"]]]);
+    assert.deepEqual([p.rating, p.reviewCount], [4.5, 2]);
+    assert.deepEqual(p.blogs.map((b) => b.title), ["Live post"]);
+    assert.deepEqual(p.projects.map((b) => b.title), ["Shown"]);
+    assert.deepEqual([p.offer.discount, p.offer.promoCode], ["10% off", "SPRING10"]);
+    assert.equal(p.faqs.length, 1);
+    assert.equal(p.about.companyHistory, "Since 1999");
+    assert.equal(p.established, 1999);
+    assert.equal(p.company, undefined);
+    assert.ok(!JSON.stringify(p).includes("SECRET-TAX"), "tax numbers are never public");
+    assert.equal((await api("GET", "/api/companies/public/000000000000000000000000/profile")).status, 404);
+    assert.equal((await api("GET", "/api/companies/public/not-an-id/profile")).status, 404, "treated as an unknown slug");
+  });
+
+  test("a step can be cleared, and the whole listing can be deleted", async () => {
+    const { token, listingId } = await newCompany();
+    await api("PUT", "/api/companies/onboarding/steps/contact", { token, body: { formData: { primaryPhone: "555-0100" } } });
+    assert.equal((await api("GET", `/api/companies/public/${listingId}`)).body.data.phone, "555-0100");
+
+    const cleared = await api("DELETE", "/api/companies/onboarding/steps/contact", { token });
+    assert.equal(cleared.status, 200);
+    assert.equal(cleared.body.data.formData.primaryPhone, "");
+    assert.ok(!cleared.body.data.completedSteps.includes("contact"));
+    assert.ok(!(await api("GET", `/api/companies/public/${listingId}`)).body.data.phone, "live listing updated");
+    assert.equal((await api("DELETE", "/api/companies/onboarding/steps/company-information", { token })).status, 400, "name can't be cleared while live");
+    assert.equal((await api("DELETE", "/api/companies/onboarding/steps/nope", { token })).status, 404);
+
+    const removed = await api("DELETE", "/api/companies/onboarding", { token });
+    assert.equal(removed.status, 200);
+    assert.equal(removed.body.data.deleted, true);
+    assert.equal((await api("GET", `/api/companies/public/${listingId}`)).status, 404);
+    const after = (await api("GET", "/api/companies/onboarding", { token })).body.data;
+    assert.deepEqual([after.listing, after.submittedAt, after.completedSteps], [null, null, []]);
+    assert.equal((await api("DELETE", "/api/companies/onboarding", {})).status, 401);
+  });
+});
+
 describe("review fixes", () => {
   test("impossible calendar dates and out-of-range years are rejected", async () => {
     const { token } = await newCompany();
@@ -324,7 +483,7 @@ describe("review fixes", () => {
     assert.ok(bad.body.errors.companyLogo);
     const symbols = await api("POST", "/api/companies/onboarding", { token, body: { formData: { companyName: "★★★" } } });
     assert.equal(symbols.status, 201);
-    assert.match(symbols.body.data.slug, /^company-[a-f0-9]{6}$/);
+    assert.match(symbols.body.data.slug, /^company(-\d+)?$/);
   });
 });
 
@@ -351,5 +510,119 @@ describe("public endpoints", () => {
     assert.equal(booking.body.data.company, undefined, "public data hides the company id");
 
     assert.equal((await api("GET", `/api/companies/blogs/public/${new mongoose.Types.ObjectId()}`)).status, 404);
+  });
+});
+
+describe("clean company URLs and record deletes", () => {
+  const signup = async (name) => (await api("POST", "/api/auth/companies/signup", { body: { companyName: name, email: `${name.replace(/\W/g, "").toLowerCase()}${++seq}@example.com`, password: "password123" } })).body.token;
+
+  test("saving the Company Profile creates a public listing with a clean, unique slug", async () => {
+    const first = await signup("Abc Plumbing");
+    const second = await signup("Abc Plumbing Two");
+    const one = await api("PUT", "/api/companies/header-profile", { token: first, body: { companyName: "ABC Plumbing!" } });
+    assert.equal(one.status, 200);
+    await api("PUT", "/api/companies/header-profile", { token: second, body: { companyName: "abc plumbing" } });
+    const cards = (await api("GET", "/api/companies/public")).body.data;
+    const slugs = cards.filter((card) => /^abc plumbing/i.test(card.companyName)).map((card) => card.slug).sort();
+    assert.deepEqual(slugs, ["abc-plumbing", "abc-plumbing-2"]);
+
+    const bySlug = await api("GET", "/api/companies/public/abc-plumbing/profile");
+    assert.equal(bySlug.status, 200);
+    assert.equal(bySlug.body.data.companyName, "ABC Plumbing!");
+    assert.equal((await api("GET", `/api/companies/public/${bySlug.body.data._id}/profile`)).body.data.slug, "abc-plumbing");
+    assert.equal((await api("GET", "/api/companies/public/no-such-company/profile")).status, 404);
+  });
+
+  test("renaming keeps the old slug working and reserved", async () => {
+    const token = await signup("Rename Me");
+    await api("PUT", "/api/companies/header-profile", { token, body: { companyName: "Old Name Plumbing" } });
+    await api("PUT", "/api/companies/header-profile", { token, body: { companyName: "Old Name Plumbing" } });
+    assert.equal((await api("GET", "/api/companies/public/old-name-plumbing/profile")).body.data.slug, "old-name-plumbing", "unchanged name keeps its slug");
+    await api("PUT", "/api/companies/header-profile", { token, body: { companyName: "New Name Plumbing" } });
+    const viaOld = await api("GET", "/api/companies/public/old-name-plumbing/profile");
+    assert.equal(viaOld.status, 200);
+    assert.equal(viaOld.body.data.slug, "new-name-plumbing", "old links resolve to the current slug");
+    const other = await signup("Squatter");
+    await api("PUT", "/api/companies/header-profile", { token: other, body: { companyName: "Old Name Plumbing" } });
+    const squatter = (await api("GET", "/api/companies/public")).body.data.find((card) => card.companyName === "Old Name Plumbing" && card.slug !== "new-name-plumbing");
+    assert.equal(squatter.slug, "old-name-plumbing-2", "old slugs are not reused by other companies");
+  });
+
+  test("the wizard also uses clean slugs", async () => {
+    const token = await signup("Wizard Slug");
+    const res = await api("POST", "/api/companies/onboarding", { token, body: { formData: { companyName: "Wizard Slug Plumbing" } } });
+    assert.equal(res.body.data.slug, "wizard-slug-plumbing");
+  });
+
+  test("single-record sections can be deleted", async () => {
+    const token = await signup("Delete Records");
+    await api("PUT", "/api/companies/header-profile", { token, body: { companyName: "Delete Records Co" } });
+    await api("PUT", "/api/companies/service-areas", { token, body: { areasCovered: "Austin, Dallas" } });
+    await api("PUT", "/api/companies/company-overview", { token, body: { teamSize: 5 } });
+    await api("PUT", "/api/companies/booking", { token, body: { workingDays: "Mon–Fri" } });
+    let card = (await api("GET", "/api/companies/public")).body.data.find((item) => item.companyName === "Delete Records Co");
+    assert.deepEqual(card.serviceAreas, ["Austin", "Dallas"]);
+
+    for (const section of ["service-areas", "company-overview", "booking"]) {
+      const res = await api("DELETE", `/api/companies/${section}`, { token });
+      assert.equal(res.status, 200, section);
+      assert.equal((await api("GET", `/api/companies/${section}`, { token })).body.data, null, section);
+      assert.equal((await api("DELETE", `/api/companies/${section}`, { token })).status, 404, `${section} twice`);
+    }
+    card = (await api("GET", "/api/companies/public")).body.data.find((item) => item.companyName === "Delete Records Co");
+    assert.deepEqual(card.serviceAreas, [], "listing areas cleared");
+    assert.equal((await api("DELETE", "/api/companies/booking", {})).status, 401);
+
+    // Deleting the profile removes a listing that only the profile created.
+    assert.equal((await api("DELETE", "/api/companies/header-profile", { token })).status, 200);
+    assert.ok(!(await api("GET", "/api/companies/public")).body.data.some((item) => item.companyName === "Delete Records Co"));
+  });
+});
+
+describe("service areas with services, card details, and the public blog feed", () => {
+  test("areas list their services; coordinates and areas reach the listing card", async () => {
+    const { token, listingId } = await newCompany();
+    assert.equal((await api("PUT", "/api/companies/service-areas", { token, body: { latitude: 30.2 } })).status, 400, "latitude needs longitude");
+    assert.equal((await api("PUT", "/api/companies/service-areas", { token, body: { latitude: 120, longitude: 0 } })).status, 400);
+    assert.equal((await api("PUT", "/api/companies/service-areas", { token, body: { areaDetails: [{ services: ["Drains"] }] } })).status, 400, "area name required");
+    const res = await api("PUT", "/api/companies/service-areas", { token, body: { branchLocation: "Austin, TX", latitude: 30.2672, longitude: -97.7431, areaDetails: [{ name: "Austin", services: "Drains, Water heaters" }, { name: "Round Rock", services: [] }, { name: "austin", services: [] }] } });
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body.data.areaDetails, [{ name: "Austin", services: ["Drains", "Water heaters"] }, { name: "Round Rock", services: [] }], "duplicate names are dropped");
+    assert.equal(res.body.data.areasCovered, "Austin, Round Rock");
+
+    await api("POST", "/api/companies/team", { token, body: { name: "Sam", role: "Lead" } });
+    await api("POST", "/api/companies/blogs", { token, body: { title: "Post A", excerpt: "E", content: "C", status: "published" } });
+    await api("POST", "/api/companies/blogs", { token, body: { title: "Draft B", excerpt: "E", content: "C" } });
+    const card = (await api("GET", "/api/companies/public")).body.data.find((item) => item._id === listingId);
+    assert.deepEqual(card.coordinates, { lat: 30.2672, lng: -97.7431 });
+    assert.deepEqual(card.serviceAreas, ["Austin", "Round Rock"]);
+    assert.equal(card.location, "Austin, TX", "base location fills an empty listing location");
+    assert.equal(card.blogCount, 1);
+    assert.deepEqual(card.teamPreview, [{ name: "Sam", role: "Lead" }]);
+    const profile = (await api("GET", `/api/companies/public/${listingId}/profile`)).body.data;
+    assert.equal(profile.serviceArea.areaDetails[0].services.length, 2);
+
+    // Old clients that only send the text still work.
+    const text = await api("PUT", "/api/companies/service-areas", { token, body: { areasCovered: "Dallas, Plano" } });
+    assert.deepEqual(text.body.data.areaDetails, [{ name: "Dallas", services: [] }, { name: "Plano", services: [] }]);
+  });
+
+  test("GET /api/blogs lists published posts from published companies and freelancers", async () => {
+    const { token } = await newCompany();
+    await api("POST", "/api/companies/blogs", { token, body: { title: "Feed Post", excerpt: "Short", content: "word ".repeat(450), status: "published" } });
+    await api("POST", "/api/companies/blogs", { token, body: { title: "Hidden Draft", excerpt: "E", content: "C" } });
+    const { body: fl } = await api("POST", "/api/auth/freelancers/signup", { body: { name: "Feed Fran", email: `feedfran${++seq}@example.com`, password: "password123" } });
+    await api("PUT", "/api/freelancers/header-profile", { token: fl.token, body: { displayName: "Feed Fran" } });
+    await api("POST", "/api/freelancers/blogs", { token: fl.token, body: { title: "Freelancer Feed Post", excerpt: "E", content: "C", status: "published" } });
+
+    const feed = (await api("GET", "/api/blogs")).body.data;
+    const post = feed.find((item) => item.title === "Feed Post");
+    assert.ok(post);
+    assert.equal(post.content, undefined, "article text is not sent");
+    assert.equal(post.readTime, 2);
+    assert.equal(post.provider.type, "company");
+    assert.ok(post.provider.slug);
+    assert.ok(!feed.some((item) => item.title === "Hidden Draft"));
+    assert.equal(feed.find((item) => item.title === "Freelancer Feed Post")?.provider.name, "Feed Fran");
   });
 });

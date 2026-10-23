@@ -150,3 +150,55 @@ describe("public freelancer directory", () => {
     assert.equal(video.body.data.mediaKind, "video");
   });
 });
+
+describe("opening hours, public profile, and removing the listing", () => {
+  test("opening hours are validated, saved in day order, and require a freelancer token", async () => {
+    const { token, listingId } = await newFreelancer();
+    assert.equal((await api("PUT", "/api/freelancers/opening-hours", { body: {} })).status, 401);
+    assert.equal((await api("PUT", "/api/freelancers/opening-hours", { token, body: { weeklyHours: [{ day: "funday", isOpen: true, opensAt: "08:00", closesAt: "17:00" }] } })).status, 400);
+    assert.equal((await api("PUT", "/api/freelancers/opening-hours", { token, body: { weeklyHours: [{ day: "monday", isOpen: true, opensAt: "25:00", closesAt: "17:00" }] } })).status, 400);
+    const res = await api("PUT", "/api/freelancers/opening-hours", { token, body: { emergencyHours: "Call any time", weeklyHours: [{ day: "friday", isOpen: true, opensAt: "08:00", closesAt: "16:00" }, { day: "Monday", isOpen: "true", opensAt: "20:00", closesAt: "02:00" }] } });
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body.data.weeklyHours.map((d) => `${d.day} ${d.opensAt}-${d.closesAt}`), ["monday 20:00-02:00", "friday 08:00-16:00"]);
+    const card = (await api("GET", "/api/freelancers/public")).body.data.find((item) => item._id === listingId);
+    assert.equal(card.weeklyHours.length, 2);
+    const profile = (await api("GET", `/api/freelancers/public/${listingId}/profile`)).body.data;
+    assert.equal(profile.hours.emergencyHours, "Call any time");
+  });
+
+  test("the public profile includes every public section and card details", async () => {
+    const { token, listingId, freelancerId } = await newFreelancer();
+    await api("PUT", "/api/freelancers/overview", { token, body: { bio: "Twenty years on the tools.", specialties: "Drains, Boilers", languages: "English, Spanish", emergencyAvailable: true, averageCost: 150 } });
+    await api("POST", "/api/freelancers/services", { token, body: { name: "Drain unblocking", price: "$90" } });
+    await api("POST", "/api/freelancers/reviews", { token, body: { customer: "Ann", rating: 5, review: "Great" } });
+    await api("POST", "/api/freelancers/reviews", { token, body: { customer: "Bo", rating: 3, review: "Fine" } });
+    await api("POST", "/api/freelancers/blogs", { token, body: { title: "Live", excerpt: "E", content: "C", status: "published" } });
+    await api("POST", "/api/freelancers/blogs", { token, body: { title: "Draft", excerpt: "E", content: "C" } });
+    await api("POST", "/api/freelancers/previous-projects", { token, body: { title: "Hidden job", service: "Drains", description: "D", visible: false } });
+    await api("POST", "/api/freelancers/special-offers", { token, body: { title: "New customers", discount: "$20 off", promoCode: "new20" } });
+    await mongoose.connection.collection("freelancers").updateOne({ _id: new mongoose.Types.ObjectId(freelancerId) }, { $set: { verificationStatus: "verified" } });
+
+    const p = (await api("GET", `/api/freelancers/public/${listingId}/profile`)).body.data;
+    assert.equal(p.displayName.startsWith("Fran"), true);
+    assert.deepEqual([p.rating, p.reviewCount, p.verified, p.isEmergency], [4, 2, true, true]);
+    assert.deepEqual(p.specialties, ["Drains", "Boilers"]);
+    assert.deepEqual(p.services.map((s) => s.name), ["Drain unblocking"]);
+    assert.deepEqual(p.blogs.map((b) => b.title), ["Live"]);
+    assert.equal(p.projects.length, 0, "hidden projects stay private");
+    assert.equal(p.offer.promoCode, "NEW20");
+    assert.equal(p.freelancer, undefined);
+    assert.equal((await api("GET", "/api/freelancers/public/000000000000000000000000/profile")).status, 404);
+  });
+
+  test("a freelancer can remove their public listing; other sections are kept", async () => {
+    const { token, listingId } = await newFreelancer();
+    await api("POST", "/api/freelancers/faqs", { token, body: { question: "Q?", answer: "A" } });
+    const res = await api("DELETE", "/api/freelancers/header-profile", { token });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.deleted, true);
+    assert.equal((await api("GET", `/api/freelancers/public/${listingId}`)).status, 404);
+    assert.equal((await api("GET", "/api/freelancers/header-profile", { token })).body.data, null);
+    assert.equal((await api("GET", "/api/freelancers/faqs", { token })).body.data.length, 1);
+    assert.equal((await api("DELETE", "/api/freelancers/header-profile", {})).status, 401);
+  });
+});
