@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode, useState } from "react";
+import DashboardGuard from "@/components/auth/DashboardGuard";
 import CompanyFooter from "@/components/company-dashboard/CompanyFooter";
 import CompanyNavbar from "@/components/company-dashboard/CompanyNavbar";
 import CompanySidebar from "@/components/company-dashboard/CompanySidebar";
@@ -23,7 +24,7 @@ const getMobileSidebarWidth = (state: CompanySidebarState) => {
   return "w-20";
 };
 
-export default function CompanyDashboardLayout({ children }: { children: ReactNode }) {
+function CompanyDashboardLayoutContent({ children }: { children: ReactNode }) {
   const [mobileSidebarState, setMobileSidebarState] =
     useState<CompanySidebarState>("closed");
   const [desktopSidebarState, setDesktopSidebarState] =
@@ -84,4 +85,9 @@ export default function CompanyDashboardLayout({ children }: { children: ReactNo
       </footer>
     </div>
   );
+}
+
+/** Only companies can open this dashboard (see DashboardGuard and proxy.ts). */
+export default function CompanyDashboardLayout({ children }: { children: ReactNode }) {
+  return <DashboardGuard area="company"><CompanyDashboardLayoutContent>{children}</CompanyDashboardLayoutContent></DashboardGuard>;
 }

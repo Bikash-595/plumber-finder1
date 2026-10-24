@@ -46,7 +46,8 @@ export default function SectionForm({ section, title, description, fields, defau
 
   useEffect(() => {
     if (!apiEndpoint) {
-      setValues((current) => readProfileDraft(section, current));
+      // Drafts kept on this device (sections that aren't connected to the backend yet).
+      Promise.resolve().then(() => setValues((current) => readProfileDraft(section, current)));
       return;
     }
     companyApi<Record<string, unknown> | null>(apiEndpoint)

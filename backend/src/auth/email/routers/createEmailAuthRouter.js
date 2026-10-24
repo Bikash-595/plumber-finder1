@@ -6,7 +6,8 @@ import { validateEmailLogin, validateEmailSignup } from "../middleware/validateE
 export function createEmailAuthRouter(account) {
   const controller = createEmailAuthController(account);
   const router = Router();
-  router.post("/signup", validateEmailSignup(account), controller.signup);
+  // Account types can add their own signup checks (customers: a real ZIP code).
+  router.post("/signup", validateEmailSignup(account), ...(account.signupMiddleware ?? []), controller.signup);
   router.post("/login", validateEmailLogin, controller.login);
   return router;
 }

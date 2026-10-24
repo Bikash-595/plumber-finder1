@@ -9,6 +9,14 @@ const userSchema = new mongoose.Schema({
   appleId: { type: String, unique: true, sparse: true },
   phone: { type: String, trim: true, maxlength: 40 },
   address: { type: String, trim: true, maxlength: 300 },
+  // From a real ZIP code lookup at signup.
+  zipCode: { type: String, trim: true, maxlength: 10 },
+  city: { type: String, trim: true, maxlength: 100 },
+  state: { type: String, trim: true, maxlength: 100 },
+  latitude: { type: Number },
+  longitude: { type: Number },
+  // false until the emailed code is entered; undefined for accounts created before verification existed.
+  emailVerified: { type: Boolean },
   avatarUrl: { type: String, trim: true },
   role: { type: String, default: "user", immutable: true },
   accountType: { type: String, default: "user", immutable: true },

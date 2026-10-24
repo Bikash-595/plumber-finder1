@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FaBell, FaHeart, FaShoppingCart, FaSignOutAlt } from "react-icons/fa";
 import { clearStoredUser, readStoredUser, type AppUser, getInitials } from "@/components/utils/auth";
+import { dashboardLink } from "@/components/utils/accountLinks";
 
 export default function AccountPage() {
   const [user, setUser] = useState<AppUser | null>(null);
@@ -41,6 +42,12 @@ export default function AccountPage() {
                 Account type: {user.accountType || "seeker"}
               </p>
             </div>
+            {/* Straight to this account's own dashboard (customer, company, or freelancer). */}
+            {dashboardLink(user) && (
+              <Link href={dashboardLink(user)!.href} className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#0b1f3b] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#17345a]">
+                Go to {dashboardLink(user)!.label}
+              </Link>
+            )}
           </div>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2">

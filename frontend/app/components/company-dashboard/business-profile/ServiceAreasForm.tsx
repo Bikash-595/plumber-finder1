@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { FaCrosshairs, FaExternalLinkAlt, FaPlus, FaTrash } from "react-icons/fa";
 import { companyApi } from "./companyApi";
 import { NoticeMessage, type Notice } from "./SavedItems";
+import ServiceAreaMap from "@/components/plumber/ServiceAreaMap";
 
 type Area = { name: string; services: string[] };
 type Saved = { branchLocation?: string | null; radius?: number | null; latitude?: number | null; longitude?: number | null; areaDetails?: Area[] };
@@ -31,6 +32,8 @@ export default function ServiceAreasForm({ apiEndpoint, servicesEndpoint }: Prop
   const [notice, setNotice] = useState<Notice>(null);
   const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState(false);
+  // The area shown on the map preview (null = the base location).
+  const [focus, setFocus] = useState<string | null>(null);
 
   const load = (data: Saved) => {
     setValues({ branchLocation: data.branchLocation ?? "", radius: data.radius?.toString() ?? "", latitude: data.latitude?.toString() ?? "", longitude: data.longitude?.toString() ?? "" });
@@ -46,7 +49,9 @@ export default function ServiceAreasForm({ apiEndpoint, servicesEndpoint }: Prop
 
   const addAreas = () => {
     const names = newAreas.split(",").map((name) => name.trim()).filter(Boolean);
-    setAreas((current) => [...current, ...names.filter((name) => !current.some((area) => area.name.toLowerCase() === name.toLowerCase())).map((name) => ({ name, services: [] }))]);
+    const added = names.filter((name) => !areas.some((area) => area.name.toLowerCase() === name.toLowerCase()));
+    setAreas((current) => [...current, ...added.map((name) => ({ name, services: [] }))]);
+    if (added.length) setFocus(added[added.length - 1]);
     setNewAreas("");
   };
   const updateArea = (index: number, changes: Partial<Area>) => setAreas((current) => current.map((area, i) => (i === index ? { ...area, ...changes } : area)));
@@ -102,6 +107,8 @@ export default function ServiceAreasForm({ apiEndpoint, servicesEndpoint }: Prop
   };
 
   const mapsQuery = values.latitude && values.longitude ? `${values.latitude},${values.longitude}` : values.branchLocation;
+  const lat = Number(values.latitude), lng = Number(values.longitude);
+  const previewCoordinates = values.latitude !== "" && values.longitude !== "" && Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : undefined;
 
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7">
@@ -125,15 +132,10 @@ export default function ServiceAreasForm({ apiEndpoint, servicesEndpoint }: Prop
             <div><dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">Coordinates</dt><dd className="mt-1 text-sm text-gray-900">{saved.latitude != null && saved.longitude != null ? `${saved.latitude}, ${saved.longitude}` : <span className="text-gray-400">Not set (no distance on cards)</span>}</dd></div>
             <div><dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">Radius</dt><dd className="mt-1 text-sm text-gray-900">{saved.radius != null ? `${saved.radius} miles` : <span className="text-gray-400">Not set</span>}</dd></div>
           </dl>
-          <ul className="grid gap-3 border-t border-gray-100 p-4 md:grid-cols-2">
-            {(saved.areaDetails ?? []).map((area) => (
-              <li key={area.name} className="rounded-lg bg-gray-50 p-3">
-                <p className="font-semibold text-gray-900">{area.name}</p>
-                <p className="mt-1 text-xs text-gray-500">{area.services?.length ? area.services.join(" · ") : "All services"}</p>
-              </li>
-            ))}
-            {!saved.areaDetails?.length && <li className="text-sm text-gray-400">No areas added.</li>}
-          </ul>
+          <div className="border-t border-gray-100 p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">How customers see it on your profile</p>
+            <ServiceAreaMap areas={(saved.areaDetails ?? []).map((area) => ({ name: area.name, services: area.services ?? [] }))} services={services} ownerName="your company" baseName={saved.branchLocation ?? ""} coordinates={saved.latitude != null && saved.longitude != null ? { lat: saved.latitude, lng: saved.longitude } : undefined} />
+          </div>
         </div>
       )}
 
@@ -151,8 +153,9 @@ export default function ServiceAreasForm({ apiEndpoint, servicesEndpoint }: Prop
               {mapsQuery && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl px-3 py-2 font-semibold text-[#0b1f3b] hover:bg-gray-50"><FaExternalLinkAlt className="h-3 w-3" /> Check on Google Maps</a>}
             </div>
 
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-              <h2 className="font-bold text-gray-900">Areas you serve</h2>
+              <h2 className="font-bold text-gray-900">Areas you serve <span className="font-medium text-gray-400">({areas.filter((area) => area.name.trim()).length})</span></h2>
               <p className="mt-1 text-xs text-gray-500">Tick the services offered in each area. Leave all unticked if every service is available there.{!services.length && " Add services first to choose them per area."}</p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <input value={newAreas} onChange={(e) => setNewAreas(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addAreas(); } }} placeholder="e.g. Dallas, Plano, Irving" aria-label="New areas, separated by commas" className={`${inputClass} mt-0 flex-1`} />
@@ -160,13 +163,20 @@ export default function ServiceAreasForm({ apiEndpoint, servicesEndpoint }: Prop
               </div>
               <ul className="mt-4 space-y-3">
                 {areas.map((area, index) => (
-                  <li key={index} className="rounded-xl border border-gray-200 bg-white p-3">
+                  <li key={index} onClick={() => setFocus(area.name)} onFocusCapture={() => setFocus(area.name)} className={`rounded-xl border bg-white p-3 transition ${focus === area.name ? "border-[#0b1f3b] ring-2 ring-[#FFD60A]/50" : "border-gray-200"}`}>
                     <div className="flex items-center gap-2">
-                      <input value={area.name} onChange={(e) => updateArea(index, { name: e.target.value })} aria-label={`Area ${index + 1} name`} className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold outline-none focus:border-[#FFD60A]" />
-                      <button type="button" onClick={() => setAreas((current) => current.filter((_, i) => i !== index))} aria-label={`Remove ${area.name}`} className="rounded-lg p-2 text-red-600 hover:bg-red-50"><FaTrash className="h-3.5 w-3.5" /></button>
+                      <input value={area.name} onChange={(e) => { updateArea(index, { name: e.target.value }); setFocus(e.target.value); }} aria-label={`Area ${index + 1} name`} className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold outline-none focus:border-[#FFD60A]" />
+                      <span className="hidden shrink-0 text-xs font-semibold text-gray-500 sm:inline">{area.services.length ? `${area.services.length} service${area.services.length === 1 ? "" : "s"}` : "All services"}</span>
+                      <button type="button" onClick={(event) => { event.stopPropagation(); setAreas((current) => current.filter((_, i) => i !== index)); if (focus === area.name) setFocus(null); }} aria-label={`Remove ${area.name}`} className="rounded-lg p-2 text-red-600 hover:bg-red-50"><FaTrash className="h-3.5 w-3.5" /></button>
                     </div>
                     {services.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-2">
+                      <div className="mt-2 flex gap-3 text-xs font-semibold">
+                        <button type="button" onClick={() => updateArea(index, { services: [...services] })} className="text-[#0b1f3b] hover:underline">Tick all</button>
+                        <button type="button" onClick={() => updateArea(index, { services: [] })} className="text-gray-500 hover:underline">Any service (clear ticks)</button>
+                      </div>
+                    )}
+                    {services.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
                         {services.map((service) => (
                           <label key={service} className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${area.services.includes(service) ? "border-[#0b1f3b] bg-[#0b1f3b] text-white" : "border-gray-200 text-gray-600"}`}>
                             <input type="checkbox" checked={area.services.includes(service)} onChange={() => toggleService(index, service)} className="sr-only" />
@@ -179,6 +189,15 @@ export default function ServiceAreasForm({ apiEndpoint, servicesEndpoint }: Prop
                 ))}
                 {!areas.length && <li className="rounded-xl border border-dashed border-gray-200 p-4 text-center text-sm text-gray-500">No areas yet. Type area names above and press Add areas.</li>}
               </ul>
+            </div>
+
+            <div className="xl:sticky xl:top-24 xl:self-start">
+              <div className="rounded-xl border border-gray-200 p-4">
+                <h2 className="font-bold text-gray-900">Live map preview</h2>
+                <p className="mb-3 mt-1 text-xs text-gray-500">Click an area (here or in the list) to see it on the map with its services — exactly as customers will.</p>
+                <ServiceAreaMap compact areas={areas} services={services} ownerName="your company" baseName={values.branchLocation} coordinates={previewCoordinates} selected={focus} onSelect={setFocus} />
+              </div>
+            </div>
             </div>
           </fieldset>
           <NoticeMessage notice={notice} />

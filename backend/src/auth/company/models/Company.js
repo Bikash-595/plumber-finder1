@@ -4,6 +4,8 @@ import mongoose from "mongoose";
 const companySchema = new mongoose.Schema({
   companyName: { type: String, required: true, trim: true, maxlength: 150 },
   email: { type: String, required: true, trim: true, lowercase: true, unique: true },
+  // false until the emailed code is entered; undefined for accounts created before verification existed.
+  emailVerified: { type: Boolean },
   password: { type: String, select: false, minlength: 8 },
   googleId: { type: String, unique: true, sparse: true },
   appleId: { type: String, unique: true, sparse: true },

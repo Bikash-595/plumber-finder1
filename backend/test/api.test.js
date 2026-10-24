@@ -19,7 +19,7 @@ const email = () => `user${++seq}@example.com`;
 describe("auth", () => {
   test("user signup, login (typed and unified) and /me round-trip", async () => {
     const e = email();
-    const signup = await api("POST", "/api/auth/users/signup", { body: { name: "Ann", email: e.toUpperCase(), password: "password123" } });
+    const signup = await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: "Ann", email: e.toUpperCase(), password: "password123" } });
     assert.equal(signup.status, 201);
     assert.equal(signup.body.account.email, e);
     assert.equal(signup.body.account.password, undefined);
@@ -37,13 +37,13 @@ describe("auth", () => {
 
   test("wrong password and duplicate email are rejected", async () => {
     const e = email();
-    await api("POST", "/api/auth/users/signup", { body: { name: "Bob", email: e, password: "password123" } });
+    await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: "Bob", email: e, password: "password123" } });
     assert.equal((await api("POST", "/api/auth/login", { body: { email: e, password: "nope-nope" } })).status, 401);
-    assert.equal((await api("POST", "/api/auth/users/signup", { body: { name: "Bob", email: e, password: "password123" } })).status, 409);
+    assert.equal((await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: "Bob", email: e, password: "password123" } })).status, 409);
   });
 
   test("a token for one account type cannot read another type's /me", async () => {
-    const { body } = await api("POST", "/api/auth/users/signup", { body: { name: "Cat", email: email(), password: "password123" } });
+    const { body } = await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: "Cat", email: email(), password: "password123" } });
     assert.equal((await api("GET", "/api/auth/companies/me", { token: body.token })).status, 403);
     assert.equal((await api("GET", "/api/auth/users/me", { token: "garbage" })).status, 401);
   });
@@ -67,9 +67,9 @@ describe("auth", () => {
   });
 
   test("non-string credentials return 400, not 500", async () => {
-    assert.equal((await api("POST", "/api/auth/users/signup", { body: { name: "X", email: ["a@b.c"], password: "password123" } })).status, 400);
-    assert.equal((await api("POST", "/api/auth/users/signup", { body: { name: "X", email: email(), password: ["password123"] } })).status, 400);
-    assert.equal((await api("POST", "/api/auth/users/signup", { body: { name: ["X"], email: email(), password: "password123" } })).status, 400);
+    assert.equal((await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: "X", email: ["a@b.c"], password: "password123" } })).status, 400);
+    assert.equal((await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: "X", email: email(), password: ["password123"] } })).status, 400);
+    assert.equal((await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: ["X"], email: email(), password: "password123" } })).status, 400);
   });
 
   test("invalid Google credential returns 401, not 500", async () => {

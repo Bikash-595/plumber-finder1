@@ -8,6 +8,10 @@ import mongoose from "mongoose";
 
 process.env.JWT_SECRET ||= "test-secret-that-is-long-enough-for-tests";
 process.env.GOOGLE_CLIENT_ID ||= "123456789012-test.apps.googleusercontent.com";
+// Most tests sign up and log in directly with made-up emails; the verification tests switch this back on.
+process.env.EMAIL_VERIFICATION ||= "off";
+process.env.EMAIL_DOMAIN_CHECK ||= "off";
+process.env.NODE_ENV ||= "test";
 
 const freePort = () => new Promise((resolve) => {
   const srv = createServer().listen(0, () => { const { port } = srv.address(); srv.close(() => resolve(port)); });
@@ -15,6 +19,10 @@ const freePort = () => new Promise((resolve) => {
 
 export async function startTestServer() {
   const { app } = await import("../../src/app.js");
+  // ZIP lookups are answered offline: 5-digit codes starting with 0 don't exist, every other one is Austin, TX.
+  const { placeLookup } = await import("../../src/location/services/placeLookup.js");
+  placeLookup.zip = async (zipCode) => (zipCode.startsWith("0") ? null : { zipCode, city: "Austin", state: "Texas", stateCode: "TX", latitude: 30.2672, longitude: -97.7431 });
+  placeLookup.reverse = async (latitude, longitude) => ({ zipCode: "78701", city: "Austin", state: "Texas", stateCode: "TX", latitude: Number(latitude), longitude: Number(longitude), street: "" });
   const dbPath = mkdtempSync(path.join(tmpdir(), "plumber-test-db-"));
   const mongoPort = await freePort();
   const mongod = spawn("mongod", ["--dbpath", dbPath, "--port", String(mongoPort), "--bind_ip", "127.0.0.1", "--quiet"], { stdio: "ignore" });

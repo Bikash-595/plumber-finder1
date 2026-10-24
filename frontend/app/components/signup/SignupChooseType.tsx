@@ -1,261 +1,43 @@
-// "use client";
-
-// import Link from "next/link";
-
-// interface SignupChooseTypeProps {
-//   accountType: "seeker" | "company" | null;
-//   onSelectType: (type: "seeker" | "company") => void;
-//   onContinue: () => void;
-// }
-
-// export default function SignupChooseType({
-//   accountType,
-//   onSelectType,
-//   onContinue,
-// }: SignupChooseTypeProps) {
-//   return (
-//     <>
-//       <div className="text-center">
-//         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#FFD60A]/10 text-3xl">
-//           🔧
-//         </div>
-//         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 font-heading">
-//           Create Your Account
-//         </h1>
-//         <p className="mt-2 text-gray-600">
-//           Already have an account?{" "}
-//           <Link href="/login" className="font-semibold text-[#FFD60A] hover:underline">
-//             Log in →
-//           </Link>
-//         </p>
-//       </div>
-
-//       <div className="mt-8 grid gap-6 sm:grid-cols-2">
-//         {/* Seeker Card */}
-//         <button
-//           onClick={() => onSelectType("seeker")}
-//           className={`group rounded-2xl border p-6 text-left transition-all hover:shadow-md hover:scale-[1.02] ${
-//             accountType === "seeker"
-//               ? "border-[#FFD60A] bg-[#FFD60A]/5 shadow-md"
-//               : "border-gray-200 bg-white hover:border-[#FFD60A]"
-//           }`}
-//         >
-//           <div className="mb-4 text-4xl">🔧</div>
-//           <h2 className="text-xl font-bold text-gray-900 font-heading">
-//             I&apos;m Looking for a Plumber
-//           </h2>
-//           <p className="mt-2 text-sm text-gray-600">
-//             Find and compare verified plumber companies near you.
-//           </p>
-//         </button>
-
-//         {/* Company Card */}
-//         <button
-//           onClick={() => onSelectType("company")}
-//           className={`group rounded-2xl border p-6 text-left transition-all hover:shadow-md hover:scale-[1.02] ${
-//             accountType === "company"
-//               ? "border-[#FFD60A] bg-[#FFD60A]/5 shadow-md"
-//               : "border-gray-200 bg-white hover:border-[#FFD60A]"
-//           }`}
-//         >
-//           <div className="mb-4 text-4xl">🏢</div>
-//           <h2 className="text-xl font-bold text-gray-900 font-heading">
-//             I&apos;m a Plumbing Company
-//           </h2>
-//           <p className="mt-2 text-sm text-gray-600">
-//             List your business and get leads from thousands of users.
-//           </p>
-//         </button>
-//       </div>
-
-//       <div className="mt-8 text-center">
-//         <button
-//           onClick={onContinue}
-//           disabled={!accountType}
-//           className={`rounded-full px-8 py-2.5 text-sm font-semibold transition-all ${
-//             accountType
-//               ? "bg-[#FFD60A] text-white shadow-md hover:brightness-105 hover:shadow-[#FFD60A]/30 active:scale-[0.98]"
-//               : "bg-gray-100 text-gray-400 cursor-not-allowed"
-//           }`}
-//         >
-//           Continue →
-//         </button>
-//       </div>
-
-//       {/* Footer */}
-//       <div className="mt-10 text-center text-xs text-gray-500">
-//         <p>
-//           By creating an account, you agree to The Industrial Meller&apos;s{" "}
-//           <Link href="/terms" className="underline hover:text-[#FFD60A]">
-//             Terms of Service
-//           </Link>{" "}
-//           and{" "}
-//           <Link href="/privacy" className="underline hover:text-[#FFD60A]">
-//             Privacy Policy
-//           </Link>
-//           .
-//         </p>
-//         <p className="mt-4">
-//           © 2023 THE INDUSTRIAL MILLER ALL RIGHTS RESERVED.
-//           <br />
-//           <Link href="/help" className="hover:text-[#FFD60A]">
-//             HELP CENTER
-//           </Link>{" "}
-//           |{" "}
-//           <Link href="/privacy" className="hover:text-[#FFD60A]">
-//             PRIVACY
-//           </Link>
-//         </p>
-//       </div>
-//     </>
-//   );
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 "use client";
 
 import Link from "next/link";
+import { FaBuilding, FaCheckCircle, FaHardHat, FaHome } from "react-icons/fa";
+
+type AccountChoice = "seeker" | "company" | "freelancer";
 
 interface SignupChooseTypeProps {
-  accountType: "seeker" | "company" | "freelancer" | null;
-  onSelectType: (type: "seeker" | "company" | "freelancer") => void;
+  accountType: AccountChoice | null;
+  onSelectType: (type: AccountChoice) => void;
   onContinue: () => void;
 }
 
-export default function SignupChooseType({
-  accountType,
-  onSelectType,
-  onContinue,
-}: SignupChooseTypeProps) {
+const choices = [
+  { value: "seeker" as const, icon: FaHome, title: "I need a plumber", text: "Find, compare, and book verified plumbers near you." },
+  { value: "company" as const, icon: FaBuilding, title: "I run a plumbing company", text: "List your business, show your team, and get customer leads." },
+  { value: "freelancer" as const, icon: FaHardHat, title: "I'm an independent plumber", text: "Create your profile and get booked for jobs in your area." },
+];
+
+/** Step 1 of signup: which kind of account. */
+export default function SignupChooseType({ accountType, onSelectType, onContinue }: SignupChooseTypeProps) {
   return (
     <>
-      <div className="text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#FFD60A]/10 text-3xl">
-          🔧
-        </div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 font-heading">
-          Create Your Account
-        </h1>
-        <p className="mt-2 text-gray-600">
-          Already have an account?{" "}
-          <Link href="/login" className="font-semibold text-[#FFD60A] hover:underline">
-            Log in →
-          </Link>
-        </p>
+      <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl">Create your account</h1>
+      <p className="mt-1.5 text-sm text-gray-600">Already have one? <Link href="/login" className="font-bold text-[#0b1f3b] hover:underline">Log in</Link></p>
+
+      <div role="radiogroup" aria-label="Account type" className="mt-6 space-y-3">
+        {choices.map(({ value, icon: Icon, title, text }) => {
+          const selected = accountType === value;
+          return (
+            <button key={value} type="button" role="radio" aria-checked={selected} onClick={() => onSelectType(value)} className={`flex w-full items-center gap-4 rounded-2xl border-2 p-4 text-left transition ${selected ? "border-[#0b1f3b] bg-[#FFD60A]/10" : "border-gray-200 bg-white hover:border-gray-300"}`}>
+              <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${selected ? "bg-[#0b1f3b] text-[#FFD60A]" : "bg-gray-100 text-gray-500"}`}><Icon className="h-5 w-5" /></span>
+              <span className="min-w-0 flex-1"><span className="block font-bold text-gray-900">{title}</span><span className="block text-sm text-gray-600">{text}</span></span>
+              <FaCheckCircle className={`h-5 w-5 shrink-0 ${selected ? "text-[#0b1f3b]" : "text-gray-200"}`} aria-hidden />
+            </button>
+          );
+        })}
       </div>
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2">
-        {/* Seeker Card */}
-        <button
-          onClick={() => onSelectType("seeker")}
-          className={`group rounded-2xl border p-6 text-left transition-all hover:shadow-md hover:scale-[1.02] ${
-            accountType === "seeker"
-              ? "border-[#FFD60A] bg-[#FFD60A]/5 shadow-md"
-              : "border-gray-200 bg-white hover:border-[#FFD60A]"
-          }`}
-        >
-          <div className="mb-4 text-4xl">🔧</div>
-          <h2 className="text-xl font-bold text-gray-900 font-heading">
-            I&apos;m Looking for a Plumber
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Find and compare verified plumber companies near you.
-          </p>
-        </button>
-
-        {/* Company Card */}
-        <button
-          onClick={() => onSelectType("company")}
-          className={`group rounded-2xl border p-6 text-left transition-all hover:shadow-md hover:scale-[1.02] ${
-            accountType === "company"
-              ? "border-[#FFD60A] bg-[#FFD60A]/5 shadow-md"
-              : "border-gray-200 bg-white hover:border-[#FFD60A]"
-          }`}
-        >
-          <div className="mb-4 text-4xl">🏢</div>
-          <h2 className="text-xl font-bold text-gray-900 font-heading">
-            I&apos;m a Plumbing Company
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            List your business and get leads from thousands of users.
-          </p>
-        </button>
-
-        {/* Freelancer Card */}
-        <button
-          onClick={() => onSelectType("freelancer")}
-          className={`group rounded-2xl border p-6 text-left transition-all hover:shadow-md hover:scale-[1.02] ${
-            accountType === "freelancer"
-              ? "border-[#FFD60A] bg-[#FFD60A]/5 shadow-md"
-              : "border-gray-200 bg-white hover:border-[#FFD60A]"
-          }`}
-        >
-          <div className="mb-4 text-4xl">🧰</div>
-          <h2 className="text-xl font-bold text-gray-900 font-heading">
-            I&apos;m a Freelancer Plumber
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Offer plumbing services individually and manage your own leads.
-          </p>
-        </button>
-      </div>
-
-      <div className="mt-8 text-center">
-        <button
-          onClick={onContinue}
-          disabled={!accountType}
-          className={`rounded-full px-8 py-2.5 text-sm font-semibold transition-all ${
-            accountType
-              ? "bg-[#FFD60A] text-white shadow-md hover:brightness-105 hover:shadow-[#FFD60A]/30 active:scale-[0.98]"
-              : "bg-gray-100 text-gray-400 cursor-not-allowed"
-          }`}
-        >
-          Continue →
-        </button>
-      </div>
-
-      {/* Footer */}
-      <div className="mt-10 text-center text-xs text-gray-500">
-        <p>
-          By creating an account, you agree to The Industrial Meller&apos;s{" "}
-          <Link href="/terms" className="underline hover:text-[#FFD60A]">
-            Terms of Service
-          </Link>{" "}
-          and{" "}
-          <Link href="/privacy" className="underline hover:text-[#FFD60A]">
-            Privacy Policy
-          </Link>
-          .
-        </p>
-        <p className="mt-4">
-          © 2023 THE INDUSTRIAL MILLER ALL RIGHTS RESERVED.
-          <br />
-          <Link href="/help" className="hover:text-[#FFD60A]">
-            HELP CENTER
-          </Link>{" "}
-          |{" "}
-          <Link href="/privacy" className="hover:text-[#FFD60A]">
-            PRIVACY
-          </Link>
-        </p>
-      </div>
+      <button type="button" onClick={onContinue} disabled={!accountType} className="mt-6 w-full rounded-xl bg-[#0b1f3b] py-3 text-sm font-bold text-white transition hover:bg-[#17345a] disabled:cursor-not-allowed disabled:opacity-40">Continue</button>
     </>
   );
 }

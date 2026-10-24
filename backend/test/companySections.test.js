@@ -36,7 +36,7 @@ const collections = {
 
 describe("every section", () => {
   test("requires a company token", async () => {
-    const { body: user } = await api("POST", "/api/auth/users/signup", { body: { name: "U", email: "u-sections@example.com", password: "password123" } });
+    const { body: user } = await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: "U", email: "u-sections@example.com", password: "password123" } });
     for (const section of [...singletons, ...Object.keys(collections)]) {
       assert.equal((await api("GET", `/api/companies/${section}`)).status, 401, section);
       assert.equal((await api("GET", `/api/companies/${section}`, { token: user.token })).status, 403, `${section} (user token)`);

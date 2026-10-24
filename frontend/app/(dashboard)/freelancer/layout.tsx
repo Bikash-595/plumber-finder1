@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode, useState } from "react";
+import DashboardGuard from "@/components/auth/DashboardGuard";
 import FreelancerSidebar from "@/components/freelancer-dashboard/FreelancerSidebar";
 import FreelancerFooter from "@/components/freelancer-dashboard/FreelancerFooter";
 import FreelancerNavbar from "@/components/freelancer-dashboard/FreelancerNavbar";
@@ -25,7 +26,7 @@ const getMobileSidebarWidth = (state: FreelancerSidebarState) => {
   return "w-20";
 };
 
-export default function FreelancerLayout({ children }: { children: ReactNode }) {
+function FreelancerLayoutContent({ children }: { children: ReactNode }) {
   const [mobileSidebarState, setMobileSidebarState] =
     useState<FreelancerSidebarState>("closed");
   const [desktopSidebarState, setDesktopSidebarState] =
@@ -88,4 +89,9 @@ export default function FreelancerLayout({ children }: { children: ReactNode }) 
       </footer>
     </div>
   );
+}
+
+/** Only freelancers can open this dashboard (see DashboardGuard and proxy.ts). */
+export default function FreelancerLayout({ children }: { children: ReactNode }) {
+  return <DashboardGuard area="freelancer"><FreelancerLayoutContent>{children}</FreelancerLayoutContent></DashboardGuard>;
 }

@@ -4,6 +4,7 @@ import { companyAuthRouter } from "./company/routers/companyAuthRouter.js";
 import { unifiedLoginRouter } from "./email/routers/unifiedLoginRouter.js";
 import { freelancerAuthRouter } from "./freelancer/routers/freelancerAuthRouter.js";
 import { userAuthRouter } from "./user/routers/userAuthRouter.js";
+import { verificationRouter } from "./verification/routers/verificationRouter.js";
 
 // Mounted at /api/auth.
 //   POST /login                                   email login for any account type
@@ -11,6 +12,7 @@ import { userAuthRouter } from "./user/routers/userAuthRouter.js";
 //   /admins                                       POST /login · GET /me (admin app only; no signup)
 export const authRouter = Router();
 authRouter.use(unifiedLoginRouter);
+authRouter.use(verificationRouter); // POST /verify-email, /resend-code, /password/forgot, /password/reset
 authRouter.use("/users", userAuthRouter);
 authRouter.use("/companies", companyAuthRouter);
 authRouter.use("/freelancers", freelancerAuthRouter);

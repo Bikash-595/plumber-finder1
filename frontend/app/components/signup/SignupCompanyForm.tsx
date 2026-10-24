@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { AppleAuthButton } from "@/components/auth/AppleAuthButton";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
-import { authenticateAccount } from "@/components/utils/auth";
+import { authenticateAccount, VerificationRequiredError } from "@/components/utils/auth";
 
 interface SignupCompanyFormProps {
   onBack?: () => void;
   onComplete?: (name: string, email: string) => void;
+  /** The account was created; its email must be confirmed with the emailed code. */
+  onVerificationRequired?: (email: string) => void;
 }
 
 // Common country codes with flags (emoji) – reuse from seeker form
@@ -25,7 +27,7 @@ const countryCodes = [
   { code: "+971", country: "AE", flag: "🇦🇪", example: "50 123 4567" },
 ];
 
-export default function SignupCompanyForm({ onBack, onComplete }: SignupCompanyFormProps) {
+export default function SignupCompanyForm({ onBack, onComplete, onVerificationRequired }: SignupCompanyFormProps) {
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneCountryCode, setPhoneCountryCode] = useState("+1");
@@ -59,6 +61,7 @@ export default function SignupCompanyForm({ onBack, onComplete }: SignupCompanyF
       const account = await authenticateAccount("company", "signup", { companyName, email, password, phone: `${phoneCountryCode}${phoneNumber}` });
       onComplete?.(account.name, account.email);
     } catch (error) {
+      if (error instanceof VerificationRequiredError) return onVerificationRequired?.(error.email);
       setPasswordError(error instanceof Error ? error.message : "Could not register the company.");
     }
   };

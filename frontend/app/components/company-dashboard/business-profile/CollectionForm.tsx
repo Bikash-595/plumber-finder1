@@ -43,13 +43,12 @@ export default function CollectionForm({ section, title, description, itemName, 
   const noun = itemName.toLowerCase();
 
   useEffect(() => {
-    if (!apiEndpoint) {
-      setRecords(readProfileDraft<{ items: SavedRecord[] }>(section, { items: [] }).items.filter((item) => item._id));
-      setLoading(false);
-      return;
-    }
-    companyApi<SavedRecord[]>(apiEndpoint)
-      .then(({ data }) => setRecords(data))
+    // Without an endpoint the records are drafts kept on this device.
+    const load = apiEndpoint
+      ? companyApi<SavedRecord[]>(apiEndpoint).then(({ data }) => data)
+      : Promise.resolve(readProfileDraft<{ items: SavedRecord[] }>(section, { items: [] }).items.filter((item) => item._id));
+    load
+      .then(setRecords)
       .catch((error: Error) => setNotice({ tone: "error", text: error.message }))
       .finally(() => setLoading(false));
   }, [apiEndpoint, section]);

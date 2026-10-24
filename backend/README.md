@@ -148,6 +148,20 @@ Each folder uses `config/`, `controllers/`, `middleware/`, `routers/` (plus `ser
 
 `users` and `freelancers` require `name`, `email`, and `password` to sign up; `companies` requires `companyName`. Passwords must be 8–72 bytes (bcrypt's limit). Google and Apple tokens are verified by the server; a verified email links to an existing account with the same email, otherwise a new account is created. Requests return `201` when a new account was created and `200` for an existing one.
 
+## Email verification and password reset
+
+New email/password accounts get a 6-digit code by email and can't log in until it is entered (Google and Apple accounts are already verified by the provider). Accounts created before this existed are treated as verified.
+
+- `POST /api/auth/{type}/signup` → `201 { verificationRequired: true, email }` (no token yet). Gmail addresses must follow Gmail's rules, and the email domain must have mail servers (MX records).
+- `POST /api/auth/verify-email` `{ email, accountType, code }` → token. `accountType` is `user`, `company`, or `freelancer`.
+- `POST /api/auth/resend-code` `{ email, accountType }` — at most once a minute, 5 per hour.
+- Logging in with the right password but an unconfirmed email → `403 { verificationRequired: true }` and a fresh code.
+- `POST /api/auth/password/forgot` `{ email, accountType }` and `POST /api/auth/password/reset` `{ email, accountType, code, password }`.
+
+Codes expire after 10 minutes, are stored hashed, and are discarded after 5 wrong guesses. Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `MAIL_FROM` (see `.env.example`; Gmail needs an App Password). Without them, development prints the code in the server console and production refuses to sign up (`503`).
+
+Customer signup also needs a real US ZIP code: `GET /api/location/zip/:zip` (Zippopotam.us) fills the city and state, and `GET /api/location/reverse?lat=&lng=` (OpenStreetMap) finds the ZIP code for "Use my location". The server looks the ZIP up again on signup, so the saved city/state always match it.
+
 ## Apple sign-in setup
 
 1. In the Apple Developer portal, create a **Services ID** (e.g. `com.plumberfinder.web`), enable Sign in with Apple, and register your domain and Return URL.

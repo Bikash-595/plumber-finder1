@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { AppleAuthButton } from "@/components/auth/AppleAuthButton";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
-import { authenticateAccount } from "@/components/utils/auth";
+import { authenticateAccount, VerificationRequiredError } from "@/components/utils/auth";
 
 interface SignupFreelancerFormProps {
   onBack?: () => void;
   onComplete?: (name: string, email: string) => void;
+  /** The account was created; its email must be confirmed with the emailed code. */
+  onVerificationRequired?: (email: string) => void;
 }
 
 const countryCodes = [
@@ -22,7 +24,7 @@ const countryCodes = [
   { code: "+86", country: "CN", flag: "🇨🇳", example: "138 1234 5678" },
 ];
 
-export default function SignupFreelancerForm({ onBack, onComplete }: SignupFreelancerFormProps) {
+export default function SignupFreelancerForm({ onBack, onComplete, onVerificationRequired }: SignupFreelancerFormProps) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneCountryCode, setPhoneCountryCode] = useState("+1");
@@ -57,6 +59,7 @@ export default function SignupFreelancerForm({ onBack, onComplete }: SignupFreel
       const account = await authenticateAccount("freelancer", "signup", { name: fullName, email, password, phone: `${phoneCountryCode}${phoneNumber}` });
       onComplete?.(account.name, account.email);
     } catch (error) {
+      if (error instanceof VerificationRequiredError) return onVerificationRequired?.(error.email);
       setPasswordError(error instanceof Error ? error.message : "Could not create the freelancer account.");
     }
   };

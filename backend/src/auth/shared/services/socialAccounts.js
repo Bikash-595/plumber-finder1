@@ -6,14 +6,14 @@ const httpError = (status, message) => Object.assign(new Error(message), { statu
 
 /** Copies only the profile fields an account type allows (never status, googleId, _id, ...). */
 export const pickProfile = (profileFields, body) =>
-  Object.fromEntries(profileFields.filter((field) => typeof body?.[field] === "string").map((field) => [field, body[field]]));
+  Object.fromEntries(profileFields.filter((field) => typeof body?.[field] === "string" || (typeof body?.[field] === "number" && Number.isFinite(body[field]))).map((field) => [field, body[field]]));
 
 /**
  * @param account  { Model, accountType, nameField, profileFields }
  * @param identity { providerField: "googleId" | "appleId", providerId, email?, name?, avatarUrl? }
  * @param body     request body (may carry the display name and allowed profile fields for new accounts)
  */
-export async function findOrCreateSocialAccount({ Model, accountType, nameField, profileFields = [] }, identity, body = {}) {
+export async function findOrCreateSocialAccount({ Model, accountType, nameField, profileFields = [], socialProfileFields }, identity, body = {}) {
   const { providerField, providerId, email, name, avatarUrl } = identity;
 
   let account = await Model.findOne({ [providerField]: providerId });
@@ -26,6 +26,7 @@ export async function findOrCreateSocialAccount({ Model, accountType, nameField,
         throw httpError(409, "This email is already linked to a different account at this provider.");
       }
       account[providerField] = providerId;
+      account.emailVerified = true; // the provider confirmed this email
       if (!account.avatarUrl && avatarUrl) account.avatarUrl = avatarUrl;
       await account.save();
     }
@@ -35,10 +36,11 @@ export async function findOrCreateSocialAccount({ Model, accountType, nameField,
   if (!email) throw httpError(400, "Your sign-in provider did not share an email address, so a new account cannot be created.");
   const displayName = [body[nameField], name, email.split("@")[0]].find(isFilledString).trim();
   account = await Model.create({
-    ...pickProfile(profileFields, body),
+    ...pickProfile(socialProfileFields ?? profileFields, body),
     [nameField]: displayName,
     email,
     [providerField]: providerId,
+    emailVerified: true, // Google and Apple only share verified emails
     ...(avatarUrl ? { avatarUrl } : {}),
     role: accountType,
     accountType,

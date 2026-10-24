@@ -7,6 +7,7 @@
 "use client";
 
 import { ReactNode, useState } from "react";
+import DashboardGuard from "@/components/auth/DashboardGuard";
 import DashboardSidebar, {
   type DashboardSidebarState,
 } from "@/components/dashboard/DashboardSidebar";
@@ -32,7 +33,7 @@ const getMobileSidebarWidth = (state: DashboardSidebarState) => {
   return "w-20";
 };
 
-export default function DashboardLayout({
+function DashboardLayoutContent({
   children,
 }: {
   children: ReactNode;
@@ -113,9 +114,7 @@ export default function DashboardLayout({
   );
 }
 
-
-
-
-
-
-
+/** Only customers can open this dashboard (see DashboardGuard and proxy.ts). */
+export default function DashboardLayout({ children }: { children: ReactNode }) {
+  return <DashboardGuard area="user"><DashboardLayoutContent>{children}</DashboardLayoutContent></DashboardGuard>;
+}

@@ -7,6 +7,7 @@ import { companySections, companySectionsRouter } from "./company/companySection
 import { authRouter } from "./auth/authRouter.js";
 import { freelancerRouter, freelancerSections } from "./freelancer/freelancerRouter.js";
 import { publicBlogsRouter } from "./blogs/routers/publicBlogsRouter.js";
+import { locationRouter } from "./location/routers/locationRouter.js";
 import { userRouter, userSections } from "./user/userRouter.js";
 import { adminRouter, adminSections } from "./admin/adminRouter.js";
 
@@ -44,6 +45,7 @@ app.use("/api/companies/onboarding", companyOnboardingRouter);
 app.use("/api/companies", companyListingRouter);
 app.use("/api/freelancers", freelancerRouter);
 app.use("/api/blogs", publicBlogsRouter);
+app.use("/api/location", locationRouter);
 app.use("/api/users", userRouter);
 app.use("/api/admin", adminRouter);
 

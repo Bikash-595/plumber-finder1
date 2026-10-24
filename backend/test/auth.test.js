@@ -68,7 +68,7 @@ describe("Sign in with Apple", () => {
 
   test("links to an existing email/password account with the same email", async () => {
     const email = uniqueEmail();
-    const signup = await api("POST", "/api/auth/users/signup", { body: { name: "Existing", email, password: "password123" } });
+    const signup = await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: "Existing", email, password: "password123" } });
     const linked = await api("POST", "/api/auth/users/apple", { body: { identityToken: appleToken({ sub: "apple-link", email }) } });
     assert.equal(linked.status, 200);
     assert.equal(linked.body.account._id, signup.body.account._id);
@@ -150,8 +150,8 @@ describe("Google sign-in", () => {
 
 describe("email signup and login", () => {
   test("validates email format and bcrypt's 72-byte password limit", async () => {
-    assert.equal((await api("POST", "/api/auth/users/signup", { body: { name: "A", email: "not-an-email", password: "password123" } })).status, 400);
-    const long = await api("POST", "/api/auth/users/signup", { body: { name: "A", email: uniqueEmail(), password: "é".repeat(40) } });
+    assert.equal((await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: "A", email: "not-an-email", password: "password123" } })).status, 400);
+    const long = await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: "A", email: uniqueEmail(), password: "é".repeat(40) } });
     assert.equal(long.status, 400, "80 bytes is over bcrypt's limit");
     assert.match(long.body.message, /72 bytes/);
   });

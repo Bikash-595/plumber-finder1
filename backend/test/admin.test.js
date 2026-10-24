@@ -21,7 +21,7 @@ async function newAdmin() {
   const { body } = await api("POST", "/api/auth/admins/login", { body: { email, password: "admin-password-1" } });
   return { email, token: body.token };
 }
-const signup = async (type, body) => (await api("POST", `/api/auth/${type}/signup`, { body: { password: "password123", ...body } })).body;
+const signup = async (type, body) => (await api("POST", `/api/auth/${type}/signup`, { body: { password: "password123", zipCode: "78701", ...body } })).body;
 
 describe("admin accounts", () => {
   test("login-only: no signup, Google, or Apple routes, and not part of the unified login", async () => {

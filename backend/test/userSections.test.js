@@ -12,7 +12,7 @@ after(() => stop());
 let seq = 0;
 async function newUser() {
   const n = ++seq;
-  const { body } = await api("POST", "/api/auth/users/signup", { body: { name: `Cus ${n}`, email: `cus${n}@example.com`, password: "password123" } });
+  const { body } = await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: `Cus ${n}`, email: `cus${n}@example.com`, password: "password123" } });
   return { token: body.token, userId: body.account._id, email: `cus${n}@example.com` };
 }
 const demoPlumber = (id = "1", extra = {}) => ({ providerType: "company", providerId: id, name: `Demo Plumbing ${id}`, image: "/Plumber.png", rating: 4.5, location: "Austin, TX", ...extra });

@@ -11,6 +11,7 @@ import {
   FaBell,
   FaBolt,
   FaBriefcase,
+  FaBuilding,
   FaCalendarCheck,
   FaCartShopping,
   FaChevronDown,
@@ -18,6 +19,8 @@ import {
   FaCircleQuestion,
   FaCircleUser,
   FaEnvelope,
+  FaEye,
+  FaGauge,
   FaHeadset,
   FaHeart,
   FaHouse,
@@ -40,6 +43,7 @@ import SearchSuggestionsPanel from "./search/SearchSuggestionsPanel";
 import { getInitials, readStoredUser, clearStoredUser, type AppUser } from "../components/utils/auth";
 import { isCustomerSignedIn, USER_DATA_EVENT, userApi } from "./utils/userApi";
 import { useUserData } from "./dashboard/useUserData";
+import { accountMenuLinks, dashboardLink, type AccountLink } from "./utils/accountLinks";
 
 const navLinks = [
   { label: "Home", href: "/", icon: FaHouse },
@@ -81,6 +85,8 @@ function Logo({ compactTagline = false }: { compactTagline?: boolean }) {
     </Link>
   );
 }
+
+const menuIcons: Record<AccountLink["key"], typeof FaUser> = { dashboard: FaGauge, profile: FaUser, saved: FaHeart, notifications: FaBell, cart: FaCartShopping, business: FaBuilding, preview: FaEye };
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -213,6 +219,9 @@ export function Header() {
   const mobileStateQuery = mobileStateSearch.trim().toLowerCase();
   const filteredMobileStates = usStates.filter((state) => state.toLowerCase().includes(mobileStateQuery));
 
+  const menuLinks = accountMenuLinks(user);
+  const ownDashboard = dashboardLink(user);
+
   const accountAvatar = user && (user.avatarUrl ? (
     <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-200 ring-2 ring-white">
       <Image src={user.avatarUrl} alt="" fill sizes="32px" className="object-cover" />
@@ -252,7 +261,7 @@ export function Header() {
             <li aria-hidden className="h-3.5 w-px bg-white/20" />
             <li>
               {user ? (
-                <Link href="/account" className="font-semibold text-[#FFD60A] hover:underline">My account</Link>
+                <Link href={ownDashboard?.href ?? "/account"} className="font-semibold text-[#FFD60A] hover:underline">{ownDashboard?.label ?? "My account"}</Link>
               ) : (
                 <Link href="/signup" className="font-semibold text-[#FFD60A] hover:underline">Sign up free</Link>
               )}
@@ -354,22 +363,22 @@ export function Header() {
                         </div>
                       </div>
                       <div className="p-2">
-                        {[
-                          { href: "/account", label: "My Profile", icon: FaUser },
-                          { href: "/saved", label: "Saved Deals", icon: FaHeart },
-                          { href: "/notifications", label: "Notifications", icon: FaBell },
-                          { href: "/checkout", label: "Cart", icon: FaCartShopping },
-                        ].map(({ href, label, icon: Icon }) => (
-                          <Link
-                            key={href}
-                            href={href}
-                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
-                            onClick={() => setUserDropdownOpen(false)}
-                          >
-                            <Icon className="h-4 w-4 text-slate-400" aria-hidden />
-                            {label}
-                          </Link>
-                        ))}
+                        {/* Each account type gets its own dashboard and shortcuts. */}
+                        {menuLinks.map(({ href, label, key }) => {
+                          const Icon = menuIcons[key];
+                          const isDashboard = key === "dashboard";
+                          return (
+                            <Link
+                              key={href}
+                              href={href}
+                              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${isDashboard ? "bg-[#FFD60A]/15 font-semibold text-[#0b1f3b] hover:bg-[#FFD60A]/25" : "text-slate-700 hover:bg-slate-100"}`}
+                              onClick={() => setUserDropdownOpen(false)}
+                            >
+                              <Icon className={`h-4 w-4 ${isDashboard ? "text-[#0b1f3b]" : "text-slate-400"}`} aria-hidden />
+                              {label}
+                            </Link>
+                          );
+                        })}
                         <hr className="my-1 border-slate-100" />
                         <button
                           type="button"
@@ -669,9 +678,15 @@ export function Header() {
                 <FaCalendarCheck className="h-4 w-4" aria-hidden />
                 Book a Plumber
               </Link>
+              {user && ownDashboard && (
+                <Link href={ownDashboard.href} onClick={closeMobileMenu} className="flex h-11 items-center justify-center gap-2 rounded-full bg-[#0b1f3b] text-sm font-semibold text-white hover:bg-[#17345a]">
+                  <FaGauge className="h-4 w-4" aria-hidden />
+                  {ownDashboard.label}
+                </Link>
+              )}
               {user ? (
                 <div className="flex items-center gap-2">
-                  <Link href="/account" onClick={closeMobileMenu} className="flex min-w-0 flex-1 items-center gap-3 rounded-full border border-slate-200 py-1.5 pl-1.5 pr-4 hover:bg-slate-50">
+                  <Link href={menuLinks.find((link) => link.key === "profile" || link.key === "business")?.href ?? "/account"} onClick={closeMobileMenu} className="flex min-w-0 flex-1 items-center gap-3 rounded-full border border-slate-200 py-1.5 pl-1.5 pr-4 hover:bg-slate-50">
                     {accountAvatar}
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-semibold text-slate-900">{user.name}</span>
