@@ -52,10 +52,11 @@ function DashboardLayoutContent({
     />
   );
 
+  // App shell: one screen tall. The sidebar and the page body scroll separately.
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
+        <div className="flex h-dvh flex-col overflow-hidden bg-gray-100">
       {/* Full Width Navbar */}
-      <header className="sticky top-0 z-50 w-full shadow-sm bg-white">
+      <header className="relative z-50 w-full shrink-0 shadow-sm bg-white">
         <UserNavbar
           onToggleSidebar={() =>
             setMobileSidebarState(nextSidebarState)
@@ -64,10 +65,10 @@ function DashboardLayoutContent({
       </header>
 
       {/* Main Dashboard Section */}
-      <div className="flex flex-1">
+      <div className="flex min-h-0 flex-1">
         {/* Desktop Sidebar */}
         <aside
-          className={`hidden lg:flex flex-col bg-white border-r transition-all duration-300 ${getDesktopSidebarWidth(
+          className={`hidden min-h-0 overflow-hidden lg:flex flex-col bg-white border-r transition-all duration-300 ${getDesktopSidebarWidth(
             desktopSidebarState
           )}`}
         >
@@ -99,17 +100,17 @@ function DashboardLayoutContent({
         )}
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
-          <div className="bg-white rounded-2xl shadow-sm min-h-[calc(100vh-180px)] p-6 text-gray-900">
-            {children}
+        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+          <div className="flex-1 p-6 lg:p-8">
+            <div className="bg-white rounded-2xl shadow-sm min-h-[calc(100vh-180px)] p-6 text-gray-900">
+              {children}
+            </div>
           </div>
+          <footer className="w-full bg-white border-t shadow-sm">
+            <UserFooter />
+          </footer>
         </main>
       </div>
-
-      {/* Full Width Footer */}
-      <footer className="w-full bg-white border-t shadow-sm">
-        <UserFooter />
-      </footer>
     </div>
   );
 }

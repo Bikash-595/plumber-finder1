@@ -290,7 +290,7 @@ export default function ServiceAreasForm({ apiEndpoint, servicesEndpoint }: Prop
                 </ul>
               </div>
 
-              <div className="xl:sticky xl:top-24 xl:self-start">
+              <div className="xl:sticky xl:top-4 xl:self-start">
                 <div className="rounded-xl border border-gray-200 p-4">
                   <h2 className="font-bold text-gray-900">All areas preview</h2>
                   <p className="mb-3 mt-1 text-xs text-gray-500">Every area&apos;s circle together, as customers will see it. Choose an area to open it.</p>

@@ -40,18 +40,19 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     />
   );
 
+  // App shell: one screen tall. The sidebar and the page body scroll separately.
   return (
     <AdminGuard>
-    <div className="flex min-h-screen flex-col bg-gray-100">
-      <header className="sticky top-0 z-50 w-full bg-white shadow-sm">
+    <div className="flex h-dvh flex-col overflow-hidden bg-gray-100">
+      <header className="relative z-50 w-full shrink-0 bg-white shadow-sm">
         <AdminNavbar
           onToggleSidebar={() => setMobileSidebarState(nextSidebarState)}
         />
       </header>
 
-      <div className="flex flex-1">
+      <div className="flex min-h-0 flex-1">
         <aside
-          className={`hidden flex-col border-r bg-white transition-all duration-300 lg:flex ${getDesktopSidebarWidth(
+          className={`hidden min-h-0 overflow-hidden flex-col border-r bg-white transition-all duration-300 lg:flex ${getDesktopSidebarWidth(
             desktopSidebarState
           )}`}
         >
@@ -78,16 +79,17 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </aside>
         )}
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <div className="min-h-[calc(100vh-180px)] rounded-2xl bg-white p-4 shadow-sm sm:p-6 text-gray-900">
-            {children}
+        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+          <div className="flex-1 p-4 sm:p-6 lg:p-8">
+            <div className="min-h-[calc(100vh-180px)] rounded-2xl bg-white p-4 shadow-sm sm:p-6 text-gray-900">
+              {children}
+            </div>
           </div>
+          <footer className="w-full border-t bg-white shadow-sm">
+            <AdminFooter />
+          </footer>
         </main>
       </div>
-
-      <footer className="w-full border-t bg-white shadow-sm">
-        <AdminFooter />
-      </footer>
     </div>
     </AdminGuard>
   );
