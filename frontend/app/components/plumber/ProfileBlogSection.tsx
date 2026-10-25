@@ -24,7 +24,7 @@ export default function ProfileBlogSection({ plumber }: ProfileBlogSectionProps)
         </Link>
       </div>
 
-      <div className="mt-4 grid gap-5 md:grid-cols-2">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-5">
         {plumber.blogs.slice(0, 2).map((post) => (
           <LatestArticleCard
             key={post.slug}

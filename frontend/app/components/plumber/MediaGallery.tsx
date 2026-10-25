@@ -198,7 +198,7 @@ export default function MediaGallery({ images, videos }: MediaGalleryProps) {
                   src={img}
                   alt={`Gallery ${idx + 1}`}
                   fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  sizes="(max-width: 640px) 50vw, 33vw"
                   className="object-cover"
                   loading="lazy"
                 />
@@ -212,7 +212,7 @@ export default function MediaGallery({ images, videos }: MediaGalleryProps) {
       {videos.length > 0 && (
         <div>
           <h3 className="font-semibold text-gray-800 mb-2">Videos</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {videos.slice(0, 4).map((video, idx) => (
               <button
                 key={idx}
@@ -220,7 +220,7 @@ export default function MediaGallery({ images, videos }: MediaGalleryProps) {
                 className="relative aspect-video rounded-lg overflow-hidden bg-gray-900 group"
               >
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <FaPlay className="h-12 w-12 text-white opacity-80 group-hover:opacity-100 transition" />
+                  <FaPlay className="h-8 w-8 text-white opacity-80 transition group-hover:opacity-100 sm:h-12 sm:w-12" />
                 </div>
                 <div className="absolute bottom-2 left-2 text-white text-xs bg-black/50 px-2 py-1 rounded">
                   Video {idx + 1}

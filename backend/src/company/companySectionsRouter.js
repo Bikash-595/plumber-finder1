@@ -2,6 +2,7 @@ import { Router } from "express";
 import { blogsRouter } from "./blogs/routers/blogsRouter.js";
 import { bookingRouter } from "./booking/routers/bookingRouter.js";
 import { socialLinksRouter } from "./social-links/routers/socialLinksRouter.js";
+import { openingHoursRouter } from "./opening-hours/routers/openingHoursRouter.js";
 import { companyOverviewRouter } from "./company-overview/routers/companyOverviewRouter.js";
 import { faqsRouter } from "./faqs/routers/faqsRouter.js";
 import { galleryRouter } from "./gallery/routers/galleryRouter.js";
@@ -28,6 +29,7 @@ export const companySections = [
   { path: "/blogs", router: blogsRouter },
   { path: "/booking", router: bookingRouter },
   { path: "/social-links", router: socialLinksRouter },
+  { path: "/opening-hours", router: openingHoursRouter },
   { path: "/special-offers", router: specialOffersRouter },
 ];
 

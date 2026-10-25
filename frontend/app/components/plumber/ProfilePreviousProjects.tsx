@@ -39,7 +39,7 @@ export default function ProfilePreviousProjects({ plumber }: ProfilePreviousProj
         </span>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-5">
         {plumber.projects.map((project, index) => {
           const projectId = project.id ?? `project-${index + 1}`;
 
@@ -49,13 +49,13 @@ export default function ProfilePreviousProjects({ plumber }: ProfilePreviousProj
               href={`${plumberHref(plumber)}/projects/${projectId}`}
               className="group overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:border-[#f7672c]/40 hover:shadow-lg"
             >
-              <div className="relative h-52 w-full overflow-hidden bg-gray-100">
+              <div className="relative h-28 w-full overflow-hidden bg-gray-100 sm:h-52">
                 {project.image ? (
                   <Image
                     src={project.image}
                     alt={project.title}
                     fill
-                    sizes="(min-width: 768px) 50vw, 100vw"
+                    sizes="50vw"
                     className="object-cover transition duration-500 group-hover:scale-105"
                   />
                 ) : (
@@ -63,31 +63,31 @@ export default function ProfilePreviousProjects({ plumber }: ProfilePreviousProj
                     Project image unavailable
                   </div>
                 )}
-                <div className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-gray-900 shadow-sm">
+                <div className="absolute left-2 top-2 rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-bold text-gray-900 shadow-sm sm:left-3 sm:top-3 sm:px-3 sm:py-1 sm:text-xs">
                   {project.year}
                 </div>
               </div>
 
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-lg font-bold leading-snug text-gray-900">{project.title}</h3>
-                    <p className="mt-1 text-sm text-gray-600">Client: {project.client}</p>
+              <div className="p-2.5 sm:p-4">
+                <div className="flex items-start justify-between gap-2 sm:gap-3">
+                  <div className="min-w-0">
+                    <h3 className="line-clamp-2 text-sm font-bold leading-snug text-gray-900 sm:text-lg">{project.title}</h3>
+                    <p className="mt-1 truncate text-xs text-gray-600 sm:text-sm">Client: {project.client}</p>
                   </div>
                   <FaArrowRight className="mt-1 h-4 w-4 shrink-0 text-gray-300 transition group-hover:translate-x-1 group-hover:text-[#f7672c]" />
                 </div>
 
-                <p className="mt-3 line-clamp-2 text-sm leading-6 text-gray-500">{project.description}</p>
+                <p className="mt-2 line-clamp-2 text-xs leading-5 text-gray-500 sm:mt-3 sm:text-sm sm:leading-6">{project.description}</p>
 
-                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-lg bg-gray-50 p-3">
+                <div className="mt-3 grid grid-cols-1 gap-1.5 text-xs sm:mt-4 sm:grid-cols-2 sm:gap-3 sm:text-sm">
+                  <div className="rounded-lg bg-gray-50 p-2 sm:p-3">
                     <div className="flex items-center gap-2 text-gray-500">
                       <FaCalendarAlt className="h-3.5 w-3.5 text-[#f7672c]" />
                       Time
                     </div>
                     <p className="mt-1 font-semibold text-gray-900">{project.durationDays ?? "-"} days</p>
                   </div>
-                  <div className="rounded-lg bg-gray-50 p-3">
+                  <div className="rounded-lg bg-gray-50 p-2 sm:p-3">
                     <div className="flex items-center gap-2 text-gray-500">
                       <FaDollarSign className="h-3.5 w-3.5 text-[#f7672c]" />
                       Charges

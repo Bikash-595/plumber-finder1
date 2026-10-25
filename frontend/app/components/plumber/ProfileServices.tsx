@@ -79,7 +79,7 @@ export default function ProfileServices({ plumber }: { plumber: Plumber }) {
   const specializations = plumber.specializations ?? [];
 
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-200">
+    <div id="services" className="scroll-mt-24 rounded-2xl bg-white p-6 shadow-sm border border-gray-200">
       <h2 className="text-xl font-bold text-gray-900 mb-4">Services Offered</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {plumber.services.map((service) => (

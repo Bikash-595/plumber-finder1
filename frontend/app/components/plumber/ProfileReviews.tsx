@@ -61,7 +61,7 @@ export default function ProfileReviews({ plumber }: { plumber?: Plumber }) {
   const isLive = plumber?.reviews !== undefined;
   const reviews = isLive ? plumber.reviews! : sampleReviews;
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-200">
+    <div id="reviews" className="scroll-mt-24 rounded-2xl bg-white p-6 shadow-sm border border-gray-200">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-xl font-bold text-gray-900">Customer Reviews</h2>
         {isLive && reviews.length > 0 && <span className="text-sm text-gray-500">{plumber.rating.toFixed(1)} average · {plumber.reviewCount} review{plumber.reviewCount === 1 ? "" : "s"}</span>}

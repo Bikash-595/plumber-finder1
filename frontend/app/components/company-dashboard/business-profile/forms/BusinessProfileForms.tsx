@@ -1,4 +1,5 @@
 import CollectionForm from "../CollectionForm";
+import OpeningHoursForm from "../OpeningHoursForm";
 import SectionForm from "../SectionForm";
 import ServiceAreasEditor from "../ServiceAreasForm";
 import { companyProfileSeed } from "../profileStore";
@@ -15,8 +16,9 @@ export function BranchesForm() {
   return <CollectionForm section="branches" title="Branches" description="Support multiple locations with their own service coverage and working hours." itemName="Branch" initial={{ name: "Uptown", manager: "Chris Bennett", address: "500 Main St, Dallas, TX 75201", phone: "(214) 555-6677", email: "service@dallasrapidplumbers.com", mapLocation: "32.7767, -96.7970", latitude: "32.7767", longitude: "-96.7970", services: "Emergency Service, Sewer Line", hours: "Mon–Sat 8 AM–6 PM" }} fields={[{ name: "name", label: "Branch Name" }, { name: "manager", label: "Manager" }, { name: "address", label: "Address", type: "textarea" }, { name: "phone", label: "Phone", type: "tel" }, { name: "email", label: "Email", type: "email" }, { name: "mapLocation", label: "Google Map Location" }, { name: "latitude", label: "Latitude" }, { name: "longitude", label: "Longitude" }, { name: "services", label: "Services Available" }, { name: "hours", label: "Working Hours" }]} />;
 }
 
+/** Weekly opening days and times, saved to /api/companies/opening-hours and shown on the public profile. */
 export function BusinessHoursForm() {
-  return <SectionForm section="business-hours" title="Business Hours" description="Set your normal opening times. Add 24-hour or closed notes for each day." defaults={{ monday: "8:00 AM – 6:00 PM", tuesday: "8:00 AM – 6:00 PM", wednesday: "8:00 AM – 6:00 PM", thursday: "8:00 AM – 6:00 PM", friday: "8:00 AM – 6:00 PM", saturday: "8:00 AM – 2:00 PM", sunday: "Closed" }} fields={[{ name: "monday", label: "Monday" }, { name: "tuesday", label: "Tuesday" }, { name: "wednesday", label: "Wednesday" }, { name: "thursday", label: "Thursday" }, { name: "friday", label: "Friday" }, { name: "saturday", label: "Saturday" }, { name: "sunday", label: "Sunday" }]} />;
+  return <OpeningHoursForm apiEndpoint="/companies/opening-hours" wizardFallback />;
 }
 
 export function CompanyOverviewForm() {

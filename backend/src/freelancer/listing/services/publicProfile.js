@@ -1,6 +1,6 @@
 import { Freelancer } from "../../../auth/freelancer/models/Freelancer.js";
 import { currentOffers, publishedBlogs, visibleProjects } from "../../../shared/profileSections/publicFilters.js";
-import { firstPoint, publishedBlogCounts } from "../../../shared/profileSections/cardExtras.js";
+import { firstPoint, galleryCounts, publishedBlogCounts } from "../../../shared/profileSections/cardExtras.js";
 import { FreelancerBlog } from "../../blogs/models/FreelancerBlog.js";
 import { FreelancerBookingSettings } from "../../booking/models/FreelancerBookingSettings.js";
 import { FreelancerFaq } from "../../faqs/models/FreelancerFaq.js";
@@ -14,6 +14,7 @@ import { FreelancerServiceArea } from "../../service-areas/models/FreelancerServ
 import { FreelancerServiceOffering } from "../../services/models/FreelancerServiceOffering.js";
 import { FreelancerSpecialOffer } from "../../special-offers/models/FreelancerSpecialOffer.js";
 import { FreelancerSocialLinks } from "../../social-links/models/FreelancerSocialLinks.js";
+import { publicHours } from "../../../shared/profileSections/openingHoursSection.js";
 
 const hidden = "-freelancer -__v";
 const byPosition = { position: 1, createdAt: 1 };
@@ -26,7 +27,7 @@ const byOwner = (docs) => new Map(docs.map((doc) => [String(doc.freelancer ?? do
 export async function cardSummaries(listings) {
   const freelancers = listings.map((listing) => listing.freelancer);
   const match = { freelancer: { $in: freelancers } };
-  const [ratings, headers, overviews, offers, hours, emergencyServices, accounts, serviceAreas, blogCounts] = await Promise.all([
+  const [ratings, headers, overviews, offers, hours, emergencyServices, accounts, serviceAreas, blogCounts, mediaCounts] = await Promise.all([
     FreelancerReview.aggregate([{ $match: match }, { $group: { _id: "$freelancer", rating: { $avg: "$rating" }, reviewCount: { $sum: 1 } } }]),
     FreelancerHeaderProfile.find(match).select("freelancer licenseNumber insurance").lean(),
     FreelancerOverview.find(match).select("freelancer bio specialties certifications languages responseTime jobsCompleted averageCost emergencyAvailable").lean(),
@@ -36,6 +37,7 @@ export async function cardSummaries(listings) {
     Freelancer.find({ _id: { $in: freelancers } }).select("verificationStatus").lean(),
     FreelancerServiceArea.find(match).select("freelancer latitude longitude branchLocation").lean(),
     publishedBlogCounts(FreelancerBlog, "freelancer", freelancers),
+    galleryCounts(FreelancerGalleryItem, "freelancer", freelancers),
   ]);
   const areasByOwner = byOwner(serviceAreas);
   const maps = { ratings: byOwner(ratings), headers: byOwner(headers), overviews: byOwner(overviews), hours: byOwner(hours), accounts: byOwner(accounts) };
@@ -55,6 +57,7 @@ export async function cardSummaries(listings) {
       coordinates: firstPoint({ lat: area.latitude, lng: area.longitude }),
       baseLocation: area.branchLocation || undefined,
       blogCount: blogCounts.get(key) ?? 0,
+      galleryCounts: mediaCounts.get(key) ?? { images: 0, videos: 0 },
       rating: rating ? Math.round(rating.rating * 10) / 10 : listing.rating ?? 0,
       reviewCount: rating?.reviewCount ?? listing.reviewCount ?? 0,
       verified: maps.accounts.get(key)?.verificationStatus === "verified",
@@ -107,6 +110,6 @@ export async function fullProfile(listing) {
     booking: booking ?? null,
     serviceArea: withCurrentServices(serviceArea, services),
     socialLinks: socialLinks ?? {},
-    hours: hours ? { weeklyHours: hours.weeklyHours ?? [], availability24x7: hours.availability24x7 ? "Yes" : undefined, emergencyHours: hours.emergencyHours, holidayHours: hours.holidayHours, specialClosures: hours.specialClosures } : { weeklyHours: [] },
+    hours: publicHours(hours) ?? { weeklyHours: [] },
   };
 }

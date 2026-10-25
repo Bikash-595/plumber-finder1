@@ -599,6 +599,10 @@ describe("service areas with services, card details, and the public blog feed", 
     assert.deepEqual(card.serviceAreas, ["Austin", "Round Rock"]);
     assert.equal(card.location, "Austin, TX", "base location fills an empty listing location");
     assert.equal(card.blogCount, 1);
+    await api("POST", "/api/companies/gallery", { token, body: { media: tinyPng, caption: "Van" } });
+    await api("POST", "/api/companies/gallery", { token, body: { media: "https://example.com/tour.mp4", caption: "Tour" } });
+    const withMedia = (await api("GET", "/api/companies/public")).body.data.find((item) => item._id === listingId);
+    assert.deepEqual(withMedia.galleryCounts, { images: 1, videos: 1 });
     assert.deepEqual(card.teamPreview, [{ name: "Sam", role: "Lead" }]);
     const profile = (await api("GET", `/api/companies/public/${listingId}/profile`)).body.data;
     assert.equal(profile.serviceArea.areaDetails[0].services.length, 2);
@@ -707,5 +711,44 @@ describe("service-area radius and map coordinates", () => {
     assert.equal((await api("GET", "/api/location/place?name=Los%20Angeles,%20CA")).status, 200, "state inside the name");
     assert.equal((await api("GET", "/api/location/place?name=Nowhere&state=TX")).status, 404);
     assert.equal((await api("GET", "/api/location/place")).status, 400);
+  });
+});
+
+describe("company opening hours", () => {
+  test("a company sets its weekly hours in the dashboard; profile and card show them", async () => {
+    const { token, listingId } = await newCompany();
+    assert.equal((await api("PUT", "/api/companies/opening-hours", { body: {} })).status, 401);
+    assert.equal((await api("PUT", "/api/companies/opening-hours", { token, body: { weeklyHours: [{ day: "monday", isOpen: true, opensAt: "7am", closesAt: "17:00" }] } })).status, 400);
+    // The wizard's hours show until the dashboard section is saved.
+    await api("PUT", "/api/companies/onboarding/steps/operations", { token, body: { weeklyHours: [{ day: "sunday", isOpen: true, opensAt: "10:00", closesAt: "14:00" }] } });
+    let profile = (await api("GET", `/api/companies/public/${listingId}/profile`)).body.data;
+    assert.deepEqual(profile.hours.weeklyHours.map((d) => d.day), ["sunday"]);
+
+    const res = await api("PUT", "/api/companies/opening-hours", { token, body: {
+      weeklyHours: [{ day: "Friday", isOpen: true, opensAt: "08:00", closesAt: "16:00" }, { day: "monday", isOpen: true, opensAt: "07:30", closesAt: "18:00" }, { day: "sunday", isOpen: false }],
+      dailyHours: "Lunch break 1–2 PM", emergencyHours: "Call any time", availability24x7: true,
+    } });
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body.data.weeklyHours.map((d) => `${d.day}:${d.isOpen ? `${d.opensAt}-${d.closesAt}` : "closed"}`), ["monday:07:30-18:00", "friday:08:00-16:00", "sunday:closed"]);
+
+    profile = (await api("GET", `/api/companies/public/${listingId}/profile`)).body.data;
+    assert.deepEqual(profile.hours.weeklyHours.map((d) => d.day), ["monday", "friday", "sunday"], "the dashboard section replaces the wizard's hours");
+    assert.deepEqual([profile.hours.dailyHours, profile.hours.emergencyHours, profile.hours.availability24x7], ["Lunch break 1–2 PM", "Call any time", "Yes"]);
+    const card = (await api("GET", "/api/companies/public")).body.data.find((item) => item._id === listingId);
+    assert.equal(card.weeklyHours.length, 3);
+    assert.equal(card.isEmergency, true, "open 24/7 counts as emergency service");
+
+    assert.equal((await api("DELETE", "/api/companies/opening-hours", { token })).status, 200);
+    profile = (await api("GET", `/api/companies/public/${listingId}/profile`)).body.data;
+    assert.deepEqual(profile.hours.weeklyHours.map((d) => d.day), ["sunday"], "deleting falls back to the wizard's hours");
+  });
+
+  test("freelancers keep their opening hours (now with a daily note)", async () => {
+    const { body } = await api("POST", "/api/auth/freelancers/signup", { body: { name: "Hours Fran", email: `hoursfran${++seq}@example.com`, password: "password123" } });
+    await api("PUT", "/api/freelancers/header-profile", { token: body.token, body: { displayName: "Hours Fran" } });
+    const res = await api("PUT", "/api/freelancers/opening-hours", { token: body.token, body: { dailyHours: "Back by 6 PM", weeklyHours: [{ day: "tuesday", isOpen: true, opensAt: "09:00", closesAt: "17:00" }] } });
+    assert.equal(res.status, 200);
+    const listing = (await api("GET", "/api/freelancers/public")).body.data.find((item) => item.displayName === "Hours Fran");
+    assert.equal((await api("GET", `/api/freelancers/public/${listing._id}/profile`)).body.data.hours.dailyHours, "Back by 6 PM");
   });
 });

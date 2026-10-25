@@ -26,7 +26,7 @@ export default function PlumberBlogsPage({ params }: { params: Promise<{ id: str
         <h1 className="mt-5 text-3xl font-bold text-gray-900">Articles by {plumber.companyName}</h1>
         <p className="mt-2 text-sm text-gray-600">{posts.length ? `${posts.length} published article${posts.length === 1 ? "" : "s"}.` : "No articles published yet."}</p>
         {posts.length > 0 && (
-          <div className="mt-7 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
             {posts.map((post) => <LatestArticleCard key={post.slug} post={post} href={`${href}/blog/${post.slug}`} />)}
           </div>
         )}

@@ -21,7 +21,7 @@ export default function ProfileHours({ plumber }: { plumber: Plumber }) {
   const today = todayKey();
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+    <section id="hours" className="scroll-mt-24 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900"><FaClock className="text-[#FFD60A]" aria-hidden /> Opening Hours</h2>
         {status && <span className={`rounded-full px-3 py-1 text-xs font-bold ${status === "Open now" ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>{status}</span>}

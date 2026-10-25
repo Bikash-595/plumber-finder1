@@ -41,6 +41,7 @@ export type CompanyListing = {
   weeklyHours?: OpeningHoursDay[];
   coordinates?: { lat: number; lng: number };
   blogCount?: number;
+  galleryCounts?: { images: number; videos: number };
   teamPreview?: { name: string; role?: string }[];
 };
 
@@ -156,6 +157,7 @@ export function companyListingToPlumber(company: CompanyListing): Plumber {
     openingHours: company.weeklyHours?.length ? { weekly: company.weeklyHours, notes: [] } : undefined,
     coordinates: company.coordinates,
     blogCount: company.blogCount ?? 0,
+    galleryCounts: company.galleryCounts,
     // Cards only get names and roles; the profile loads the full team.
     teamMembers: (company.teamPreview ?? []).map((member, index) => ({ id: `preview-${index}`, name: member.name, role: member.role || "Team member", specialties: [], experience: 0, certificates: [], availability: "", bio: "" })),
     projects: [],
@@ -215,6 +217,7 @@ export function companyProfileToPlumber(profile: CompanyProfile): Plumber {
     companyName: profile.header?.companyName || card.companyName,
     ownerName: profile.header?.ownerName || contact.contactPerson || card.ownerName,
     logo: displayableImage(profile.header?.logo) || card.logo,
+    coverImage: cover || undefined,
     description: profile.description || about.longDescription || card.description,
     priceRange: prices.length ? [...new Set([prices[0], prices[prices.length - 1]])].join(" – ") : card.priceRange,
     isEmergency: card.isEmergency || Boolean(profile.booking?.emergencyBooking),
@@ -296,6 +299,7 @@ export type FreelancerListing = {
   coordinates?: { lat: number; lng: number };
   baseLocation?: string;
   blogCount?: number;
+  galleryCounts?: { images: number; videos: number };
 };
 
 export type FreelancerProfile = Omit<FreelancerListing, "services"> & Pick<CompanyProfile, "services" | "gallery" | "projects" | "reviews" | "faqs" | "blogs" | "offers" | "booking" | "hours" | "serviceArea" | "socialLinks">;
@@ -333,6 +337,7 @@ function freelancerAsCompany(freelancer: Omit<FreelancerListing, "services">) {
     weeklyHours: freelancer.weeklyHours,
     coordinates: freelancer.coordinates,
     blogCount: freelancer.blogCount,
+    galleryCounts: freelancer.galleryCounts,
   };
 }
 

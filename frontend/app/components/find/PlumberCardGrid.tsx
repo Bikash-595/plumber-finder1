@@ -372,7 +372,6 @@
 // components/find/PlumberCardGrid.tsx
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Plumber } from "./types";
 import { FaCheckCircle, FaMapMarkerAlt, FaTag, FaImage, FaVideo, FaClock, FaUsers } from "react-icons/fa";
@@ -381,6 +380,7 @@ import { plumberHref } from "@/components/find/companyListing";
 import { distanceLabel } from "./distance";
 import { useUserLocation } from "./useUserLocation";
 import CardExtras from "./CardExtras";
+import CardMediaCarousel from "./CardMediaCarousel";
 
 interface Props {
   plumbers: Plumber[];
@@ -391,12 +391,14 @@ export default function PlumberCardGrid({ plumbers }: Props) {
   return (
     // Container query: columns follow the space the grid actually has (e.g. beside a sidebar), not the screen width.
     <div className="@container">
-    <div className="grid grid-cols-1 gap-4 @[26rem]:grid-cols-2 @[26rem]:gap-5 @[52rem]:grid-cols-3 @[52rem]:gap-6">
+    {/* Two columns even on phones; three once there is room. */}
+    <div className="grid grid-cols-2 gap-2.5 @[26rem]:gap-4 @[40rem]:gap-5 @[52rem]:grid-cols-3 @[52rem]:gap-6">
       {plumbers.map((plumber) => {
-        const displayImage = plumber.media?.images?.[0] || plumber.logo || "";
         const hasDiscount = !!plumber.discount;
         // Real distance from the visitor when both locations are known; otherwise the plumber's city.
         const distance = distanceLabel(plumber, userLocation);
+        const imageCount = (plumber.media?.images?.length ?? 0) + (plumber.galleryCounts?.images ?? 0);
+        const videoCount = (plumber.media?.videos?.length ?? 0) + (plumber.galleryCounts?.videos ?? 0);
         const place = plumber.location?.split(",")[0] || plumber.city || "";
 
         return (
@@ -407,19 +409,8 @@ export default function PlumberCardGrid({ plumbers }: Props) {
           >
             {/* Image section */}
             <div className="relative h-32 w-full bg-gray-100 sm:h-44 lg:h-48">
-              {displayImage ? (
-                <Image
-                  src={displayImage}
-                  alt={plumber.companyName || "Company"}
-                  fill
-                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
-                  className="object-cover transition group-hover:scale-105 duration-300"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-gray-200 text-gray-400">
-                  No image
-                </div>
-              )}
+              {/* Every photo and video, changing on its own. */}
+              <CardMediaCarousel plumber={plumber} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw" />
               {hasDiscount && (
                 <div className="absolute right-2 top-2 z-10 max-w-[calc(100%-1rem)] truncate rounded-full bg-green-500 px-2 py-1 text-[10px] font-bold text-white shadow-md sm:right-3 sm:top-3 sm:text-xs">
                   <FaTag className="h-2 w-2" />
@@ -435,7 +426,7 @@ export default function PlumberCardGrid({ plumbers }: Props) {
             </div>
 
             {/* Content section */}
-            <div className="p-3 sm:p-4">
+            <div className="p-2.5 sm:p-4">
               <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -452,11 +443,11 @@ export default function PlumberCardGrid({ plumbers }: Props) {
                     <span className="text-xs text-gray-600">{place}</span>
                   </div>
                 </div>
-                <div className="flex items-center justify-between gap-2 sm:block sm:text-right">
-                  <div className="text-sm font-bold text-[#FFD60A] sm:text-lg">{plumber.priceRange || ""}</div>
-                  <div className="flex items-center gap-1 text-[11px] text-gray-500 sm:justify-end sm:text-xs">
-                    <FaClock className="h-3 w-3" />
-                    {plumber.responseTime || ""}
+                <div className="flex min-w-0 flex-col gap-0.5 sm:block sm:text-right">
+                  <div className="truncate text-xs font-bold text-[#b59a00] sm:text-lg sm:text-[#FFD60A]">{plumber.priceRange || ""}</div>
+                  <div className="flex min-w-0 items-center gap-1 text-[11px] text-gray-500 sm:justify-end sm:text-xs">
+                    <FaClock className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{plumber.responseTime || ""}</span>
                   </div>
                 </div>
               </div>
@@ -464,7 +455,7 @@ export default function PlumberCardGrid({ plumbers }: Props) {
               {/* Services tags */}
               <div className="mt-2 flex flex-wrap gap-1 sm:mt-3">
                 {(plumber.services ?? []).slice(0, 2).map((s) => (
-                  <span key={s} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                  <span key={s} className="max-w-full truncate rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700 sm:text-xs">
                     {s}
                   </span>
                 ))}
@@ -478,12 +469,12 @@ export default function PlumberCardGrid({ plumbers }: Props) {
               {/* Bottom row: media, emergency, team size */}
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-500 sm:mt-3 sm:text-xs">
                 <div className="flex min-w-0 items-center gap-2">
-                  {plumber.media &&
-                    ((plumber.media.images?.length ?? 0) > 0 || (plumber.media.videos?.length ?? 0) > 0) && (
+                  {/* Photos and videos in the slideshow: the card's own media plus the gallery (live listings). */}
+                  {imageCount + videoCount > 0 && (
                       <span className="flex items-center gap-1">
-                        {(plumber.media.images?.length ?? 0) > 0 && <FaImage className="h-3 w-3" />}
-                        {(plumber.media.videos?.length ?? 0) > 0 && <FaVideo className="h-3 w-3" />}
-                        <span>{(plumber.media.images?.length ?? 0) + (plumber.media.videos?.length ?? 0)}</span>
+                        {imageCount > 0 && <FaImage className="h-3 w-3" />}
+                        {videoCount > 0 && <FaVideo className="h-3 w-3" />}
+                        <span>{imageCount + videoCount}</span>
                       </span>
                     )}
                   {plumber.isEmergency && (

@@ -240,7 +240,7 @@ export default function BlogsPage() {
               <p className="text-sm text-slate-500 dark:text-slate-500">{filteredBlogFeed.length} result{filteredBlogFeed.length === 1 ? "" : "s"}</p>
             </div>
 
-            <div className="mt-7 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
               {visibleBlogs.map(({ plumberId, href, post }) => (
                 <LatestArticleCard
                   key={`${plumberId}-${post.slug}`}

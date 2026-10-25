@@ -492,310 +492,139 @@
 "use client";
 
 import Image from "next/image";
-import { Plumber } from "@/components/find/types";
-import {
-  FaStar,
-  FaCheckCircle,
-  FaMapMarkerAlt,
-  FaPhone,
-  FaEnvelope,
-  FaGlobe,
-  FaUsers,
-  FaUserTie,
-  FaFacebook,
-  // FaTwitter,
-  // FaInstagram,
-  FaLinkedin,
-  FaYoutube,
-  FaTiktok,
-} from "react-icons/fa";
+import { useState } from "react";
+import type { IconType } from "react-icons";
+import { FaCalendarCheck, FaCheck, FaCheckCircle, FaClock, FaEnvelope, FaFacebook, FaGlobe, FaInstagram, FaLinkedin, FaMapMarkerAlt, FaPhoneAlt, FaShareAlt, FaStar, FaTiktok, FaUsers, FaUserTie, FaYoutube } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
+import type { Plumber } from "@/components/find/types";
+import { openNowLabel } from "@/components/find/companyListing";
 
+const socialIcons: { key: keyof NonNullable<Plumber["socialLinks"]>; label: string; Icon: IconType }[] = [
+  { key: "facebook", label: "Facebook", Icon: FaFacebook },
+  { key: "instagram", label: "Instagram", Icon: FaInstagram },
+  { key: "twitter", label: "X (Twitter)", Icon: FaXTwitter },
+  { key: "linkedin", label: "LinkedIn", Icon: FaLinkedin },
+  { key: "youtube", label: "YouTube", Icon: FaYoutube },
+  { key: "tiktok", label: "TikTok", Icon: FaTiktok },
+];
+const outlineButton = "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800 transition hover:border-[#0b1f3b] hover:bg-gray-50";
 
-
-
+/**
+ * Profile header: cover banner, logo, name and badges, rating/location/open-now, short description,
+ * key facts, top services, contact buttons and social links. Stacks on phones, sits side by side from tablets up.
+ */
 export default function ProfileHeader({ plumber }: { plumber: Plumber }) {
-  const socialLinks = plumber.socialLinks || {};
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const isFreelancer = plumber.providerType === "freelancer";
+  const cover = plumber.coverImage || plumber.media?.images?.[0];
+  const status = openNowLabel(plumber.openingHours?.weekly);
+  const socials = socialIcons.filter(({ key }) => plumber.socialLinks?.[key]);
+  const topServices = (plumber.specializations.length ? plumber.specializations : plumber.services).slice(0, 4);
+  const moreServices = Math.max(0, new Set([...plumber.specializations, ...plumber.services]).size - topServices.length);
+  const longDescription = plumber.description.length > 180;
 
-
+  const share = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) return await navigator.share({ title: plumber.companyName, url });
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Share sheet closed or clipboard blocked: nothing to do.
+    }
+  };
 
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-200 transition hover:shadow-md sm:p-6">
-      <div className="flex flex-col gap-5 sm:flex-row sm:gap-6">
-        {/* Logo */}
-        <div className="flex justify-center sm:justify-start">
-          <div className="relative h-28 w-28 overflow-hidden rounded-full border border-gray-200 bg-gray-50 shadow-sm sm:h-32 sm:w-32">
-            <Image
-              src={plumber.logo}
-              alt={plumber.companyName}
-              fill
-              sizes="(max-width: 640px) 112px, 128px"
-              className="object-cover"
-            />
+    <header className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+      {/* Cover banner */}
+      <div className="relative h-32 bg-gradient-to-br from-[#0b1f3b] via-[#17345a] to-[#0b1f3b] sm:h-44 lg:h-52">
+        {cover && <Image src={cover} alt="" fill priority sizes="(max-width: 1024px) 100vw, 66vw" className="object-cover" />}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-black/20" aria-hidden />
+        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5 sm:left-5 sm:top-4">
+          {plumber.isVerified && <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-[#0b1f3b] shadow sm:text-xs"><FaCheckCircle className="text-emerald-600" aria-hidden /> Verified</span>}
+          {plumber.isEmergency && <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-bold text-white shadow sm:text-xs">24/7 Emergency</span>}
+        </div>
+        <button type="button" onClick={share} aria-label="Share this profile" className="absolute right-3 top-3 inline-flex h-9 items-center gap-1.5 rounded-full bg-white/95 px-3 text-xs font-bold text-[#0b1f3b] shadow transition hover:bg-[#FFD60A] sm:right-5 sm:top-4">
+          {copied ? <FaCheck aria-hidden /> : <FaShareAlt aria-hidden />} <span className="hidden sm:inline">{copied ? "Link copied" : "Share"}</span>
+        </button>
+      </div>
+
+      <div className="px-4 pb-5 sm:px-6 sm:pb-6">
+        {/* Logo + name */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-5">
+          <div className="relative -mt-12 h-24 w-24 shrink-0 overflow-hidden rounded-2xl border-4 border-white bg-white shadow-md sm:-mt-16 sm:h-32 sm:w-32">
+            <Image src={plumber.logo} alt={`${plumber.companyName} logo`} fill sizes="(max-width: 640px) 96px, 128px" className="object-cover" />
+          </div>
+          <div className="min-w-0 flex-1 sm:pb-1">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#f7672c] sm:text-xs">{isFreelancer ? "Independent plumber" : "Plumbing company"}</p>
+            <h1 className="mt-0.5 break-words text-2xl font-extrabold leading-tight text-gray-900 sm:text-3xl">
+              {plumber.companyName}
+              {plumber.isVerified && <FaCheckCircle className="ml-2 inline-block h-5 w-5 -translate-y-0.5 align-middle text-[#FFD60A]" aria-label="Verified" />}
+            </h1>
+            {plumber.tagline && <p className="mt-1 text-sm font-semibold text-[#0b1f3b] sm:text-base">{plumber.tagline}</p>}
           </div>
         </div>
 
-        {/* Content */}
-        <div className="min-w-0 flex-1 space-y-4 text-center sm:text-left">
-          {/* Name and badges */}
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-            <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
+        {/* Rating, location, open now, experience */}
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
+          <a href="#reviews" className="inline-flex items-center gap-1.5 hover:underline">
+            <span className="inline-flex" aria-hidden>{[1, 2, 3, 4, 5].map((n) => <FaStar key={n} className={`h-3.5 w-3.5 ${n <= Math.round(plumber.rating) ? "text-[#FFD60A]" : "text-gray-200"}`} />)}</span>
+            {plumber.reviewCount > 0 ? <><span className="font-bold text-gray-900">{plumber.rating.toFixed(1)}</span><span className="text-gray-500">({plumber.reviewCount} review{plumber.reviewCount === 1 ? "" : "s"})</span></> : <span className="text-gray-500">No reviews yet</span>}
+          </a>
+          {plumber.location && <span className="inline-flex min-w-0 items-center gap-1.5"><FaMapMarkerAlt className="h-3.5 w-3.5 shrink-0 text-[#f7672c]" aria-hidden /><span className="break-words">{plumber.location}</span></span>}
+          {status && <a href="#hours" className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${status === "Open now" ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}`}><FaClock className="h-3 w-3" aria-hidden /> {status}</a>}
+          {plumber.yearsInBusiness > 0 && <span className="inline-flex items-center gap-1.5"><FaCalendarCheck className="h-3.5 w-3.5 text-gray-400" aria-hidden />{plumber.yearsInBusiness}+ years</span>}
+        </div>
 
-              {plumber.companyName}
-
-            </h1>
-
-
-            {plumber.isVerified && (
-              <FaCheckCircle className="h-5 w-5 text-[#FFD60A]" />
-            )}
-
-
-
-            {plumber.isEmergency && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-600">
-                🚨 24/7
-              </span>
-
-
-            )}
+        {/* Description */}
+        {plumber.description && (
+          <div className="mt-4 max-w-3xl">
+            <p className={`text-sm leading-relaxed text-gray-600 sm:text-[15px] ${expanded ? "" : "line-clamp-3"}`}>{plumber.description}</p>
+            {longDescription && <button type="button" onClick={() => setExpanded((open) => !open)} className="mt-1 text-sm font-semibold text-[#0b1f3b] hover:underline">{expanded ? "Show less" : "Read more"}</button>}
           </div>
+        )}
 
+        {/* Key facts and top services */}
+        <div className="mt-4 flex flex-wrap gap-2 text-xs sm:text-sm">
+          {plumber.ownerName && <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-gray-700"><FaUserTie className="text-gray-500" aria-hidden /> Owner: <span className="font-semibold text-gray-900">{plumber.ownerName}</span></span>}
+          {!isFreelancer && plumber.teamSize > 0 && <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-gray-700"><FaUsers className="text-gray-500" aria-hidden /><span className="font-semibold text-gray-900">{plumber.teamSize}</span> plumbers</span>}
+          {plumber.responseTime && <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-gray-700"><FaClock className="text-gray-500" aria-hidden /> Responds {plumber.responseTime.toLowerCase().startsWith("within") ? "" : "in "}<span className="font-semibold text-gray-900">{plumber.responseTime}</span></span>}
+        </div>
+        {topServices.length > 0 && (
+          <ul className="mt-3 flex flex-wrap gap-2" aria-label="Top services">
+            {topServices.map((name) => <li key={name} className="rounded-full border border-[#FFD60A] bg-[#FFD60A]/10 px-3 py-1 text-xs font-semibold text-[#0b1f3b]">{name}</li>)}
+            {moreServices > 0 && <li><a href="#services" className="inline-block rounded-full px-2 py-1 text-xs font-semibold text-gray-500 hover:underline">+{moreServices} more</a></li>}
+          </ul>
+        )}
 
-
-
-
-          {/* Rating & Location */}
-          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-gray-600 sm:justify-start">
-            <div className="flex items-center gap-1">
-              <FaStar className="h-4 w-4 text-[#FFD60A]" />
-              <span className="font-semibold text-gray-800">{plumber.rating}</span>
-
-
-              <span className="text-gray-500">({plumber.reviewCount} reviews)</span>
-
-
-            </div>
-            <span className="hidden text-gray-300 sm:inline">•</span>
-            <div className="flex items-center gap-1">
-              <FaMapMarkerAlt className="h-3.5 w-3.5 text-gray-500" />
-
-
-              <span className="break-words text-gray-600">{plumber.location}</span>
-
-
-            </div>
-          </div>
-
-
-
-
-
-          {/* Tagline (live companies) or trade headline (freelancers) */}
-          {plumber.tagline && <p className="text-sm font-semibold text-[#0b1f3b]">{plumber.tagline}</p>}
-
-          {/* Description */}
-          <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
-            {plumber.description}
-          </p>
-
-
-
-
-
-
-
-          {/* Owner & Team */}
-          <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-600 sm:justify-start">
-            <div className="flex items-center gap-1.5">
-              <FaUserTie className="h-4 w-4 text-gray-500" />
-
-
-              <span>
-                Owner: <span className="font-medium text-gray-800">{plumber.ownerName}</span>
-              </span>
-
-
-            </div>
-            <div className="flex items-center gap-1.5">
-              <FaUsers className="h-4 w-4 text-gray-500" />
-
-
-              <span>
-                {plumber.providerType === "freelancer" ? <span className="font-medium text-gray-800">Independent plumber</span> : <><span className="font-medium text-gray-800">{plumber.teamSize}</span> plumbers</>}
-              </span>
-
-
-            </div>
-          </div>
-
-
-
-
-
-
-
-
-
-          {/* Action Buttons (Contact & Social) */}
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-2 sm:justify-start">
-
-
-
-            {/* Phone */}
-            <a
-              href={`tel:${plumber.phone}`}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-700 text-sm font-medium text-white transition hover:bg-[#FFD60A] hover:text-gray-900"
-              title="Call"
-            >
-              <FaPhone className="h-3.5 w-3.5" />
-              {/* <span className="hidden sm:inline">Call</span> */}
-            </a>
-
-
-
-
-
-            {/* Email */}
-            <a
-              href={`mailto:${plumber.email}`}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-700 text-sm font-medium text-white transition hover:bg-[#FFD60A] hover:text-gray-900"
-              title="Email"
-            >
-              <FaEnvelope className="h-3.5 w-3.5" />
-              {/* <span className="hidden sm:inline">Email</span> */}
-            </a>
-
-
-
-
-            {/* Website */}
-            {plumber.website && (
-              <a
-                href={plumber.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-700 text-sm font-medium text-white transition hover:bg-[#FFD60A] hover:text-gray-900"
-                title="Website"
-              >
-                <FaGlobe className="h-3.5 w-3.5" />
-                {/* <span className="hidden sm:inline">Website</span> */}
+        {/* Contact actions and social links */}
+        <div className="mt-5 flex flex-col gap-4 border-t border-gray-100 pt-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            {plumber.phone && (
+              <a href={`tel:${plumber.phone.replace(/[^\d+]/g, "")}`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#FFD60A] px-4 text-sm font-bold text-[#0b1f3b] shadow-sm transition hover:brightness-95">
+                <FaPhoneAlt className="h-3.5 w-3.5" aria-hidden /> <span className="sm:hidden">Call</span><span className="hidden sm:inline">{plumber.phone}</span>
               </a>
-
-
-
             )}
-
-
-            {/* Social Icons (only if links exist) */}
-
-            <div className="flex items-center gap-1">
-              {socialLinks.facebook && (
-                <a
-                  href={socialLinks.facebook}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700 text-white transition hover:bg-[#FFD60A] hover:text-gray-900"
-                  title="Facebook"
-                  aria-label="Facebook"
-                >
-                  <FaFacebook className="h-4 w-4" />
-                </a>
-              )}
-
-              
-              {socialLinks.twitter && (
-                <a
-                  href={socialLinks.twitter}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700 text-white transition hover:bg-[#FFD60A] hover:text-gray-900"
-                  title="X (Twitter)"
-                  aria-label="X (Twitter)"
-                >
-                  <FaXTwitter className="h-4 w-4" />
-                </a>
-              )}
-
-
-
-
-
-
-              
-              {socialLinks.instagram && (
-                <a
-                  href={socialLinks.instagram}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700 text-white transition hover:bg-[#FFD60A] hover:text-gray-900"
-                  title="Instagram"
-                  aria-label="Instagram"
-                >
-                  <Image
-                      src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png"
-                      alt="Instagram"
-                      width={24}
-                      height={24}
-                     className="object-contain"
-                  />
-                  {/* <FaInstagram className="h-4 w-4" /> */}
-                </a>
-              )}
-
-
-
-
-
-              {socialLinks.linkedin && (
-                <a
-                  href={socialLinks.linkedin}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700 text-white transition hover:bg-[#FFD60A] hover:text-gray-900"
-                  title="LinkedIn"
-                  aria-label="LinkedIn"
-                >
-                  <FaLinkedin className="h-4 w-4" />
-                </a>
-              )}
-
-              {socialLinks.youtube && (
-                <a
-                  href={socialLinks.youtube}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700 text-white transition hover:bg-[#FFD60A] hover:text-gray-900"
-                  title="YouTube"
-                  aria-label="YouTube"
-                >
-                  <FaYoutube className="h-4 w-4" />
-                </a>
-              )}
-
-              {socialLinks.tiktok && (
-                <a
-                  href={socialLinks.tiktok}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700 text-white transition hover:bg-[#FFD60A] hover:text-gray-900"
-                  title="TikTok"
-                  aria-label="TikTok"
-                >
-                  <FaTiktok className="h-4 w-4" />
-                </a>
-              )}
-
-
-
-
-
-            </div>
+            <a href="#booking" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#0b1f3b] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#17345a]">
+              <FaCalendarCheck className="h-3.5 w-3.5" aria-hidden /> Book now
+            </a>
+            {plumber.email && <a href={`mailto:${plumber.email}`} className={outlineButton}><FaEnvelope className="h-3.5 w-3.5" aria-hidden /> Email</a>}
+            {plumber.website && <a href={plumber.website} target="_blank" rel="noopener noreferrer" className={outlineButton}><FaGlobe className="h-3.5 w-3.5" aria-hidden /> Website</a>}
           </div>
+          {socials.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 lg:hidden">Follow</span>
+              {socials.map(({ key, label, Icon }) => (
+                <a key={key} href={plumber.socialLinks![key]} target="_blank" rel="noopener noreferrer" title={label} aria-label={label} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-700 transition hover:border-[#0b1f3b] hover:bg-[#0b1f3b] hover:text-white">
+                  <Icon className="h-4 w-4" />
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </header>
   );
-
-
 }

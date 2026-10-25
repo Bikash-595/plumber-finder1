@@ -36,9 +36,9 @@ export default function ProfileTeam({ plumber }: { plumber: Plumber }) {
       <div className="flex gap-2"><CarouselButton label="Previous team members" onClick={() => moveCarousel(-1)}><FaChevronLeft /></CarouselButton><CarouselButton label="Next team members" onClick={() => moveCarousel(1)}><FaChevronRight /></CarouselButton></div>
     </div>
     <div ref={carouselRef} className="mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {members.map((member) => <Link key={member.id} href={`${plumberHref(plumber)}/team/${member.id}`} className="group flex min-w-[calc(100%-1rem)] snap-start overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 text-left transition hover:-translate-y-0.5 hover:border-[#FFD60A] hover:shadow-md sm:min-w-[calc(50%-0.5rem)]">
-        <div className="h-32 w-28 shrink-0 bg-gray-200"><img src={member.photo || plumber.logo} alt={`${member.name} at ${plumber.companyName}`} className="h-full w-full object-cover" /></div>
-        <div className="min-w-0 p-4"><p className="text-base font-bold text-gray-900">{member.name}</p><p className="mt-0.5 text-sm font-semibold text-[#0b1f3b]">{member.role}</p><p className="mt-2 line-clamp-2 text-xs leading-5 text-gray-500">{member.specialties.join(" · ")}</p><span className="mt-3 inline-block text-xs font-bold text-[#b59a00] group-hover:underline">View profile →</span></div>
+      {members.map((member) => <Link key={member.id} href={`${plumberHref(plumber)}/team/${member.id}`} className="group flex min-w-[calc(50%-0.5rem)] snap-start flex-col overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 text-left transition hover:-translate-y-0.5 hover:border-[#FFD60A] hover:shadow-md sm:flex-row">
+        <div className="h-28 w-full shrink-0 bg-gray-200 sm:h-32 sm:w-28"><img src={member.photo || plumber.logo} alt={`${member.name} at ${plumber.companyName}`} className="h-full w-full object-cover" /></div>
+        <div className="min-w-0 p-3 sm:p-4"><p className="truncate text-sm font-bold text-gray-900 sm:text-base">{member.name}</p><p className="mt-0.5 truncate text-xs font-semibold text-[#0b1f3b] sm:text-sm">{member.role}</p><p className="mt-2 line-clamp-2 text-xs leading-5 text-gray-500">{member.specialties.join(" · ")}</p><span className="mt-3 inline-block text-xs font-bold text-[#b59a00] group-hover:underline">View profile →</span></div>
       </Link>)}
     </div>
   </section>;

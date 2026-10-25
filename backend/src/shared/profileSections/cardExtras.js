@@ -24,3 +24,15 @@ export async function publishedBlogCounts(BlogModel, ownerField, owners) {
   const counts = await BlogModel.aggregate([{ $match: { [ownerField]: { $in: owners }, ...publishedBlogs() } }, { $group: { _id: `$${ownerField}`, count: { $sum: 1 } } }]);
   return new Map(counts.map((row) => [String(row._id), row.count]));
 }
+
+/** Gallery photo and video counts per owner id (for the card's media badge). */
+export async function galleryCounts(GalleryModel, ownerField, owners) {
+  const rows = await GalleryModel.aggregate([{ $match: { [ownerField]: { $in: owners } } }, { $group: { _id: { owner: `$${ownerField}`, kind: "$mediaKind" }, count: { $sum: 1 } } }]);
+  const counts = new Map();
+  for (const { _id, count } of rows) {
+    const entry = counts.get(String(_id.owner)) ?? { images: 0, videos: 0 };
+    if (_id.kind === "video") entry.videos += count; else entry.images += count;
+    counts.set(String(_id.owner), entry);
+  }
+  return counts;
+}

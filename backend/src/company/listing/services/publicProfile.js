@@ -17,8 +17,10 @@ import { CompanyServiceOffering } from "../../services/models/CompanyServiceOffe
 import { CompanySpecialOffer } from "../../special-offers/models/CompanySpecialOffer.js";
 import { CompanyTeamMember } from "../../team/models/CompanyTeamMember.js";
 import { CompanySocialLinks } from "../../social-links/models/CompanySocialLinks.js";
+import { CompanyOpeningHours } from "../../opening-hours/models/CompanyOpeningHours.js";
+import { publicHours } from "../../../shared/profileSections/openingHoursSection.js";
 import { currentOffers, publishedBlogs, visibleProjects } from "../../../shared/profileSections/publicFilters.js";
-import { firstPoint, publishedBlogCounts } from "../../../shared/profileSections/cardExtras.js";
+import { firstPoint, galleryCounts, publishedBlogCounts } from "../../../shared/profileSections/cardExtras.js";
 
 const hidden = "-company -__v";
 const byPosition = { position: 1, createdAt: 1 };
@@ -38,7 +40,7 @@ const pick = (source, fields) => Object.fromEntries(fields.filter((field) => sou
  */
 export async function cardSummaries(listings) {
   const companies = listings.map((listing) => listing.company);
-  const [ratings, overviews, headers, offers, operations, emergencyServices, accounts, teamCounts, drafts, serviceAreas, wizardLocations, blogCounts, teamMembers] = await Promise.all([
+  const [ratings, overviews, headers, offers, operations, emergencyServices, accounts, teamCounts, drafts, serviceAreas, wizardLocations, blogCounts, teamMembers, mediaCounts, openingHours] = await Promise.all([
     CompanyReview.aggregate([{ $match: { company: { $in: companies } } }, { $group: { _id: "$company", rating: { $avg: "$rating" }, reviewCount: { $sum: 1 } } }]),
     CompanyOverview.find({ company: { $in: companies } }).lean(),
     CompanyHeaderProfile.find({ company: { $in: companies } }).select("company ownerName yearsInBusiness licenseNumber insurance certifications").lean(),
@@ -53,7 +55,11 @@ export async function cardSummaries(listings) {
     publishedBlogCounts(CompanyBlog, "company", companies),
     // Names and roles only — photos can be large uploads and the profile page shows them.
     CompanyTeamMember.find({ company: { $in: companies } }).sort(byPosition).select("company name role").lean(),
+    galleryCounts(CompanyGalleryItem, "company", companies),
+    CompanyOpeningHours.find({ company: { $in: companies } }).select("company weeklyHours availability24x7").lean(),
   ]);
+  // The dashboard's Opening Hours section wins; companies that haven't saved it fall back to the wizard's hours.
+  const hoursByCompany = byCompany(openingHours);
   const areasByCompany = byCompany(serviceAreas);
   const locationsByCompany = byCompany(wizardLocations);
   const teamByCompany = new Map();
@@ -72,7 +78,7 @@ export async function cardSummaries(listings) {
     const rating = maps.ratings.get(key);
     const overview = maps.overviews.get(key) ?? {};
     const header = maps.headers.get(key) ?? {};
-    const ops = maps.operations.get(key) ?? {};
+    const ops = hoursByCompany.get(key) ?? maps.operations.get(key) ?? {};
     const wizard = maps.drafts.get(key)?.formData ?? {};
     const offer = offersByCompany.get(key);
     const established = firstNumber(overview.foundedYear, numberFrom(wizard.yearEstablished));
@@ -82,6 +88,7 @@ export async function cardSummaries(listings) {
       location: listing.location || area.branchLocation || undefined,
       coordinates: firstPoint({ lat: area.latitude, lng: area.longitude }, ...(places.locations ?? []).map((place) => ({ lat: place.latitude, lng: place.longitude })), { lat: places.latitude, lng: places.longitude }),
       blogCount: blogCounts.get(key) ?? 0,
+      galleryCounts: mediaCounts.get(key) ?? { images: 0, videos: 0 },
       teamPreview: teamByCompany.get(key) ?? [],
       rating: rating ? Math.round(rating.rating * 10) / 10 : listing.rating ?? 0,
       reviewCount: rating?.reviewCount ?? listing.reviewCount ?? 0,
@@ -99,7 +106,7 @@ export async function cardSummaries(listings) {
       warranty: wizard.warranty,
       languages: wizard.languagesSpoken,
       offer: offer ? { title: offer.title, discount: offer.discount, promoCode: offer.promoCode } : undefined,
-      isEmergency: emergency.has(key) || /^(yes|true|24\/?7)/i.test(ops.availability24x7 ?? ""),
+      isEmergency: emergency.has(key) || ops.availability24x7 === true || /^(yes|true|24\/?7)/i.test(String(ops.availability24x7 ?? "")),
       weeklyHours: ops.weeklyHours ?? [],
     }];
   }));
@@ -115,7 +122,7 @@ function withCurrentServices(serviceArea, services) {
 /** Everything shown on a company's public profile page, for one published listing. */
 export async function fullProfile(listing) {
   const company = listing.company;
-  const [summaries, header, services, gallery, projects, reviews, team, faqs, blogs, offers, booking, serviceArea, operations, locations, contact, profile, draft, socialLinks] = await Promise.all([
+  const [summaries, header, services, gallery, projects, reviews, team, faqs, blogs, offers, booking, serviceArea, operations, locations, contact, profile, draft, socialLinks, openingHours] = await Promise.all([
     cardSummaries([listing]),
     CompanyHeaderProfile.findOne({ company }).select(hidden).lean(),
     CompanyServiceOffering.find({ company }).sort(byPosition).select(hidden).lean(),
@@ -134,6 +141,7 @@ export async function fullProfile(listing) {
     CompanyProfile.findOne({ company }).select("companyHistory founderStory businessGoals coreValues").lean(),
     CompanyOnboardingDraft.findOne({ company }).select("formData").lean(),
     CompanySocialLinks.findOne({ company }).select(`${hidden} -_id -createdAt -updatedAt`).lean(),
+    CompanyOpeningHours.findOne({ company }).lean(),
   ]);
   const { company: _owner, __v, ...publicListing } = listing;
   return {
@@ -142,7 +150,7 @@ export async function fullProfile(listing) {
     header: header ?? null,
     about: { ...pick(draft?.formData, publicWizardFields), ...pick(profile, ["companyHistory", "founderStory", "businessGoals", "coreValues"]) },
     contact: pick(contact, publicContactFields),
-    hours: { ...pick(operations, hoursFields), weeklyHours: operations?.weeklyHours ?? [] },
+    hours: publicHours(openingHours) ?? { ...pick(operations, hoursFields), weeklyHours: operations?.weeklyHours ?? [] },
     branches: (locations?.locations ?? []).map(({ _id, ...branch }) => branch),
     // Wizard-only service names still show when the Services section is empty.
     services: services.length ? services : (listing.services ?? []).map((name) => ({ name })),
