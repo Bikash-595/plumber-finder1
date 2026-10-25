@@ -22,6 +22,10 @@ export async function startTestServer() {
   // ZIP lookups are answered offline: 5-digit codes starting with 0 don't exist, every other one is Austin, TX.
   const { placeLookup } = await import("../../src/location/services/placeLookup.js");
   placeLookup.zip = async (zipCode) => (zipCode.startsWith("0") ? null : { zipCode, city: "Austin", state: "Texas", stateCode: "TX", latitude: 30.2672, longitude: -97.7431 });
+  // Cities: "Nowhere" can't be found; anything else gets coordinates derived from its name length.
+  placeLookup.city = async (name, stateCode) => (/nowhere/i.test(name) || !stateCode ? null : { name, stateCode, latitude: 30 + name.length / 100, longitude: -97 - name.length / 100 });
+  // Addresses: anything mentioning "Main St" is found at a fixed point; others aren't.
+  placeLookup.search = async (query) => (/main st/i.test(query) ? { name: query, latitude: 30.5, longitude: -97.5 } : null);
   placeLookup.reverse = async (latitude, longitude) => ({ zipCode: "78701", city: "Austin", state: "Texas", stateCode: "TX", latitude: Number(latitude), longitude: Number(longitude), street: "" });
   const dbPath = mkdtempSync(path.join(tmpdir(), "plumber-test-db-"));
   const mongoPort = await freePort();

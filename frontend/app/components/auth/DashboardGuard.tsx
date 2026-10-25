@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { clearStoredUser, readStoredUser, syncSessionCookie } from "@/components/utils/auth";
-import { DASHBOARD_HOME, isExpired, readTokenClaims, type DashboardArea } from "@/components/utils/session";
+import { DASHBOARD_HOME, isExpired, loginPathFor, readTokenClaims, type DashboardArea } from "@/components/utils/session";
 
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
 const meEndpoint: Record<DashboardArea, string> = { user: "/auth/users/me", company: "/auth/companies/me", freelancer: "/auth/freelancers/me" };
@@ -21,7 +21,7 @@ export default function DashboardGuard({ area, children }: { area: DashboardArea
     let cancelled = false;
     const toLogin = () => {
       clearStoredUser();
-      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      router.replace(loginPathFor(area, pathname));
     };
 
     const check = async () => {

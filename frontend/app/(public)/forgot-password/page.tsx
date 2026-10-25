@@ -61,14 +61,15 @@ function ForgotPassword() {
 
   return (
     <AuthLayout>
-      <Link href="/login" className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#0b1f3b]"><FaArrowLeft className="h-3 w-3" /> Back to log in</Link>
+      <Link href={accountType === "seeker" ? "/login" : `/business/login?type=${accountType}`} className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#0b1f3b]"><FaArrowLeft className="h-3 w-3" /> Back to log in</Link>
       <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#FFD60A]/15 text-[#0b1f3b]"><FaKey className="h-5 w-5" /></span>
       <h1 className="mt-4 text-2xl font-extrabold text-gray-900">{step === "email" ? "Forgot your password?" : "Set a new password"}</h1>
       <p className="mt-1.5 text-sm text-gray-600">{step === "email" ? "We'll email you a 6-digit code to reset it." : <>Enter the code sent to <span className="font-semibold text-gray-900">{email}</span> and choose a new password.</>}</p>
 
       {step === "email" ? (
         <form onSubmit={sendCode} noValidate className="mt-6 space-y-4">
-          <AccountTypeSwitch value={accountType} onChange={setAccountType} />
+          {/* Customers reset from the customer login; businesses choose company or freelancer. */}
+          {accountType !== "seeker" && <AccountTypeSwitch types={["company", "freelancer"]} value={accountType} onChange={setAccountType} />}
           <div>
             <label htmlFor="email" className="text-sm font-semibold text-gray-700">Email address</label>
             <input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="mt-1.5 block w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-[#FFD60A] focus:ring-2 focus:ring-[#FFD60A]/30" />

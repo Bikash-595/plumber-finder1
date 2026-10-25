@@ -137,7 +137,8 @@ export interface Plumber {
   slug?: string; // live companies: public URL is /company/<slug>
   coordinates?: { lat: number; lng: number }; // base location, for "x mi away"
   blogCount?: number; // cards: published posts (full posts are only loaded on the profile)
-  serviceAreaDetails?: { name: string; services: string[] }[]; // areas with the services offered there
+  serviceAreaDetails?: { name: string; services: string[]; address?: string; radius?: number; latitude?: number; longitude?: number }[]; // areas with the services offered there
+  baseRadius?: number; // miles around the base location
   baseLocation?: string; // where a live company or freelancer is based (Service Areas)
   tagline?: string;
   openingHours?: OpeningHours;

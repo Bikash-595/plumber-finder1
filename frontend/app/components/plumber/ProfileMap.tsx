@@ -40,19 +40,32 @@
 "use client";
 
 import { Plumber } from "@/components/find/types";
-import ServiceAreaMap from "./ServiceAreaMap";
+import { plumberPoint } from "@/components/find/distance";
+import ServiceAreaMap, { type ServiceArea } from "./ServiceAreaMap";
 
-/** Public profile: the areas served, each with its services, on a map (see ServiceAreaMap). */
+/**
+ * The built-in demo plumbers only list area names; give each area its own share of the company's
+ * services (so the profile shows what each branch area offers, like a real company's would).
+ */
+function demoAreas(plumber: Plumber): ServiceArea[] {
+  return plumber.serviceAreas.map((name, index) => {
+    const offered = plumber.services.filter((_, serviceIndex) => (serviceIndex + index) % 3 !== 0);
+    return { name, services: offered.length && offered.length < plumber.services.length ? offered : [], radius: 10 + (index % 3) * 5 };
+  });
+}
+
+/** Public profile: the areas served, each with its services and radius, on a map (see ServiceAreaMap). */
 export default function ProfileMap({ plumber }: { plumber: Plumber }) {
-  const areas = plumber.serviceAreaDetails?.length ? plumber.serviceAreaDetails : plumber.serviceAreas.map((name) => ({ name, services: [] }));
+  const areas: ServiceArea[] = plumber.serviceAreaDetails?.length ? plumber.serviceAreaDetails : demoAreas(plumber);
   const baseName = plumber.baseLocation || plumber.location || plumber.city || "";
+  const point = plumberPoint(plumber)?.point;
   if (!areas.length && !baseName) return null;
 
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6" aria-labelledby="service-areas-heading">
       <h2 id="service-areas-heading" className="text-xl font-bold text-gray-900">Service Areas</h2>
-      <p className="mb-4 mt-1 text-sm text-gray-500">{areas.length > 1 ? `${plumber.companyName} serves ${areas.length} areas. Choose one to see it on the map and the services offered there.` : `Where ${plumber.companyName} works.`}</p>
-      <ServiceAreaMap areas={areas} services={plumber.services} ownerName={plumber.companyName} baseName={baseName} coordinates={plumber.coordinates} state={plumber.state} />
+      <p className="mb-4 mt-1 text-sm text-gray-500">{areas.length > 1 ? `${plumber.companyName} serves ${areas.length} areas. Choose one to see it on the map, how far it reaches, and the services offered there.` : `Where ${plumber.companyName} works.`}</p>
+      <ServiceAreaMap areas={areas} services={plumber.services} ownerName={plumber.companyName} baseName={baseName} coordinates={point} baseRadius={plumber.baseRadius} state={plumber.state} />
     </section>
   );
 }

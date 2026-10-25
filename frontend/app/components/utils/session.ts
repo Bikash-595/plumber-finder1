@@ -10,6 +10,12 @@ export const DASHBOARD_HOME: Record<DashboardArea, string> = {
   freelancer: "/freelancer",
 };
 
+/** Where each dashboard's visitors log in: customers at /login, companies and freelancers at /business/login. */
+export function loginPathFor(area: DashboardArea, next: string) {
+  const query = `next=${encodeURIComponent(next)}`;
+  return area === "user" ? `/login?${query}` : `/business/login?type=${area}&${query}`;
+}
+
 /** The dashboard a path belongs to, or null for public pages. */
 export function dashboardAreaFor(pathname: string): DashboardArea | null {
   const inside = (prefix: string) => pathname === prefix || pathname.startsWith(`${prefix}/`);

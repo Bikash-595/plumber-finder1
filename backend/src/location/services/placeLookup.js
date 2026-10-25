@@ -1,5 +1,5 @@
 // Real places for addresses: US ZIP code -> city/state (Zippopotam.us) and coordinates ->
-// ZIP/city/state (OpenStreetMap Nominatim). Results are cached; lookups time out after 5 s.
+// ZIP/city/state (OpenStreetMap Nominatim). Results are cached; lookups time out after 8 s.
 // `placeLookup.zip` / `placeLookup.reverse` can be swapped out by the automated tests.
 
 const cache = new Map();
@@ -15,7 +15,7 @@ async function getJson(url) {
   if (cached && Date.now() - cached.at < CACHE_MS) return cached.value;
   let response;
   try {
-    response = await fetch(url, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" }, signal: AbortSignal.timeout(5000) });
+    response = await fetch(url, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" }, signal: AbortSignal.timeout(8000) });
   } catch {
     throw new LookupUnavailableError();
   }
@@ -34,6 +34,24 @@ export const placeLookup = {
     const place = data?.places?.[0];
     if (!place) return null;
     return { zipCode: data["post code"], city: place["place name"], state: place.state, stateCode: place["state abbreviation"], latitude: Number(place.latitude), longitude: Number(place.longitude) };
+  },
+
+  /** "Round Rock" in "TX" -> { name, stateCode, latitude, longitude } (centre of its ZIP codes), or null. */
+  async city(name, stateCode) {
+    if (!name || !/^[A-Za-z]{2}$/.test(stateCode ?? "")) return null;
+    const data = await getJson(`https://api.zippopotam.us/us/${stateCode.toLowerCase()}/${encodeURIComponent(name.trim().toLowerCase())}`);
+    const places = (data?.places ?? []).map((place) => ({ lat: Number(place.latitude), lng: Number(place.longitude) })).filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+    if (!places.length) return null;
+    const average = (key) => Number((places.reduce((sum, p) => sum + p[key], 0) / places.length).toFixed(5));
+    return { name: data["place name"] ?? name, stateCode: (data["state abbreviation"] ?? stateCode).toUpperCase(), latitude: average("lat"), longitude: average("lng") };
+  },
+
+  /** A US address or place ("1100 Congress Ave, Austin, TX") -> { name, latitude, longitude }, or null. */
+  async search(query) {
+    const data = await getJson(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=us&q=${encodeURIComponent(query)}`);
+    const hit = Array.isArray(data) ? data[0] : null;
+    if (!hit) return null;
+    return { name: hit.display_name, latitude: Number(Number(hit.lat).toFixed(5)), longitude: Number(Number(hit.lon).toFixed(5)) };
   },
 
   /** Coordinates -> the same shape (US only), or null when nothing usable is there. */

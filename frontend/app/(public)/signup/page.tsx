@@ -1,43 +1,33 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import SignupChooseType from "@/components/signup/SignupChooseType";
 import SignupSeekerForm from "@/components/signup/SignupSeekerForm";
-import SignupCompanyForm from "@/components/signup/SignupCompanyForm";
-import SignupFreelancerForm from "@/components/signup/SignupFreelancerForm";
 import AuthLayout from "@/components/auth/AuthLayout";
 import VerifyEmailForm from "@/components/auth/VerifyEmailForm";
-import { readStoredUser, storeUser, type AccountType } from "@/components/utils/auth";
+import { readStoredUser, storeUser } from "@/components/utils/auth";
 
-const dashboardFor = (type: AccountType) => (type === "company" ? "/company-dashboard" : type === "freelancer" ? "/freelancer" : "/dashboard");
-
-/** Signup: choose the account type → fill the form (or Google / Apple) → confirm the email with the 6-digit code. */
+/** Customer signup. Companies and freelancers sign up at /business/signup (the header's "List Company"). */
 export default function SignupPage() {
-  const [step, setStep] = useState<"choose" | "form" | "verify">("choose");
-  const [accountType, setAccountType] = useState<AccountType | null>(null);
-  const [pendingEmail, setPendingEmail] = useState("");
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleSignupComplete = (name: string, email: string, type: AccountType = accountType ?? "seeker") => {
-    storeUser({ ...readStoredUser(), name, email, avatarUrl: readStoredUser()?.avatarUrl || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(name)}`, accountType: type });
-    router.push(dashboardFor(type));
+  const handleSignupComplete = (name: string, email: string) => {
+    storeUser({ ...readStoredUser(), name, email, avatarUrl: readStoredUser()?.avatarUrl || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(name)}`, accountType: "seeker" });
+    router.push("/dashboard");
   };
-  const needsCode = (email: string) => { setPendingEmail(email); setStep("verify"); };
-  const back = () => { setStep("choose"); };
 
   return (
-    <AuthLayout wide={step === "form" && accountType !== "seeker"}>
-      {step === "choose" ? (
-        <SignupChooseType accountType={accountType} onSelectType={setAccountType} onContinue={() => accountType && setStep("form")} />
-      ) : step === "verify" && accountType ? (
-        <VerifyEmailForm email={pendingEmail} accountType={accountType} onVerified={handleSignupComplete} onBack={() => setStep("form")} />
-      ) : accountType === "seeker" ? (
-        <SignupSeekerForm onBack={back} onComplete={(name, email) => handleSignupComplete(name, email)} onVerificationRequired={needsCode} />
-      ) : accountType === "freelancer" ? (
-        <SignupFreelancerForm onBack={back} onComplete={(name, email) => handleSignupComplete(name, email)} onVerificationRequired={needsCode} />
+    <AuthLayout>
+      {pendingEmail ? (
+        <VerifyEmailForm email={pendingEmail} accountType="seeker" onVerified={(name, email) => handleSignupComplete(name, email)} onBack={() => setPendingEmail(null)} />
       ) : (
-        <SignupCompanyForm onBack={back} onComplete={(name, email) => handleSignupComplete(name, email)} onVerificationRequired={needsCode} />
+        <>
+          <SignupSeekerForm onComplete={handleSignupComplete} onVerificationRequired={setPendingEmail} />
+          <p className="mt-6 text-center text-sm text-gray-600">Already have an account? <Link href="/login" className="font-bold text-[#0b1f3b] hover:underline">Log in</Link></p>
+          <p className="mt-2 text-center text-xs text-gray-500">Plumbing company or freelancer? <Link href="/business/signup" className="font-semibold underline">List your business instead</Link></p>
+        </>
       )}
     </AuthLayout>
   );

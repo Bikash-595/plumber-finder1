@@ -209,3 +209,18 @@ async function getPlace(path: string): Promise<Place> {
 
 export const lookupZip = (zipCode: string) => getPlace(`/location/zip/${encodeURIComponent(zipCode)}`);
 export const lookupCoordinates = (latitude: number, longitude: number) => getPlace(`/location/reverse?lat=${latitude}&lng=${longitude}`);
+
+/**
+ * Which account type these credentials belong to (via the unified login), without signing in.
+ * Used to point people at the right entrance: customers at /login, companies and freelancers at /business/login.
+ */
+export async function findAccountType(email: string, password: string): Promise<AccountType | null> {
+  try {
+    const response = await fetch(`${API_BASE()}/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email.trim(), password }) });
+    const payload = await readAuthPayload(response);
+    const type = payload.accountType ?? (payload.account as { accountType?: string } | undefined)?.accountType;
+    return response.ok || payload.verificationRequired ? accountTypeFromApi(type) : null;
+  } catch {
+    return null;
+  }
+}

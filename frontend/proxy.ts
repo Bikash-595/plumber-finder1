@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { DASHBOARD_HOME, dashboardAreaFor, isExpired, readTokenClaims, SESSION_COOKIE } from "./app/components/utils/session";
+import { DASHBOARD_HOME, dashboardAreaFor, isExpired, loginPathFor, readTokenClaims, SESSION_COOKIE } from "./app/components/utils/session";
 
 const securityHeaders = {
   "X-DNS-Prefetch-Control": "on",
@@ -25,9 +25,8 @@ function dashboardRedirect(request: NextRequest) {
   if (!area) return null;
   const claims = readTokenClaims(request.cookies.get(SESSION_COOKIE)?.value);
   if (!claims || isExpired(claims)) {
-    const login = new URL("/login", request.url);
-    login.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
-    const redirect = NextResponse.redirect(login);
+    // Customers log in at /login; companies and freelancers at /business/login.
+    const redirect = NextResponse.redirect(new URL(loginPathFor(area, request.nextUrl.pathname + request.nextUrl.search), request.url));
     if (claims) redirect.cookies.delete(SESSION_COOKIE);
     return redirect;
   }

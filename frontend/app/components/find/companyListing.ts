@@ -62,7 +62,7 @@ export type CompanyProfile = Omit<CompanyListing, "services"> & {
   blogs?: { _id: string; slug: string; title: string; category?: string; excerpt: string; content: string; coverImage?: string; author?: string; publishDate?: string; tags?: string[] }[];
   offers?: (Offer & { description?: string })[];
   booking?: { emergencyBooking?: boolean } | null;
-  serviceArea?: { areaDetails?: { name: string; services?: string[] }[]; branchLocation?: string; latitude?: number; longitude?: number } | null;
+  serviceArea?: { areaDetails?: { name: string; services?: string[]; address?: string; radius?: number; latitude?: number; longitude?: number }[]; branchLocation?: string; latitude?: number; longitude?: number; radius?: number } | null;
   socialLinks?: Partial<Record<"facebook" | "instagram" | "twitter" | "linkedin" | "youtube" | "tiktok", string>>;
 };
 
@@ -252,9 +252,10 @@ export function companyProfileToPlumber(profile: CompanyProfile): Plumber {
     blogCount: blogs.length,
     coordinates: card.coordinates,
     baseLocation: profile.serviceArea?.branchLocation || undefined,
+    baseRadius: profile.serviceArea?.radius ?? undefined,
     socialLinks: profile.socialLinks ?? {},
     serviceAreaDetails: profile.serviceArea?.areaDetails?.length
-      ? profile.serviceArea.areaDetails.map((area) => ({ name: area.name, services: area.services ?? [] }))
+      ? profile.serviceArea.areaDetails.map((area) => ({ name: area.name, services: area.services ?? [], address: area.address || undefined, radius: area.radius ?? undefined, latitude: area.latitude ?? undefined, longitude: area.longitude ?? undefined }))
       : card.serviceAreas.map((name) => ({ name, services: [] })),
     about: Object.fromEntries(["slogan", "longDescription", "missionStatement", "visionStatement", "companyHistory", "founderStory", "coreValues"].filter((key) => about[key]).map((key) => [key, about[key]])),
     keyHighlights: [about.slogan, card.isVerified ? "Verified company" : "", card.isEmergency ? "Emergency service available" : "", card.warranty].filter(Boolean) as string[],

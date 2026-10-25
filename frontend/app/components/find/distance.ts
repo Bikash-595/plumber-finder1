@@ -30,6 +30,12 @@ function cityCentre(city?: string, state?: string): Point | undefined {
   return cityCentres[`${city.trim().toLowerCase()}, ${stateNames[st] ?? st}`];
 }
 
+/** The centre of a known city ("Austin, TX", or "Austin" with a fallback state), or undefined. */
+export function cityPoint(name: string, fallbackState?: string): Point | undefined {
+  const [city, state] = name.split(",").map((part) => part.trim());
+  return cityCentre(city, state || fallbackState);
+}
+
 /** Where a plumber is: exact coordinates when known, otherwise its city centre (approximate). */
 export function plumberPoint(plumber: Plumber): { point: Point; approximate: boolean } | null {
   if (plumber.coordinates) return { point: plumber.coordinates, approximate: false };

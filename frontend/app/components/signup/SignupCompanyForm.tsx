@@ -239,7 +239,7 @@ export default function SignupCompanyForm({ onBack, onComplete, onVerificationRe
 
       <div className="mt-6 text-center text-sm text-gray-600">
         Already have a company account?{" "}
-        <Link href="/login" className="font-semibold text-[#FFD60A] hover:underline">
+        <Link href="/business/login?type=company" className="font-semibold text-[#FFD60A] hover:underline">
           Login here
         </Link>
       </div>

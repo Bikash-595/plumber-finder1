@@ -588,7 +588,7 @@ describe("service areas with services, card details, and the public blog feed", 
     for (const name of ["Drains", "Water heaters"]) await api("POST", "/api/companies/services", { token, body: { name } });
     const res = await api("PUT", "/api/companies/service-areas", { token, body: { branchLocation: "Austin, TX", latitude: 30.2672, longitude: -97.7431, areaDetails: [{ name: "Austin", services: "Drains, Water heaters" }, { name: "Round Rock", services: [] }, { name: "austin", services: [] }] } });
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body.data.areaDetails, [{ name: "Austin", services: ["Drains", "Water heaters"] }, { name: "Round Rock", services: [] }], "duplicate names are dropped");
+    assert.deepEqual(res.body.data.areaDetails.map(({ name, services }) => ({ name, services })), [{ name: "Austin", services: ["Drains", "Water heaters"] }, { name: "Round Rock", services: [] }], "duplicate names are dropped");
     assert.equal(res.body.data.areasCovered, "Austin, Round Rock");
 
     await api("POST", "/api/companies/team", { token, body: { name: "Sam", role: "Lead" } });
@@ -605,7 +605,7 @@ describe("service areas with services, card details, and the public blog feed", 
 
     // Old clients that only send the text still work.
     const text = await api("PUT", "/api/companies/service-areas", { token, body: { areasCovered: "Dallas, Plano" } });
-    assert.deepEqual(text.body.data.areaDetails, [{ name: "Dallas", services: [] }, { name: "Plano", services: [] }]);
+    assert.deepEqual(text.body.data.areaDetails.map(({ name, services }) => ({ name, services })), [{ name: "Dallas", services: [] }, { name: "Plano", services: [] }]);
   });
 
   test("GET /api/blogs lists published posts from published companies and freelancers", async () => {
@@ -658,5 +658,54 @@ describe("social links and up-to-date area services", () => {
     await api("PUT", "/api/freelancers/social-links", { token: body.token, body: { linkedin: "https://linkedin.com/in/fran" } });
     const listing = (await api("GET", "/api/freelancers/public")).body.data.find((item) => item.displayName === "Social Fran");
     assert.equal((await api("GET", `/api/freelancers/public/${listing._id}/profile`)).body.data.socialLinks.linkedin, "https://linkedin.com/in/fran");
+  });
+});
+
+describe("service-area radius and map coordinates", () => {
+  test("each area keeps its own radius and services, and gets real coordinates when saved", async () => {
+    const { token, listingId } = await newCompany();
+    for (const name of ["Drains", "Heaters"]) await api("POST", "/api/companies/services", { token, body: { name } });
+    const res = await api("PUT", "/api/companies/service-areas", { token, body: {
+      branchLocation: "Austin, TX", radius: 25,
+      areaDetails: [
+        { name: "Round Rock", services: ["Drains"], radius: 10 },
+        { name: "Los Angeles, CA", services: [], radius: 40 },
+        { name: "Nowhere Town", services: ["Heaters"] },
+        { name: "Pinned", services: [], latitude: 31.1, longitude: -98.2 },
+      ],
+    } });
+    assert.equal(res.status, 200);
+    const [rr, la, nowhere, pinned] = res.body.data.areaDetails;
+    assert.deepEqual([rr.radius, rr.services, rr.latitude], [10, ["Drains"], 30.1], "uses the base location's state");
+    assert.equal(la.radius, 40);
+    assert.equal(la.latitude, 30 + "Los Angeles".length / 100, "an area with its own state is looked up there");
+    assert.equal(nowhere.latitude, undefined, "unknown places are saved without coordinates");
+    assert.deepEqual([pinned.latitude, pinned.longitude], [31.1, -98.2], "given coordinates are kept");
+    assert.equal((await api("PUT", "/api/companies/service-areas", { token, body: { areaDetails: [{ name: "X", radius: 900 }] } })).status, 400);
+
+    const profile = (await api("GET", `/api/companies/public/${listingId}/profile`)).body.data;
+    assert.equal(profile.serviceArea.radius, 25);
+    assert.equal(profile.serviceArea.areaDetails[0].radius, 10);
+    assert.ok(Number.isFinite(profile.serviceArea.areaDetails[0].latitude));
+  });
+
+  test("an area's own address decides where its map is centred", async () => {
+    const { token } = await newCompany();
+    const res = await api("PUT", "/api/companies/service-areas", { token, body: { branchLocation: "Austin, TX", areaDetails: [
+      { name: "North Branch", address: "100 Main St, Round Rock, TX", radius: 8 },
+      { name: "Cedar Park", address: "Unknown address" },
+    ] } });
+    assert.equal(res.status, 200);
+    const [north, cedar] = res.body.data.areaDetails;
+    assert.deepEqual([north.address, north.latitude, north.longitude, north.radius], ["100 Main St, Round Rock, TX", 30.5, -97.5, 8]);
+    assert.equal(cedar.latitude, 30 + "Cedar Park".length / 100, "falls back to the area name when the address isn't found");
+    assert.equal((await api("GET", "/api/location/place?address=100%20Main%20St%2C%20Austin%2C%20TX")).body.data.latitude, 30.5);
+  });
+
+  test("GET /api/location/place finds a city's centre", async () => {
+    assert.equal((await api("GET", "/api/location/place?name=Round%20Rock&state=TX")).body.data.stateCode, "TX");
+    assert.equal((await api("GET", "/api/location/place?name=Los%20Angeles,%20CA")).status, 200, "state inside the name");
+    assert.equal((await api("GET", "/api/location/place?name=Nowhere&state=TX")).status, 404);
+    assert.equal((await api("GET", "/api/location/place")).status, 400);
   });
 });

@@ -221,6 +221,9 @@ export function Header() {
 
   const menuLinks = accountMenuLinks(user);
   const ownDashboard = dashboardLink(user);
+  // Signed-in companies/freelancers go straight to their dashboard; everyone else to the business login.
+  const isBusiness = ownDashboard?.href === "/company-dashboard" || ownDashboard?.href === "/freelancer";
+  const businessCta = isBusiness && ownDashboard ? { href: ownDashboard.href, label: "My Business" } : { href: "/business/login", label: "List Company" };
 
   const accountAvatar = user && (user.avatarUrl ? (
     <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-200 ring-2 ring-white">
@@ -403,14 +406,13 @@ export function Header() {
                 </Link>
               )}
 
-              {/* Primary call to action (tablet and up) */}
+              {/* Business entrance (tablet and up): companies and freelancers log in / sign up here. */}
               <Link
-                href="/book-plumber"
-                className="hidden h-10 items-center gap-2 rounded-full bg-[#FFD60A] px-4 text-sm font-bold text-[#0b1f3b] shadow-sm shadow-[#FFD60A]/40 transition hover:-translate-y-px hover:brightness-95 hover:shadow-md md:inline-flex lg:px-5"
+                href={businessCta.href}
+                className="hidden h-10 items-center gap-2 rounded-full bg-[#0b1f3b] px-4 text-sm font-bold text-white shadow-sm transition hover:-translate-y-px hover:bg-[#17345a] hover:shadow-md md:inline-flex lg:px-5"
               >
-                <FaCalendarCheck className="h-3.5 w-3.5" aria-hidden />
-                <span className="lg:hidden">Book</span>
-                <span className="hidden lg:inline">Book a Plumber</span>
+                <FaBuilding className="h-3.5 w-3.5 text-[#FFD60A]" aria-hidden />
+                {businessCta.label}
               </Link>
 
               {/* Phone search shortcut */}
@@ -461,8 +463,15 @@ export function Header() {
               />
             </nav>
             <Link
+              href="/book-plumber"
+              className="ml-auto mr-5 inline-flex h-9 items-center gap-2 rounded-full bg-[#FFD60A] px-4 text-sm font-bold text-[#0b1f3b] shadow-sm shadow-[#FFD60A]/40 transition hover:-translate-y-px hover:brightness-95 hover:shadow-md"
+            >
+              <FaCalendarCheck className="h-3.5 w-3.5" aria-hidden />
+              Book a Plumber
+            </Link>
+            <Link
               href="/add-business"
-              className="ml-auto inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 transition hover:text-emerald-800"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 transition hover:text-emerald-800"
             >
               <span className="grid h-7 w-7 place-items-center rounded-full bg-emerald-50">
                 <FaBriefcase className="h-3 w-3" aria-hidden />
@@ -677,6 +686,14 @@ export function Header() {
               >
                 <FaCalendarCheck className="h-4 w-4" aria-hidden />
                 Book a Plumber
+              </Link>
+              <Link
+                href={businessCta.href}
+                onClick={closeMobileMenu}
+                className="flex h-11 items-center justify-center gap-2 rounded-full border border-[#0b1f3b] text-sm font-bold text-[#0b1f3b] hover:bg-slate-50"
+              >
+                <FaBuilding className="h-4 w-4" aria-hidden />
+                {businessCta.label}
               </Link>
               {user && ownDashboard && (
                 <Link href={ownDashboard.href} onClick={closeMobileMenu} className="flex h-11 items-center justify-center gap-2 rounded-full bg-[#0b1f3b] text-sm font-semibold text-white hover:bg-[#17345a]">

@@ -9,6 +9,10 @@ interface SignupChooseTypeProps {
   accountType: AccountChoice | null;
   onSelectType: (type: AccountChoice) => void;
   onContinue: () => void;
+  /** Which choices to offer (the business signup only offers company and freelancer). */
+  types?: AccountChoice[];
+  title?: string;
+  loginHref?: string;
 }
 
 const choices = [
@@ -18,14 +22,14 @@ const choices = [
 ];
 
 /** Step 1 of signup: which kind of account. */
-export default function SignupChooseType({ accountType, onSelectType, onContinue }: SignupChooseTypeProps) {
+export default function SignupChooseType({ accountType, onSelectType, onContinue, types, title = "Create your account", loginHref = "/login" }: SignupChooseTypeProps) {
   return (
     <>
-      <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl">Create your account</h1>
-      <p className="mt-1.5 text-sm text-gray-600">Already have one? <Link href="/login" className="font-bold text-[#0b1f3b] hover:underline">Log in</Link></p>
+      <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl">{title}</h1>
+      <p className="mt-1.5 text-sm text-gray-600">Already have one? <Link href={loginHref} className="font-bold text-[#0b1f3b] hover:underline">Log in</Link></p>
 
       <div role="radiogroup" aria-label="Account type" className="mt-6 space-y-3">
-        {choices.map(({ value, icon: Icon, title, text }) => {
+        {choices.filter((choice) => !types || types.includes(choice.value)).map(({ value, icon: Icon, title, text }) => {
           const selected = accountType === value;
           return (
             <button key={value} type="button" role="radio" aria-checked={selected} onClick={() => onSelectType(value)} className={`flex w-full items-center gap-4 rounded-2xl border-2 p-4 text-left transition ${selected ? "border-[#0b1f3b] bg-[#FFD60A]/10" : "border-gray-200 bg-white hover:border-gray-300"}`}>
