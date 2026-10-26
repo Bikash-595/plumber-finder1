@@ -1,5 +1,5 @@
-import NotificationsSection from "@/components/company-dashboard/sections/NotificationsSection";
+import AccountNotifications from "@/components/bookings/AccountNotifications";
 
 export default function CompanyNotificationsPage() {
-  return <NotificationsSection />;
+  return <AccountNotifications base="/companies" />;
 }

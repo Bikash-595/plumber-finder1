@@ -415,6 +415,7 @@ export default function PlumberCardGrid({ plumbers }: Props) {
                 <div className="absolute right-2 top-2 z-10 max-w-[calc(100%-1rem)] truncate rounded-full bg-green-500 px-2 py-1 text-[10px] font-bold text-white shadow-md sm:right-3 sm:top-3 sm:text-xs">
                   <FaTag className="h-2 w-2" />
                   {plumber.discount}
+                  {(plumber.couponCount ?? 0) > 1 && <span className="ml-1 font-semibold opacity-90">· {plumber.couponCount} codes</span>}
                 </div>
               )}
               {(distance || place) && (

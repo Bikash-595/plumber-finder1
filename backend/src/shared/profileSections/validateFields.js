@@ -36,6 +36,18 @@ function coerce(spec, raw) {
       if (!pattern.test(value) && !HTTP_URL.test(value)) return { error: `must be an http(s) URL or an uploaded ${spec.type === "image" ? "image" : "image or video"}` };
       return { value };
     }
+    case "images": {
+      // A list of images (e.g. cover photos): each an http(s) URL or an uploaded photo.
+      if (!Array.isArray(raw)) return { error: "must be a list of images" };
+      if (raw.length > (spec.maxItems ?? 10)) return { error: `can have ${spec.maxItems ?? 10} images at most` };
+      const value = [];
+      for (const [index, item] of raw.entries()) {
+        const result = coerce({ type: "image", max: spec.max }, item);
+        if (result.error) return { error: `image ${index + 1} ${result.error}` };
+        value.push(result.value);
+      }
+      return { value };
+    }
     case "boolean": {
       if (typeof raw === "boolean") return { value: raw };
       if (raw === "true" || raw === "false") return { value: raw === "true" };
@@ -112,7 +124,7 @@ export function validateFields(fields, body, { partial = false } = {}) {
     const isEmpty = raw === null || (typeof raw === "string" && raw.trim() === "") || (Array.isArray(raw) && raw.length === 0);
     if (isEmpty) {
       if (spec.required) errors[name] = "is required";
-      else values[name] = spec.default !== undefined ? spec.default : spec.type === "list" || spec.type === "objects" ? [] : null;
+      else values[name] = spec.default !== undefined ? spec.default : spec.type === "list" || spec.type === "objects" || spec.type === "images" ? [] : null;
       continue;
     }
     const result = coerce(spec, raw);

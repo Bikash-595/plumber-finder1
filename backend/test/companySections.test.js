@@ -752,3 +752,134 @@ describe("company opening hours", () => {
     assert.equal((await api("GET", `/api/freelancers/public/${listing._id}/profile`)).body.data.hours.dailyHours, "Back by 6 PM");
   });
 });
+
+describe("special offers with several coupon codes", () => {
+  test("each code has its own discount; card shows the best, profile lists every code", async () => {
+    const { token, listingId } = await newCompany();
+    const bad = async (coupons) => (await api("POST", "/api/companies/special-offers", { token, body: { title: "Bad", coupons } })).body.errors?.coupons;
+    assert.match(await bad([{ code: "SAVE10", discountValue: 10 }, { code: "save10", discountValue: 5 }]), /listed twice/);
+    assert.match(await bad([{ code: "BIG", discountType: "percent", discountValue: 150 }]), /more than 100%/);
+    assert.match(await bad([{ code: "FREEBIE", discountType: "free" }]), /needs a description/);
+    assert.match(await bad([{ code: "NOVALUE", discountType: "amount" }]), /greater than 0/);
+    assert.match(await bad([{ code: "no spaces", discountValue: 5 }]), /letters, numbers/);
+
+    const res = await api("POST", "/api/companies/special-offers", { token, body: { title: "Spring savings", endDate: "2099-01-01", coupons: [
+      { code: "save10", discountType: "percent", discountValue: 10 },
+      { code: "DRAIN25", discountType: "amount", discountValue: 25, appliesTo: "Drain Cleaning", minSpend: 100 },
+      { code: "CHECKUP", discountType: "free", label: "Free inspection" },
+    ] } });
+    assert.equal(res.status, 201);
+    assert.deepEqual(res.body.data.coupons.map((c) => c.code), ["SAVE10", "DRAIN25", "CHECKUP"]);
+    await api("POST", "/api/companies/special-offers", { token, body: { title: "Old style", discount: "15% off", promoCode: "old15" } });
+    await api("POST", "/api/companies/special-offers", { token, body: { title: "Ended", endDate: "2020-01-01", coupons: [{ code: "GONE", discountValue: 90 }] } });
+
+    const card = (await api("GET", "/api/companies/public")).body.data.find((item) => item._id === listingId);
+    assert.deepEqual(card.offer, { title: "Spring savings", discount: "Up to 10% off", promoCode: "SAVE10", couponCount: 4, offerCount: 2 });
+    const { offers } = (await api("GET", `/api/companies/public/${listingId}/profile`)).body.data;
+    assert.deepEqual(offers.map((o) => o.coupons.map((c) => `${c.code}=${c.discount}`)), [["SAVE10=10% off", "DRAIN25=$25 off", "CHECKUP=Free inspection"], ["OLD15=15% off"]]);
+    assert.equal(offers[0].coupons[1].appliesTo, "Drain Cleaning");
+    assert.equal(offers[1].promoCode, undefined, "old single-code fields are folded into coupons");
+  });
+
+  test("freelancers get the same coupons", async () => {
+    const { body } = await api("POST", "/api/auth/freelancers/signup", { body: { name: "Coupon Fran", email: `couponfran${++seq}@example.com`, password: "password123" } });
+    await api("PUT", "/api/freelancers/header-profile", { token: body.token, body: { displayName: "Coupon Fran" } });
+    assert.equal((await api("POST", "/api/freelancers/special-offers", { token: body.token, body: { title: "New customers", coupons: [{ code: "HELLO20", discountValue: 20 }, { code: "HELLO50", discountType: "amount", discountValue: 50, minSpend: 300 }] } })).status, 201);
+    const listing = (await api("GET", "/api/freelancers/public")).body.data.find((item) => item.displayName === "Coupon Fran");
+    assert.equal(listing.offer.discount, "Up to 20% off");
+    assert.equal(listing.offer.couponCount, 2);
+    const profile = (await api("GET", `/api/freelancers/public/${listing._id}/profile`)).body.data;
+    assert.deepEqual(profile.offers[0].coupons.map((c) => c.discount), ["20% off", "$50 off"]);
+  });
+});
+
+describe("header bio and tagline", () => {
+  test("a company's header bio and tagline show on its card and profile; cleared ones fall back to the wizard", async () => {
+    const n = ++seq;
+    const { body } = await api("POST", "/api/auth/companies/signup", { body: { companyName: `Bio Co ${n}`, email: `bioco${n}@example.com`, password: "password123" } });
+    const token = body.token;
+    const { body: wizard } = await api("POST", "/api/companies/onboarding", { token, body: { formData: { companyName: `Bio Co ${n}`, tagline: "Wizard tagline", shortDescription: "Wizard description" } } });
+    const listingId = wizard.data._id;
+    assert.equal((await api("PUT", "/api/companies/header-profile", { token, body: { companyName: `Bio Co ${n}`, bio: "x".repeat(601) } })).status, 400, "the bio is limited to 600 characters");
+
+    assert.equal((await api("PUT", "/api/companies/header-profile", { token, body: { companyName: `Bio Co ${n}`, tagline: "Fast, honest plumbing", bio: "Family-owned since 2015." } })).status, 200);
+    const card = (await api("GET", "/api/companies/public")).body.data.find((item) => item._id === listingId);
+    assert.deepEqual([card.tagline, card.description], ["Fast, honest plumbing", "Family-owned since 2015."]);
+    const profile = (await api("GET", `/api/companies/public/${listingId}/profile`)).body.data;
+    assert.deepEqual([profile.header.bio, profile.description], ["Family-owned since 2015.", "Family-owned since 2015."]);
+
+    // Re-submitting the wizard keeps the header's bio and tagline.
+    await api("POST", "/api/companies/onboarding", { token, body: { formData: { companyName: `Bio Co ${n}`, tagline: "Wizard tagline", shortDescription: "Wizard description" } } });
+    let listing = (await api("GET", `/api/companies/public/${listingId}`)).body.data;
+    assert.deepEqual([listing.tagline, listing.description], ["Fast, honest plumbing", "Family-owned since 2015."]);
+
+    await api("PUT", "/api/companies/header-profile", { token, body: { companyName: `Bio Co ${n}`, tagline: "", bio: "" } });
+    listing = (await api("GET", `/api/companies/public/${listingId}`)).body.data;
+    assert.deepEqual([listing.tagline, listing.description], ["Wizard tagline", "Wizard description"]);
+  });
+
+  test("a freelancer's header bio is separate from the longer Overview bio", async () => {
+    const { body } = await api("POST", "/api/auth/freelancers/signup", { body: { name: "Bio Fran", email: `biofran${++seq}@example.com`, password: "password123" } });
+    await api("PUT", "/api/freelancers/header-profile", { token: body.token, body: { displayName: "Bio Fran", bio: "Master plumber, 12 years." } });
+    await api("PUT", "/api/freelancers/overview", { token: body.token, body: { bio: "The longer story about my work." } });
+    const card = (await api("GET", "/api/freelancers/public")).body.data.find((item) => item.displayName === "Bio Fran");
+    assert.deepEqual([card.headerBio, card.bio], ["Master plumber, 12 years.", "The longer story about my work."]);
+  });
+});
+
+describe("gallery media kinds", () => {
+  test("YouTube links are saved as videos", async () => {
+    const { token } = await newCompany();
+    const kinds = [];
+    for (const media of ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://youtu.be/dQw4w9WgXcQ", "https://example.com/clip.mp4", "https://images.unsplash.com/photo-1?w=800"]) {
+      kinds.push((await api("POST", "/api/companies/gallery", { token, body: { media } })).body.data.mediaKind);
+    }
+    assert.deepEqual(kinds, ["video", "video", "video", "image"]);
+  });
+});
+
+describe("several cover photos", () => {
+  test("companies and freelancers save up to 8 cover photos; the first is the main cover", async () => {
+    const img = (n) => `https://images.unsplash.com/photo-${n}?w=1200`;
+    const { token, listingId } = await newCompany();
+    assert.equal((await api("PUT", "/api/companies/header-profile", { token, body: { companyName: "Covers Co", coverImages: Array.from({ length: 9 }, (_, i) => img(i)) } })).status, 400, "at most 8");
+    assert.equal((await api("PUT", "/api/companies/header-profile", { token, body: { companyName: "Covers Co", coverImages: ["not an image"] } })).status, 400);
+    const res = await api("PUT", "/api/companies/header-profile", { token, body: { companyName: "Covers Co", coverImages: [img(1), img(2), img(3)] } });
+    assert.equal(res.status, 200);
+    assert.deepEqual([res.body.data.coverImages.length, res.body.data.coverImage], [3, img(1)]);
+    const profile = (await api("GET", `/api/companies/public/${listingId}/profile`)).body.data;
+    assert.deepEqual(profile.header.coverImages, [img(1), img(2), img(3)]);
+    assert.equal(profile.coverImage, img(1), "the listing's single cover follows the first photo");
+
+    const { body } = await api("POST", "/api/auth/freelancers/signup", { body: { name: "Cover Fran", email: `coverfran${++seq}@example.com`, password: "password123" } });
+    await api("PUT", "/api/freelancers/header-profile", { token: body.token, body: { displayName: "Cover Fran", coverImages: [img(4), img(5)] } });
+    const listing = (await api("GET", "/api/freelancers/public")).body.data.find((item) => item.displayName === "Cover Fran");
+    assert.deepEqual([listing.coverImages, listing.coverImage], [[img(4), img(5)], img(4)]);
+  });
+});
+
+describe("service details", () => {
+  test("a service has a category, a structured price, duration, and what's included", async () => {
+    const { token, listingId } = await newCompany();
+    assert.equal((await api("POST", "/api/companies/services", { token, body: { name: "Leak Repair", priceType: "from" } })).body.errors?.priceAmount, "is required for this price type");
+    assert.equal((await api("POST", "/api/companies/services", { token, body: { name: "Leak Repair", category: "Painting" } })).status, 400);
+    const created = await api("POST", "/api/companies/services", { token, body: {
+      name: "Leak Repair", category: "Repairs", priceType: "from", priceAmount: 89, duration: "1–2 hours",
+      includes: ["Leak detection", "Parts up to $50", "Clean-up"], warranty: "1-year labor warranty", featured: true,
+    } });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.data.price, "From $89", "the shown price follows the structured price");
+    const updated = await api("PUT", `/api/companies/services/${created.body.data._id}`, { token, body: { priceType: "quote", priceAmount: 89 } });
+    assert.deepEqual([updated.body.data.price, updated.body.data.priceAmount], ["Free quote", null]);
+    await api("POST", "/api/companies/services", { token, body: { name: "Water Heater Install", priceType: "hourly", priceAmount: 95.5 } });
+    const { services } = (await api("GET", `/api/companies/public/${listingId}/profile`)).body.data;
+    assert.deepEqual(services.map((s) => [s.name, s.price, s.category ?? null]), [["Leak Repair", "Free quote", "Repairs"], ["Water Heater Install", "$95.50/hr", null]]);
+    assert.deepEqual(services[0].includes, ["Leak detection", "Parts up to $50", "Clean-up"]);
+  });
+
+  test("freelancers' services get the same details", async () => {
+    const { body } = await api("POST", "/api/auth/freelancers/signup", { body: { name: "Svc Fran", email: `svcfran${++seq}@example.com`, password: "password123" } });
+    const res = await api("POST", "/api/freelancers/services", { token: body.token, body: { name: "Toilet Repair", category: "Repairs", priceType: "fixed", priceAmount: 120, includes: ["Flapper and fill valve"] } });
+    assert.deepEqual([res.status, res.body.data.price], [201, "$120"]);
+  });
+});

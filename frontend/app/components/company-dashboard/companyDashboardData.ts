@@ -4,6 +4,7 @@ import { FaShareAlt,
   FaBriefcase,
   FaBuilding,
   FaCalendarAlt,
+  FaCalendarCheck,
   FaClock,
   FaChartLine,
   FaCog,
@@ -43,6 +44,7 @@ export const companyNavSections: { label: string; items: CompanyNavItem[] }[] = 
   {
     label: "Operations",
     items: [
+      { label: "Bookings", href: "/company-dashboard/bookings", icon: FaCalendarCheck },
       { label: "Leads", href: "/company-dashboard/leads", icon: FaAddressBook },
       { label: "Jobs", href: "/company-dashboard/jobs", icon: FaBriefcase },
       { label: "Schedule", href: "/company-dashboard/schedule", icon: FaCalendarAlt },

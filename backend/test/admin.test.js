@@ -151,7 +151,7 @@ describe("admin APIs", () => {
     assert.equal((await api("PATCH", `/api/admin/bookings/${booking._id}/status`, { token, body: { status: "cancelled" } })).status, 409, "completed is final");
 
     const notes = (await api("GET", "/api/users/notifications", { token: customer.token })).body.data.map((n) => n.title);
-    assert.ok(notes.includes("Booking scheduled") && notes.includes("Job completed"));
+    assert.ok(notes.includes("Booking confirmed") && notes.includes("Job completed"));
     const summary = (await api("GET", "/api/users/dashboard", { token: customer.token })).body.data.counts;
     assert.equal(summary.completedBookings, 1);
   });

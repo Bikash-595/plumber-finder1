@@ -18,6 +18,31 @@ const accepts: Record<MediaKind, string> = {
   media: "image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime",
 };
 
+/**
+ * Shrinks a photo in the browser and returns it as a WebP data URL (resolves to an error message
+ * instead when it can't be used). Wide photos such as covers can pass a larger `maxDimension`.
+ */
+export function compressImage(file: File, maxDimension = 1200): Promise<{ dataUrl: string } | { error: string }> {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith("image/")) return resolve({ error: "Choose a photo (PNG, JPG, or WEBP)." });
+    if (file.size > 8 * 1024 * 1024) return resolve({ error: `${file.name} is larger than 8 MB.` });
+    const image = new Image();
+    const sourceUrl = URL.createObjectURL(file);
+    image.onload = () => {
+      const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(sourceUrl);
+      const dataUrl = canvas.toDataURL("image/webp", 0.78);
+      resolve(dataUrl.length > 1_200_000 ? { error: `${file.name} is still too large after compression. Choose a smaller image.` } : { dataUrl });
+    };
+    image.onerror = () => { URL.revokeObjectURL(sourceUrl); resolve({ error: `${file.name} could not be read. Please choose another image.` }); };
+    image.src = sourceUrl;
+  });
+}
+
 export default function LocalMediaUpload({ label, value = "", kind = "image", onChange }: Props) {
   const id = useId();
   const [error, setError] = useState("");
@@ -32,25 +57,9 @@ export default function LocalMediaUpload({ label, value = "", kind = "image", on
     }
     setError("");
     if (file.type.startsWith("image/")) {
-      const image = new Image();
-      const sourceUrl = URL.createObjectURL(file);
-      image.onload = () => {
-        const maxDimension = 1200;
-        const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.max(1, Math.round(image.width * scale));
-        canvas.height = Math.max(1, Math.round(image.height * scale));
-        canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
-        URL.revokeObjectURL(sourceUrl);
-        const compressed = canvas.toDataURL("image/webp", 0.78);
-        if (compressed.length > 1_200_000) {
-          setError("This image is still too large after compression. Choose a smaller image.");
-          return;
-        }
-        onChange(compressed);
-      };
-      image.onerror = () => { URL.revokeObjectURL(sourceUrl); setError("This image format could not be processed. Please choose another image."); };
-      image.src = sourceUrl;
+      const result = await compressImage(file);
+      if ("error" in result) setError(result.error);
+      else onChange(result.dataUrl);
       return;
     }
     const reader = new FileReader();

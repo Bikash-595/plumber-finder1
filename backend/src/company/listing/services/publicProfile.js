@@ -19,6 +19,7 @@ import { CompanyTeamMember } from "../../team/models/CompanyTeamMember.js";
 import { CompanySocialLinks } from "../../social-links/models/CompanySocialLinks.js";
 import { CompanyOpeningHours } from "../../opening-hours/models/CompanyOpeningHours.js";
 import { publicHours } from "../../../shared/profileSections/openingHoursSection.js";
+import { cardOffer, publicOffer } from "../../../shared/profileSections/specialOffersSection.js";
 import { currentOffers, publishedBlogs, visibleProjects } from "../../../shared/profileSections/publicFilters.js";
 import { firstPoint, galleryCounts, publishedBlogCounts } from "../../../shared/profileSections/cardExtras.js";
 
@@ -44,7 +45,7 @@ export async function cardSummaries(listings) {
     CompanyReview.aggregate([{ $match: { company: { $in: companies } } }, { $group: { _id: "$company", rating: { $avg: "$rating" }, reviewCount: { $sum: 1 } } }]),
     CompanyOverview.find({ company: { $in: companies } }).lean(),
     CompanyHeaderProfile.find({ company: { $in: companies } }).select("company ownerName yearsInBusiness licenseNumber insurance certifications").lean(),
-    CompanySpecialOffer.find({ company: { $in: companies }, ...currentOffers() }).sort(byPosition).select("company title discount promoCode").lean(),
+    CompanySpecialOffer.find({ company: { $in: companies }, ...currentOffers() }).sort(byPosition).select("company title discount promoCode coupons").lean(),
     CompanyOperations.find({ company: { $in: companies } }).select("company weeklyHours availability24x7").lean(),
     CompanyServiceOffering.find({ company: { $in: companies }, emergency: true }).select("company").lean(),
     Company.find({ _id: { $in: companies } }).select("status").lean(),
@@ -70,7 +71,8 @@ export async function cardSummaries(listings) {
   }
   const maps = { ratings: byCompany(ratings), overviews: byCompany(overviews), headers: byCompany(headers), operations: byCompany(operations), accounts: byCompany(accounts), teamCounts: byCompany(teamCounts), drafts: byCompany(drafts) };
   const offersByCompany = new Map();
-  for (const offer of offers) if (!offersByCompany.has(String(offer.company))) offersByCompany.set(String(offer.company), offer);
+  // Every current offer per owner (in display order), summed up for the card.
+  for (const offer of offers) offersByCompany.set(String(offer.company), [...(offersByCompany.get(String(offer.company)) ?? []), offer]);
   const emergency = new Set(emergencyServices.map((item) => String(item.company)));
 
   return new Map(listings.map((listing) => {
@@ -80,7 +82,7 @@ export async function cardSummaries(listings) {
     const header = maps.headers.get(key) ?? {};
     const ops = hoursByCompany.get(key) ?? maps.operations.get(key) ?? {};
     const wizard = maps.drafts.get(key)?.formData ?? {};
-    const offer = offersByCompany.get(key);
+    const offer = cardOffer(offersByCompany.get(key) ?? []);
     const established = firstNumber(overview.foundedYear, numberFrom(wizard.yearEstablished));
     const area = areasByCompany.get(key) ?? {};
     const places = locationsByCompany.get(key) ?? {};
@@ -105,7 +107,7 @@ export async function cardSummaries(listings) {
       projectsCompleted: overview.projectsCompleted,
       warranty: wizard.warranty,
       languages: wizard.languagesSpoken,
-      offer: offer ? { title: offer.title, discount: offer.discount, promoCode: offer.promoCode } : undefined,
+      offer,
       isEmergency: emergency.has(key) || ops.availability24x7 === true || /^(yes|true|24\/?7)/i.test(String(ops.availability24x7 ?? "")),
       weeklyHours: ops.weeklyHours ?? [],
     }];
@@ -154,7 +156,7 @@ export async function fullProfile(listing) {
     branches: (locations?.locations ?? []).map(({ _id, ...branch }) => branch),
     // Wizard-only service names still show when the Services section is empty.
     services: services.length ? services : (listing.services ?? []).map((name) => ({ name })),
-    gallery, projects, reviews, team, faqs, blogs, offers,
+    gallery, projects, reviews, team, faqs, blogs, offers: offers.map(publicOffer),
     booking: booking ?? null,
     serviceArea: withCurrentServices(serviceArea, services),
     socialLinks: socialLinks ?? {},

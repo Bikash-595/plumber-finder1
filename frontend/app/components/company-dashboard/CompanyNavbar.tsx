@@ -2,11 +2,11 @@
 "use client";
 
 import Link from "next/link";
+import NotificationBell from "@/components/bookings/NotificationBell";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   FaBars,
-  FaBell,
   FaChevronDown,
   FaCog,
   FaSearch,
@@ -133,14 +133,7 @@ export default function CompanyNavbar({ onToggleSidebar }: CompanyNavbarProps) {
         </div> */}
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/company-dashboard/notifications"
-            className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:border-[#FFD60A] hover:text-[#0b1f3b]"
-            aria-label="Notifications"
-          >
-            <FaBell className="h-4 w-4" />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
-          </Link>
+          <NotificationBell base="/companies" href="/company-dashboard/notifications" />
 
           <div className="relative">
             <button

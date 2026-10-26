@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { FaPlay } from "react-icons/fa";
 import { displayableImage } from "./companyListing";
+import { youtubeId } from "./media";
 import type { Plumber } from "./types";
 
 type Slide = { kind: "image" | "video" | "youtube"; src: string };
@@ -14,7 +15,6 @@ const VIDEO_MS = 8000;
 // Gallery fetched once per company per page visit, shared by every card that shows it.
 const galleryCache = new Map<string, Promise<Slide[]>>();
 
-const youtubeId = (url: string) => url.match(/(?:youtube(?:-nocookie)?\.com\/(?:embed\/|watch\?v=)|youtu\.be\/)([\w-]{11})/)?.[1] ?? null;
 
 function toSlide(src: string, kind?: "image" | "video"): Slide | null {
   if (!src) return null;

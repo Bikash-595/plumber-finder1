@@ -1,8 +1,10 @@
+import { youtubeId } from "./media";
 import type { BlogPost, OpeningHours, OpeningHoursDay, Plumber, PlumberReview, TeamMember } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
 
-type Offer = { title?: string; discount?: string; promoCode?: string };
+type Offer = { title?: string; discount?: string; promoCode?: string; couponCount?: number };
+type PublicOffer = { _id: string; title: string; description?: string; image?: string; endDate?: string; coupons?: { code: string; discount: string; appliesTo?: string; minSpend?: number; terms?: string }[] };
 
 // Shape returned by the backend's GET /companies/public (one card per company).
 export type CompanyListing = {
@@ -12,6 +14,7 @@ export type CompanyListing = {
   tagline?: string;
   logo?: string;
   coverImage?: string;
+  coverImages?: string[];
   services?: string[];
   serviceAreas?: string[];
   location?: string;
@@ -49,8 +52,8 @@ type Media = { _id: string; type?: string; media: string; mediaKind?: "image" | 
 
 // GET /companies/public/:id/profile — the card fields plus every public section.
 export type CompanyProfile = Omit<CompanyListing, "services"> & {
-  services?: { name: string; price?: string; emergency?: boolean; featured?: boolean }[];
-  header?: { companyName?: string; ownerName?: string; logo?: string; coverImage?: string } | null;
+  services?: { _id?: string; name: string; category?: string; description?: string; price?: string; duration?: string; includes?: string[]; warranty?: string; emergency?: boolean; featured?: boolean; image?: string }[];
+  header?: { companyName?: string; ownerName?: string; logo?: string; coverImage?: string; coverImages?: string[] } | null;
   about?: Record<string, string>;
   contact?: Record<string, string>;
   hours?: Record<string, string> & { weeklyHours?: OpeningHoursDay[] };
@@ -61,7 +64,7 @@ export type CompanyProfile = Omit<CompanyListing, "services"> & {
   team?: { _id: string; name: string; role?: string; bio?: string; photo?: string; specialties?: string[]; experienceYears?: number; certificates?: string[]; licenseNumber?: string; availability?: string; joinedYear?: number }[];
   faqs?: { question: string; answer: string }[];
   blogs?: { _id: string; slug: string; title: string; category?: string; excerpt: string; content: string; coverImage?: string; author?: string; publishDate?: string; tags?: string[] }[];
-  offers?: (Offer & { description?: string })[];
+  offers?: PublicOffer[];
   booking?: { emergencyBooking?: boolean } | null;
   serviceArea?: { areaDetails?: { name: string; services?: string[]; address?: string; radius?: number; latitude?: number; longitude?: number }[]; branchLocation?: string; latitude?: number; longitude?: number; radius?: number } | null;
   socialLinks?: Partial<Record<"facebook" | "instagram" | "twitter" | "linkedin" | "youtube" | "tiktok", string>>;
@@ -154,6 +157,7 @@ export function companyListingToPlumber(company: CompanyListing): Plumber {
     media: { images: displayableImage(company.coverImage) ? [displayableImage(company.coverImage)] : [], videos: [] },
     discount: company.offer?.discount || company.offer?.title,
     promoCode: company.offer?.promoCode,
+    couponCount: company.offer?.couponCount,
     openingHours: company.weeklyHours?.length ? { weekly: company.weeklyHours, notes: [] } : undefined,
     coordinates: company.coordinates,
     blogCount: company.blogCount ?? 0,
@@ -172,9 +176,13 @@ export function companyProfileToPlumber(profile: CompanyProfile): Plumber {
   const about = profile.about ?? {};
   const contact = profile.contact ?? {};
   const prices = offerings.map((service) => service.price).filter(Boolean) as string[];
-  const images = (profile.gallery ?? []).filter((item) => item.mediaKind !== "video").map((item) => displayableImage(item.media)).filter(Boolean);
-  const videos = (profile.gallery ?? []).filter((item) => item.mediaKind === "video").map((item) => item.media);
+  // YouTube links count as videos even if they were saved before the backend recognised them.
+  const isVideo = (item: { media: string; mediaKind?: string }) => item.mediaKind === "video" || Boolean(youtubeId(item.media));
+  const images = (profile.gallery ?? []).filter((item) => !isVideo(item)).map((item) => displayableImage(item.media)).filter(Boolean);
+  const videos = (profile.gallery ?? []).filter(isVideo).map((item) => item.media);
   const cover = displayableImage(profile.header?.coverImage) || displayableImage(profile.coverImage);
+  // Cover photos for the header slideshow: the company's header (or a freelancer's listing), else the single cover.
+  const coverList = (profile.header?.coverImages?.length ? profile.header.coverImages : profile.coverImages ?? []).map((image) => displayableImage(image)).filter(Boolean);
   const weekly = profile.hours?.weeklyHours ?? [];
   const notes = hoursNotes.filter(([key]) => profile.hours?.[key]).map(([key, label]) => ({ label, value: String(profile.hours![key]) }));
   const openingHours: OpeningHours | undefined = weekly.length || notes.length ? { weekly, notes } : undefined;
@@ -218,9 +226,13 @@ export function companyProfileToPlumber(profile: CompanyProfile): Plumber {
     ownerName: profile.header?.ownerName || contact.contactPerson || card.ownerName,
     logo: displayableImage(profile.header?.logo) || card.logo,
     coverImage: cover || undefined,
+    coverImages: coverList.length ? coverList : cover ? [cover] : undefined,
+    offers: (profile.offers ?? []).map((offer) => ({ id: offer._id, title: offer.title, description: offer.description, image: displayableImage(offer.image) || undefined, endDate: offer.endDate?.slice(0, 10), coupons: offer.coupons ?? [] })),
     description: profile.description || about.longDescription || card.description,
     priceRange: prices.length ? [...new Set([prices[0], prices[prices.length - 1]])].join(" – ") : card.priceRange,
     isEmergency: card.isEmergency || Boolean(profile.booking?.emergencyBooking),
+    // Every service with its details, for the profile's Services section (featured first).
+    serviceDetails: offerings.map((service, index) => ({ id: service._id ?? `${index}`, name: service.name, category: service.category, description: service.description, price: service.price, duration: service.duration, includes: service.includes ?? [], warranty: service.warranty, emergency: Boolean(service.emergency), featured: Boolean(service.featured), image: displayableImage(service.image) || undefined })),
     specializations: offerings.filter((service) => service.featured).map((service) => service.name).concat(serviceNames).filter((name, index, all) => all.indexOf(name) === index),
     teamSize: card.teamSize || teamMembers.length,
     teamMembers,
@@ -273,6 +285,7 @@ export type FreelancerListing = {
   headline?: string;
   photo?: string;
   coverImage?: string;
+  coverImages?: string[];
   phone?: string;
   city?: string;
   state?: string;
@@ -287,7 +300,8 @@ export type FreelancerListing = {
   verified?: boolean;
   licenseNumber?: string;
   insurance?: string;
-  bio?: string;
+  headerBio?: string; // short bio from "Your Profile" (header)
+  bio?: string; // longer Overview bio (About section)
   specialties?: string[];
   certifications?: string;
   languages?: string[];
@@ -313,12 +327,13 @@ function freelancerAsCompany(freelancer: Omit<FreelancerListing, "services">) {
     tagline: freelancer.headline,
     logo: freelancer.photo,
     coverImage: freelancer.coverImage,
+    coverImages: freelancer.coverImages,
     serviceAreas: freelancer.serviceAreas,
     location: [freelancer.city, freelancer.state].filter(Boolean).join(", ") || freelancer.baseLocation,
     city: freelancer.city,
     state: freelancer.state,
     phone: freelancer.phone,
-    description: freelancer.bio || freelancer.headline,
+    description: freelancer.headerBio || freelancer.bio || freelancer.headline,
     rating: freelancer.rating,
     reviewCount: freelancer.reviewCount,
     createdAt: freelancer.createdAt,

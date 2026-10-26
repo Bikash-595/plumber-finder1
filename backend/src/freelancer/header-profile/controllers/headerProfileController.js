@@ -1,6 +1,7 @@
 import { FreelancerListing } from "../../listing/models/FreelancerListing.js";
 import { FreelancerServiceArea } from "../../service-areas/models/FreelancerServiceArea.js";
 import { FreelancerServiceOffering } from "../../services/models/FreelancerServiceOffering.js";
+import { coverImagesOf, syncFirstCoverImage } from "../../../shared/profileSections/coverImages.js";
 import { createSingletonController } from "../../shared/createSingletonController.js";
 import { headerProfileConfig } from "../config/headerProfileConfig.js";
 import { FreelancerHeaderProfile } from "../models/FreelancerHeaderProfile.js";
@@ -22,6 +23,7 @@ async function syncListing(profile, { freelancer }) {
         headline: profile.headline ?? null,
         photo: profile.photo ?? null,
         coverImage: profile.coverImage ?? null,
+        coverImages: coverImagesOf(profile),
         phone: profile.phone ?? null,
         city: profile.city ?? null,
         state: profile.state ?? null,
@@ -40,6 +42,7 @@ async function syncListing(profile, { freelancer }) {
 export const headerProfileController = createSingletonController({
   Model: FreelancerHeaderProfile,
   config: headerProfileConfig,
+  beforeSave: syncFirstCoverImage,
   afterSave: syncListing,
 });
 

@@ -4,6 +4,7 @@ import { invoicesConfig } from "../../invoices/config/invoicesConfig.js";
 import { UserInvoice } from "../../invoices/models/UserInvoice.js";
 import { newInvoiceNumber } from "../../invoices/services/invoiceNumber.js";
 import { notify } from "../../notifications/services/notify.js";
+import { announce, newBookingFields } from "../../../shared/bookings/bookingWorkflow.js";
 
 /**
  * POST /api/users/checkout — turns the cart into one booking request per line plus a pending invoice,
@@ -16,8 +17,9 @@ export async function checkout(req, res, next) {
     if (!items.length) return res.status(400).json({ message: "Your cart is empty." });
 
     const { address, phone, scheduledDate, timeSlot, details } = req.validated;
-    const bookings = await UserBooking.insertMany(items.map((item) => ({
-      user, providerType: item.providerType, providerId: item.providerId, providerName: item.providerName,
+    const fields = await Promise.all(items.map((item) => newBookingFields(user, item.providerType, item.providerId)));
+    const bookings = await UserBooking.insertMany(items.map((item, index) => ({
+      user, ...fields[index], providerType: item.providerType, providerId: item.providerId, providerName: item.providerName,
       service: item.name, quantity: item.quantity, price: item.price,
       address, phone, scheduledDate, timeSlot, details, source: "checkout", status: "pending",
     })));
@@ -38,6 +40,8 @@ export async function checkout(req, res, next) {
     }
     await UserBooking.updateMany({ _id: { $in: invoice.bookings } }, { $set: { invoice: invoice._id } });
     await clearCart(user);
+    // Each plumber gets its booking request to accept or decline; admins see them all.
+    await Promise.all(bookings.map((booking) => announce(booking, "created", "customer", { tellCustomer: false })));
     await notify(user, { type: "order", title: "Order placed", message: `Invoice ${invoice.number} for $${invoice.total.toFixed(2)} was created. Your booking requests were sent.`, link: "/dashboard/invoices" });
 
     res.status(201).json({ message: "Order placed.", data: { invoice, bookings } });

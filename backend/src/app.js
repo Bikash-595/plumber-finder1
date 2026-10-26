@@ -18,8 +18,8 @@ const frontendUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "http
 const adminUrl = process.env.ADMIN_URL || "http://localhost:3001";
 
 app.use(cors({ origin: [...frontendUrl.split(","), ...adminUrl.split(",")].map((origin) => origin.trim()).filter(Boolean) }));
-// Gallery items may be videos, so those routes accept larger bodies than the rest of the API.
-const largeBodyPaths = ["/api/companies/gallery", "/api/freelancers/gallery"];
+// Gallery items may be videos and header profiles carry several cover photos, so those routes accept larger bodies.
+const largeBodyPaths = ["/api/companies/gallery", "/api/freelancers/gallery", "/api/companies/header-profile", "/api/freelancers/header-profile"];
 const jsonDefault = express.json({ limit: "3mb" });
 const jsonLarge = express.json({ limit: "8mb" });
 app.use((req, res, next) => (largeBodyPaths.some((path) => req.path.startsWith(path)) ? jsonLarge : jsonDefault)(req, res, next));

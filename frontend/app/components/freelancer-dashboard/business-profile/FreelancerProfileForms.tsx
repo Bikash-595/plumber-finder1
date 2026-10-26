@@ -1,6 +1,8 @@
 // Freelancer profile sections, saved to /api/freelancers/<section>.
 // They reuse the company business-profile form components; draft keys are prefixed so
 // freelancer drafts never mix with company drafts on the same device.
+import ServicesEditor from "@/components/company-dashboard/business-profile/ServicesEditor";
+import SpecialOffersEditor from "@/components/company-dashboard/business-profile/SpecialOffersEditor";
 import CollectionForm from "@/components/company-dashboard/business-profile/CollectionForm";
 import CompanyBlogForm from "@/components/company-dashboard/business-profile/CompanyBlogForm";
 import PreviousProjectForm from "@/components/company-dashboard/business-profile/PreviousProjectForm";
@@ -10,16 +12,17 @@ import ServiceAreasEditor from "@/components/company-dashboard/business-profile/
 import FreelancerDeleteListing from "./FreelancerDeleteListing";
 import FreelancerOpeningHoursForm from "./FreelancerOpeningHoursForm";
 
-const headerDefaults = { photo: "", coverImage: "", displayName: "", headline: "", yearsExperience: "", licenseNumber: "", insurance: "", hourlyRate: "", phone: "", city: "", state: "", isAvailable: true, published: true };
+const headerDefaults = { photo: "", coverImages: "", displayName: "", headline: "", bio: "", yearsExperience: "", licenseNumber: "", insurance: "", hourlyRate: "", phone: "", city: "", state: "", isAvailable: true, published: true };
 const overviewDefaults = { bio: "", specialties: "", certifications: "", languages: "", responseTime: "", jobsCompleted: "", averageCost: "", emergencyAvailable: false };
 const bookingDefaults = { instantBooking: true, approvalRequired: false, emergencyBooking: false, workingDays: "", timeSlots: "", cancellationPolicy: "" };
 
 export function FreelancerHeaderProfileForm() {
-  return <><SectionForm section="freelancer-header-profile" apiEndpoint="/freelancers/header-profile" title="Your Profile" description="Your name, trade, and photo appear at the top of your public profile. Saving this registers you in the public freelancer directory." defaults={headerDefaults} fields={[
+  return <><SectionForm section="freelancer-header-profile" apiEndpoint="/freelancers/header-profile" title="Your Profile" description="Your name, trade, short bio, and photo appear at the top of your public profile. Saving this registers you in the public freelancer directory." defaults={headerDefaults} fields={[
     { name: "photo", label: "Profile Photo", type: "image" },
-    { name: "coverImage", label: "Cover Image", type: "image" },
+    { name: "coverImages", label: "Cover Photos", type: "images", maxImages: 8, legacyField: "coverImage", placeholder: "Add up to 8 wide photos (vans, team, finished jobs). They change automatically at the top of your profile; the first one is the main cover." },
     { name: "displayName", label: "Display Name", placeholder: "e.g. Dana Pipes" },
     { name: "headline", label: "Trade / Headline", placeholder: "e.g. Licensed Master Plumber" },
+    { name: "bio", label: "Short Bio (up to 600 characters, shown at the top of your profile and on your card)", type: "textarea", placeholder: "e.g. Independent master plumber with 12 years of experience in leak detection, water heaters and bathroom remodels. I answer every call myself and give upfront quotes." },
     { name: "yearsExperience", label: "Years of Experience", type: "number" },
     { name: "hourlyRate", label: "Hourly Rate (USD)", type: "number" },
     { name: "licenseNumber", label: "License Number" },
@@ -45,8 +48,9 @@ export function FreelancerOverviewForm() {
   ]} />;
 }
 
+/** Services with category, price, duration, and what's included (saved to /api/freelancers/services). */
 export function FreelancerServicesForm() {
-  return <CollectionForm section="freelancer-services" apiEndpoint="/freelancers/services" title="Services Offered" description="List the services you offer. They decide which service pages you appear on." itemName="Service" fields={[{ name: "name", label: "Service Name" }, { name: "description", label: "Description", type: "textarea" }, { name: "price", label: "Price" }, { name: "duration", label: "Duration" }, { name: "emergency", label: "Emergency Service", type: "checkbox" }, { name: "featured", label: "Featured", type: "checkbox" }, { name: "image", label: "Service Image", type: "image" }]} />;
+  return <ServicesEditor apiEndpoint="/freelancers/services" />;
 }
 
 export function FreelancerGalleryForm() {
@@ -77,8 +81,9 @@ export function FreelancerBookingForm() {
   return <SectionForm section="freelancer-booking" apiEndpoint="/freelancers/booking" title="Booking Settings" description="Control how customers can request appointments with you." defaults={bookingDefaults} fields={[{ name: "instantBooking", label: "Instant Booking", type: "checkbox" }, { name: "approvalRequired", label: "Approval Required", type: "checkbox" }, { name: "emergencyBooking", label: "Emergency Booking", type: "checkbox" }, { name: "workingDays", label: "Working Days" }, { name: "timeSlots", label: "Time Slots" }, { name: "cancellationPolicy", label: "Cancellation Policy", type: "textarea" }]} />;
 }
 
+/** Offers with several coupon codes, each with its own discount (saved to /api/freelancers/special-offers). */
 export function FreelancerOffersForm() {
-  return <CollectionForm section="freelancer-offers" apiEndpoint="/freelancers/special-offers" title="Special Offers" description="Promotions customers can claim." itemName="Offer" fields={[{ name: "title", label: "Offer Title" }, { name: "description", label: "Description", type: "textarea" }, { name: "discount", label: "Discount" }, { name: "promoCode", label: "Promo Code" }, { name: "startDate", label: "Start Date", type: "date" }, { name: "endDate", label: "End Date", type: "date" }, { name: "image", label: "Offer Image", type: "image" }]} />;
+  return <SpecialOffersEditor apiEndpoint="/freelancers/special-offers" servicesEndpoint="/freelancers/services" />;
 }
 
 export function FreelancerSocialLinksForm() {

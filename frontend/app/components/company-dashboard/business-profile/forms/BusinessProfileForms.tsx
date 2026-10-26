@@ -1,6 +1,8 @@
 import CollectionForm from "../CollectionForm";
+import ServicesEditor from "../ServicesEditor";
 import OpeningHoursForm from "../OpeningHoursForm";
 import SectionForm from "../SectionForm";
+import SpecialOffersEditor from "../SpecialOffersEditor";
 import ServiceAreasEditor from "../ServiceAreasForm";
 import { companyProfileSeed } from "../profileStore";
 
@@ -34,7 +36,7 @@ export function FaqsForm() {
 }
 
 export function HeaderProfileForm() {
-  return <SectionForm section="header-profile" apiEndpoint="/companies/header-profile" title="Company Profile" description="Your company name, logo, and credentials at the top of your public profile. Saving this creates your public page at /company/your-company-name." defaults={companyProfileSeed} fields={[{ name: "logo", label: "Company Logo", type: "image" }, { name: "coverImage", label: "Cover Image", type: "image" }, { name: "companyName", label: "Company Name", required: true }, { name: "ownerName", label: "Owner Name" }, { name: "companyType", label: "Company Type" }, { name: "yearsInBusiness", label: "Years in Business", type: "number" }, { name: "licenseNumber", label: "License Number" }, { name: "insurance", label: "Insurance" }, { name: "certifications", label: "Certifications" }]} />;
+  return <SectionForm section="header-profile" apiEndpoint="/companies/header-profile" title="Company Profile" description="Your company name, tagline, short bio, logo, and credentials at the top of your public profile. Saving this creates your public page at /company/your-company-name." defaults={companyProfileSeed} fields={[{ name: "logo", label: "Company Logo", type: "image" }, { name: "coverImages", label: "Cover Photos", type: "images", maxImages: 8, legacyField: "coverImage", placeholder: "Add up to 8 wide photos (vans, team, finished jobs). They change automatically at the top of your profile; the first one is the main cover." }, { name: "companyName", label: "Company Name", required: true }, { name: "tagline", label: "Tagline", placeholder: "e.g. Fast, honest plumbing across Dallas since 2015" }, { name: "bio", label: "Short Bio (up to 600 characters, shown at the top of your profile and on your card)", type: "textarea", placeholder: "e.g. Family-owned plumbing company serving Dallas for over 10 years. We specialise in leak repair, water heaters and 24/7 emergency call-outs, with upfront pricing and licensed plumbers on every job." }, { name: "ownerName", label: "Owner Name" }, { name: "companyType", label: "Company Type" }, { name: "yearsInBusiness", label: "Years in Business", type: "number" }, { name: "licenseNumber", label: "License Number" }, { name: "insurance", label: "Insurance" }, { name: "certifications", label: "Certifications" }]} />;
 }
 
 export function MapsForm() {
@@ -45,8 +47,9 @@ export function MediaGalleryForm() {
   return <CollectionForm section="media" apiEndpoint="/companies/gallery" title="Media Gallery" description="Choose photos or videos from your device to build your company gallery." itemName="Media item" initial={{ type: "Image or video", media: "", caption: "Emergency repair team" }} fields={[{ name: "type", label: "Media type" }, { name: "media", label: "Image or Video", type: "media", required: true }, { name: "caption", label: "Caption", type: "textarea" }]} />;
 }
 
+/** Offers with several coupon codes, each with its own discount (saved to /api/companies/special-offers). */
 export function SpecialOffersForm() {
-  return <CollectionForm section="offers" apiEndpoint="/companies/special-offers" title="Special Offers" description="Set the details and dates for offers customers can claim." itemName="Offer" initial={{ title: "Free estimate", description: "Free estimate for qualifying repairs.", discount: "", promoCode: "RAPIDFREE", startDate: "", endDate: "", image: "" }} fields={[{ name: "title", label: "Offer Title", required: true }, { name: "description", label: "Description", type: "textarea" }, { name: "discount", label: "Discount" }, { name: "promoCode", label: "Promo Code" }, { name: "startDate", label: "Start Date", type: "date" }, { name: "endDate", label: "End Date", type: "date" }, { name: "image", label: "Offer Image", type: "image" }]} />;
+  return <SpecialOffersEditor apiEndpoint="/companies/special-offers" servicesEndpoint="/companies/services" />;
 }
 
 export function CustomerReviewsForm() {
@@ -57,8 +60,9 @@ export function ServiceAreasForm() {
   return <ServiceAreasEditor apiEndpoint="/companies/service-areas" servicesEndpoint="/companies/services" />;
 }
 
+/** Services with category, price, duration, and what's included (saved to /api/companies/services). */
 export function ServicesForm() {
-  return <CollectionForm section="services" apiEndpoint="/companies/services" title="Services Offered" description="Add every service your business offers. Mark emergency and featured services for prominence." itemName="Service" initial={{ name: "Emergency Plumbing", description: "Rapid response for urgent plumbing issues.", price: "$105/hr", duration: "1 hour", emergency: true, featured: true, image: "" }} fields={[{ name: "name", label: "Service Name", required: true }, { name: "description", label: "Description", type: "textarea" }, { name: "price", label: "Price" }, { name: "duration", label: "Duration" }, { name: "emergency", label: "Emergency Service", type: "checkbox" }, { name: "featured", label: "Featured", type: "checkbox" }, { name: "image", label: "Service Image", type: "image" }]} />;
+  return <ServicesEditor apiEndpoint="/companies/services" />;
 }
 
 export function SocialLinksForm() {

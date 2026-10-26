@@ -1,4 +1,4 @@
-import { notify } from "../../notifications/services/notify.js";
+import { announce, applyStatus, newBookingFields } from "../../../shared/bookings/bookingWorkflow.js";
 import { bookingsConfig } from "../config/bookingsConfig.js";
 import { UserBooking } from "../models/UserBooking.js";
 
@@ -15,9 +15,11 @@ export const bookingsController = {
 
   create: async (req, res, next) => {
     try {
-      const booking = await UserBooking.create({ ...req.validated, user: req.auth.sub, source: "request", status: "pending" });
-      await notify(req.auth.sub, { type: "booking", title: "Booking request sent", message: `Your request for ${booking.service} was sent to ${booking.providerName}.`, link: "/dashboard/bookings" });
-      res.status(201).json({ message: "Booking request sent.", data: booking });
+      const fields = await newBookingFields(req.auth.sub, req.validated.providerType, req.validated.providerId);
+      const booking = await UserBooking.create({ ...req.validated, ...fields, user: req.auth.sub, source: "request", status: "pending" });
+      // The customer, the plumber (to accept or decline), and admins are notified.
+      await announce(booking, "created", "customer");
+      res.status(201).json({ message: `Booking request ${booking.reference} sent.`, data: booking });
     } catch (error) { next(error); }
   },
 
@@ -29,18 +31,16 @@ export const bookingsController = {
     } catch (error) { next(error); }
   },
 
+  // PATCH /:id/cancel { reason? } — the plumber and admins are told, with the reason if given.
   cancel: async (req, res, next) => {
     try {
-      const booking = await UserBooking.findOneAndUpdate(
-        { _id: req.params.id, user: req.auth.sub, status: { $in: bookingsConfig.cancellable } },
-        { $set: { status: "cancelled", cancelledAt: new Date() } },
-        { new: true }
-      );
-      if (!booking) {
-        const exists = await UserBooking.exists({ _id: req.params.id, user: req.auth.sub });
-        return exists ? res.status(409).json({ message: "Only pending or scheduled bookings can be cancelled." }) : notFound(res);
-      }
-      await notify(req.auth.sub, { type: "booking", title: "Booking cancelled", message: `Your ${booking.service} booking with ${booking.providerName} was cancelled.`, link: "/dashboard/bookings" });
+      const booking = await UserBooking.findOne({ _id: req.params.id, user: req.auth.sub });
+      if (!booking) return notFound(res);
+      if (!bookingsConfig.cancellable.includes(booking.status)) return res.status(409).json({ message: "Only pending or scheduled bookings can be cancelled." });
+      const reason = typeof req.body?.reason === "string" ? req.body.reason.trim().slice(0, 500) : "";
+      applyStatus(booking, { to: "cancelled", by: "customer", note: reason });
+      await booking.save();
+      await announce(booking, "cancelled", "customer");
       res.json({ message: "Booking cancelled.", data: booking });
     } catch (error) { next(error); }
   },

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { bookingsRouter } from "./bookings/routers/bookingsRouter.js";
+import { notificationsRouter } from "./notifications/routers/notificationsRouter.js";
 import { companiesRouter } from "./companies/routers/companiesRouter.js";
 import { freelancersRouter } from "./freelancers/routers/freelancersRouter.js";
 import { overviewRouter } from "./overview/routers/overviewRouter.js";
@@ -14,6 +15,7 @@ export const adminSections = [
   { path: "/freelancers", router: freelancersRouter },
   { path: "/bookings", router: bookingsRouter },
   { path: "/registrations", router: registrationsRouter },
+  { path: "/notifications", router: notificationsRouter },
 ];
 
 export const adminRouter = Router();

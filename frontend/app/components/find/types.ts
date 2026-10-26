@@ -94,6 +94,9 @@ export interface Plumber {
   };
   discount?: string;
   promoCode?: string;
+  serviceDetails?: ServiceDetail[]; // live profiles: services with price, duration, what's included
+  couponCount?: number; // live listings: coupon codes across all current offers
+  offers?: PlumberOffer[]; // live profiles: every current offer with its coupon codes
   branches?: { name: string; lat: number; lng: number; address: string }[];
   // ... existing fields ...
   projects: {
@@ -143,11 +146,37 @@ export interface Plumber {
   baseLocation?: string; // where a live company or freelancer is based (Service Areas)
   tagline?: string;
   coverImage?: string; // profile header banner (live companies and freelancers)
+  coverImages?: string[]; // several banner photos, shown as a slideshow (the first is coverImage)
   openingHours?: OpeningHours;
   reviews?: PlumberReview[];
   about?: Partial<Record<"slogan" | "longDescription" | "missionStatement" | "visionStatement" | "companyHistory" | "founderStory" | "coreValues", string>>;
 
 
+}
+
+/** A special offer with one or more coupon codes, each with its own discount. */
+export interface PlumberOffer {
+  id: string;
+  title: string;
+  description?: string;
+  image?: string;
+  endDate?: string;
+  coupons: { code: string; discount: string; appliesTo?: string; minSpend?: number; terms?: string }[];
+}
+
+/** A service as the company/freelancer described it in its dashboard. */
+export interface ServiceDetail {
+  id: string;
+  name: string;
+  category?: string;
+  description?: string;
+  price?: string; // e.g. "From $89", "$95/hr", "Free quote"
+  duration?: string;
+  includes: string[];
+  warranty?: string;
+  emergency: boolean;
+  featured: boolean;
+  image?: string;
 }
 
 export interface TeamMember {

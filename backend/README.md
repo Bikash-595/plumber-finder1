@@ -44,20 +44,20 @@ Everything company-related lives in feature folders under `src/company/`:
 
 | Section | Path | Type |
 | --- | --- | --- |
-| Header profile | `/api/companies/header-profile` | single record (creates/updates the public listing and its URL slug) |
+| Header profile | `/api/companies/header-profile` | single record (creates/updates the public listing and its URL slug). `coverImages` (up to 8 cover photos, shown as a slideshow; `coverImage` follows the first) — `tagline` and `bio` (up to 600 characters) become the listing's tagline and description — shown at the top of the profile and on cards; when cleared, the Add Company wizard's tagline/short description are used |
 | Company overview | `/api/companies/company-overview` | single record |
 | Service areas | `/api/companies/service-areas` | single record: base location + `latitude`/`longitude` (for distances), `radius`, and `areaDetails` — `[{ name, services: [...] }]`, the services offered in each area (syncs listing `serviceAreas`) |
 | Booking settings | `/api/companies/booking` | single record |
 | Opening hours | `/api/companies/opening-hours` | single record: `weeklyHours` (one row per weekday: `day`, `isOpen`, `opensAt`, `closesAt` as HH:MM; validated by `src/shared/openingHours.js`), `availability24x7`, `dailyHours`, `emergencyHours`, `holidayHours`, `specialClosures`. Shown on the profile and cards in place of the wizard's hours; deleting it falls back to the wizard's hours |
 | Social links | `/api/companies/social-links` | single record: `facebook`, `instagram`, `twitter`, `linkedin`, `youtube`, `tiktok` (full https links; shown as icons in the profile header) |
-| Services | `/api/companies/services` | list (syncs listing `services`) |
+| Services | `/api/companies/services` | list (syncs listing `services`): `name`, `category` (Repairs, Installation, Drains & Sewer, …), `description`, `priceType` (`fixed`, `from`, `hourly`, `quote`, `free`) + `priceAmount` — the shown `price` ("From $89", "$95/hr", "Free quote") is set from them; older services keep their free-text `price` — `duration`, `includes` (up to 12 "what's included" items), `warranty`, `emergency`, `featured`, `image`. Shared with freelancers in `src/shared/profileSections/servicesSection.js` |
 | Gallery | `/api/companies/gallery` | list (8 MB body limit for videos) |
 | Previous projects | `/api/companies/previous-projects` | list |
 | Reviews | `/api/companies/reviews` | list |
 | Team | `/api/companies/team` | list |
 | FAQs | `/api/companies/faqs` | list |
 | Blogs | `/api/companies/blogs` | list (unique slug per company) |
-| Special offers | `/api/companies/special-offers` | list |
+| Special offers | `/api/companies/special-offers` | list: `title`, `description`, `startDate`/`endDate`, `image`, `active`, and `coupons` — up to 20 codes per offer, each `{ code, discountType: percent\|amount\|free\|other, discountValue, label, appliesTo, minSpend, terms }` with its own discount (codes unique within an offer). Only active offers within their dates are public. Cards get `offer: { title, discount: "Up to 15% off", promoCode, couponCount, offerCount }`; the profile gets every offer with its `coupons` (each with a `discount` label). Older offers' `discount`/`promoCode` show as one coupon. Shared with freelancers in `src/shared/profileSections/specialOffersSection.js` |
 
 Company token required (Bearer):
 
@@ -76,6 +76,7 @@ Every company listing has a clean, unique `slug` used for its public page `/comp
 
 Freelancers get the same section structure as companies under `src/freelancer/<section>/` (`config/`, `models/`, `middleware/`, `controllers/`, `routers/`), mounted by `src/freelancer/freelancerRouter.js` at `/api/freelancers`. Sections: `header-profile`, `overview`, `service-areas`, `booking`, `opening-hours`, `social-links` (single records), `services`, `gallery`, `previous-projects`, `reviews`, `faqs`, `blogs`, `special-offers` (lists). There is no team section — a freelancer works alone.
 
+- **Short bio:** `bio` on `/api/freelancers/header-profile` (up to 600 characters) is shown at the top of the profile and on cards (`headerBio` in the public listing); the Overview `bio` stays the longer About text.
 - **Opening hours:** `GET`/`PUT /api/freelancers/opening-hours` — `weeklyHours` (one row per weekday, same rules as the company wizard, validated by `src/shared/openingHours.js`) plus `availability24x7`, `dailyHours`, `emergencyHours`, `holidayHours`, `specialClosures`; `DELETE` clears them. Companies and freelancers share the config, validation and public shape in `src/shared/profileSections/openingHoursSection.js`.
 - **Removing the listing:** `DELETE /api/freelancers/header-profile` deletes the header profile and the public listing; other sections are kept, and saving the header profile again re-lists the freelancer.
 - **Public profile:** `GET /api/freelancers/public` includes card details (rating, verified, specialties, current offer, emergency, weekly hours); `GET /api/freelancers/public/:id/profile` returns everything public in one response, like the company profile endpoint.
@@ -105,6 +106,22 @@ Customer features live in `src/user/<area>/` (same `config/`, `controllers/`, `m
 | Payment methods | `GET`, `POST`, `PATCH /:id`, `DELETE /:id` — brand, last 4 digits, and expiry only; full card numbers are never stored; one default; expired cards rejected |
 
 Items point at a plumber with `providerType` (`company`/`freelancer`) and `providerId`. Real listing ids must exist and be published; the site's built-in sample plumbers (ids like `"1"`) are accepted.
+
+## Bookings between customers and plumbers
+
+A customer books a company or freelancer from its profile (`POST /api/users/bookings`) or through cart checkout. Each booking gets a reference (`BK-7F3K2Q`), a snapshot of who booked it, and `providerAccount` — the company/freelancer account that owns the listing (null for the site's sample plumbers, which only admins can answer). The rules live in `src/shared/bookings/bookingWorkflow.js`:
+
+| From | Plumber | Customer | Admin |
+|---|---|---|---|
+| `pending` (waiting for the plumber) | accept → `scheduled`, decline → `declined` | cancel | confirm, decline, cancel |
+| `scheduled` (confirmed) | complete, cancel | cancel | complete, cancel |
+
+Declining or cancelling (by the plumber or an admin) needs a reason, shown to the customer. Every change is added to the booking's `history` and announced: in-app notifications for the customer, the plumber, and admins, plus a best-effort email to the plumber for a new request and to the customer when it's accepted, declined, or cancelled. The plumber sees the customer's phone, email, and address only after accepting.
+
+- Plumber's inbox: `/api/companies/bookings` and `/api/freelancers/bookings` — `GET /` (`?status=&search=&page=`, with `counts` per status), `GET /:id`, `PATCH /:id/accept` `{ scheduledDate?, timeSlot?, note? }` (a date is required if the customer gave none), `PATCH /:id/decline` `{ reason }`, `PATCH /:id/complete` `{ note? }`, `PATCH /:id/cancel` `{ reason }`.
+- Customer: `PATCH /api/users/bookings/:id/cancel` `{ reason? }`.
+- Admin: `GET /api/admin/bookings` (with `counts`), `GET /api/admin/bookings/:id` (customer, plumber, history), `PATCH /api/admin/bookings/:id/status` `{ status, note?, scheduledDate?, timeSlot? }`.
+- Notifications for companies, freelancers, and admins (`src/shared/notifications`, collection `account_notifications`): `/api/companies/notifications`, `/api/freelancers/notifications`, `/api/admin/notifications` — `GET /` (with `unread`), `GET /unread-count`, `PATCH /read-all`, `PATCH /:id/read`, `DELETE /:id`. A new request's notification has `actionRequired: true` until the booking is answered. Admin notifications are shared by all admins.
 
 ## Admin
 

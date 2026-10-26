@@ -3,6 +3,7 @@ import {
   FaBell,
   FaBriefcase,
   FaCalendarAlt,
+  FaCalendarCheck,
   FaChartLine,
   FaCommentDots,
   FaCog,
@@ -10,6 +11,7 @@ import {
   FaHome,
   FaRegUser,
   FaStar,
+  FaTag,
   FaTools,
 } from "react-icons/fa";
 
@@ -27,6 +29,7 @@ export const freelancerNavSections = [
   {
     label: "Operations",
     items: [
+      { label: "Bookings", href: "/freelancer/bookings", icon: FaCalendarCheck },
       { label: "Leads", href: "/freelancer/leads", icon: FaAddressBook },
       { label: "Jobs", href: "/freelancer/jobs", icon: FaBriefcase },
       { label: "Schedule", href: "/freelancer/schedule", icon: FaCalendarAlt },
@@ -39,6 +42,7 @@ export const freelancerNavSections = [
       { label: "Business Profile", href: "/freelancer/business-profile", icon: FaRegUser },
       { label: "Services", href: "/freelancer/business-profile/services", icon: FaTools },
       { label: "Reviews", href: "/freelancer/business-profile/reviews", icon: FaStar },
+      { label: "Special Offers", href: "/freelancer/business-profile/offers", icon: FaTag },
       { label: "Billing", href: "/freelancer/billing", icon: FaFileInvoiceDollar },
       { label: "Settings", href: "/freelancer/settings", icon: FaCog },
     ],

@@ -16,7 +16,7 @@ export default function CardExtras({ plumber, compact = false }: { plumber: Plum
     <div className={`mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-gray-600 ${compact ? "" : "sm:text-xs"}`}>
       {offer && (
         <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full bg-green-50 px-2 py-0.5 font-semibold text-green-700" title={plumber.promoCode ? `Code ${plumber.promoCode}` : undefined}>
-          <FaTag className="h-2.5 w-2.5 shrink-0" /> <span className="truncate">{offer}{plumber.promoCode && !compact ? ` · ${plumber.promoCode}` : ""}</span>
+          <FaTag className="h-2.5 w-2.5 shrink-0" /> <span className="truncate">{offer}{plumber.promoCode && !compact ? ` · ${plumber.promoCode}` : ""}{(plumber.couponCount ?? 0) > 1 ? ` +${plumber.couponCount! - 1} code${plumber.couponCount! > 2 ? "s" : ""}` : ""}</span>
         </span>
       )}
       {team.length > 0 && (

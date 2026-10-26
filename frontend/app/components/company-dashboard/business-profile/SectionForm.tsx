@@ -3,15 +3,20 @@
 import { FormEvent, useEffect, useState } from "react";
 import { readProfileDraft, saveProfileDraft } from "./profileStore";
 import LocalMediaUpload, { type MediaKind } from "./LocalMediaUpload";
+import MultiImageUpload from "./MultiImageUpload";
 import { companyApi, toFormValues } from "./companyApi";
 import { NoticeMessage, type Notice } from "./SavedItems";
 
 export type ProfileField = {
   name: string;
   label: string;
-  type?: "text" | "textarea" | "url" | "email" | "number" | "date" | "tel" | "checkbox" | MediaKind;
+  type?: "text" | "textarea" | "url" | "email" | "number" | "date" | "tel" | "checkbox" | "images" | MediaKind;
   placeholder?: string;
   required?: boolean;
+  /** "images" fields: up to this many photos. */
+  maxImages?: number;
+  /** "images" fields: an older single-photo field to start from when the list is empty (e.g. coverImage). */
+  legacyField?: string;
 };
 
 type Props = {
@@ -26,7 +31,19 @@ type Props = {
 };
 type Values = Record<string, string | boolean>;
 
-const isUploadField = (field: ProfileField) => field.type === "image" || field.type === "video" || field.type === "media";
+const isUploadField = (field: ProfileField) => field.type === "image" || field.type === "video" || field.type === "media" || field.type === "images";
+// "images" values travel inside the form as one string, one photo per line (data URLs never contain line breaks).
+const splitImages = (value: string | boolean | undefined) => (typeof value === "string" ? value.split("\n").filter(Boolean) : []);
+/** Saved record → form values, keeping image lists intact (toFormValues would join them with commas). */
+function recordToValues(data: Record<string, unknown>, fields: ProfileField[]) {
+  const values = toFormValues(data, fields.map((field) => field.name));
+  for (const field of fields.filter((item) => item.type === "images")) {
+    const list = Array.isArray(data[field.name]) ? (data[field.name] as string[]) : [];
+    const legacy = field.legacyField && typeof data[field.legacyField] === "string" ? [data[field.legacyField] as string] : [];
+    values[field.name] = (list.length ? list : legacy).join("\n");
+  }
+  return values;
+}
 const inputClass = "mt-2 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#FFD60A] focus:ring-2 focus:ring-[#FFD60A]/30";
 const MAX_TEXT = 5000;
 
@@ -53,7 +70,7 @@ export default function SectionForm({ section, title, description, fields, defau
     companyApi<Record<string, unknown> | null>(apiEndpoint)
       .then(({ data }) => {
         if (!data) return setMode("edit");
-        const loaded = { ...blank, ...toFormValues(data, fields.map((field) => field.name)) };
+        const loaded = { ...blank, ...recordToValues(data, fields) };
         setSaved(loaded);
         setValues(loaded);
         setMode("view");
@@ -88,8 +105,9 @@ export default function SectionForm({ section, title, description, fields, defau
     setBusy(true);
     setNotice(null);
     try {
-      const { data } = await companyApi<Record<string, unknown>>(apiEndpoint, { method: "PUT", body: values });
-      const stored = { ...blank, ...toFormValues(data, fields.map((field) => field.name)) };
+      const body = Object.fromEntries(Object.entries(values).map(([name, value]) => [name, fields.find((field) => field.name === name)?.type === "images" ? splitImages(value) : value]));
+      const { data } = await companyApi<Record<string, unknown>>(apiEndpoint, { method: "PUT", body });
+      const stored = { ...blank, ...recordToValues(data, fields) };
       setNotice({ tone: "success", text: saved ? `${title} updated.` : `${title} saved to your public profile.` });
       setSaved(stored);
       setValues(stored);
@@ -144,6 +162,7 @@ export default function SectionForm({ section, title, description, fields, defau
                   <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">{field.label}</dt>
                   <dd className="mt-1 whitespace-pre-line break-words text-sm text-gray-900">
                     {field.type === "checkbox" ? (value ? "Yes" : "No")
+                      : field.type === "images" ? (splitImages(value).length ? <span className="flex flex-wrap gap-2">{splitImages(value).map((image, index) => <img key={index} src={image} alt="" className="h-16 w-28 rounded-lg object-cover" />)}</span> : <span className="text-gray-400">Not set</span>)
                       : isUploadField(field) ? (typeof value === "string" && value && !value.startsWith("data:video/") ? <img src={value} alt="" className="h-20 w-20 rounded-lg object-cover" /> : value ? "Uploaded" : <span className="text-gray-400">Not set</span>)
                       : value ? String(value) : <span className="text-gray-400">Not set</span>}
                   </dd>
@@ -161,15 +180,18 @@ export default function SectionForm({ section, title, description, fields, defau
             {fields.map((field) => {
               const error = errors[field.name];
               const value = values[field.name];
+              // An image list has its own buttons and file picker, so it sits in a <div> rather than a <label>.
+              const Wrapper = field.type === "images" ? "div" : "label";
               return (
-                <label key={field.name} className={field.type === "textarea" || isUploadField(field) ? "md:col-span-2" : field.type === "checkbox" ? "flex items-center gap-3 self-end pb-2" : ""}>
-                  <span className="text-sm font-semibold text-gray-700">{field.label}{field.required && <span className="text-red-500"> *</span>}</span>
+                <Wrapper key={field.name} className={field.type === "textarea" || isUploadField(field) ? "md:col-span-2" : field.type === "checkbox" ? "flex items-center gap-3 self-end pb-2" : ""}>
+                  {field.type !== "images" && <span className="text-sm font-semibold text-gray-700">{field.label}{field.required && <span className="text-red-500"> *</span>}</span>}
                   {field.type === "textarea" ? <textarea rows={5} name={field.name} placeholder={hint(field)} value={String(value ?? "")} onChange={(e) => update(field.name, e.target.value)} aria-invalid={Boolean(error)} className={inputClass} />
                     : field.type === "checkbox" ? <input type="checkbox" name={field.name} checked={Boolean(value)} onChange={(e) => update(field.name, e.target.checked)} className="h-4 w-4 accent-[#0b1f3b]" />
+                    : field.type === "images" ? <MultiImageUpload label={field.label} value={splitImages(value)} max={field.maxImages} hint={field.placeholder} onChange={(list) => update(field.name, list.join("\n"))} />
                     : isUploadField(field) ? <LocalMediaUpload label="" kind={field.type as MediaKind} value={String(value ?? "")} onChange={(next) => update(field.name, next)} />
                     : <input type={field.type ?? "text"} name={field.name} placeholder={hint(field)} value={String(value ?? "")} onChange={(e) => update(field.name, e.target.value)} aria-invalid={Boolean(error)} className={inputClass} />}
                   {error && <span className="mt-1 block text-xs font-medium text-red-600">{error}</span>}
-                </label>
+                </Wrapper>
               );
             })}
           </fieldset>

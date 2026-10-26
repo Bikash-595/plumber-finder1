@@ -498,6 +498,7 @@ import { FaCalendarCheck, FaCheck, FaCheckCircle, FaClock, FaEnvelope, FaFaceboo
 import { FaXTwitter } from "react-icons/fa6";
 import type { Plumber } from "@/components/find/types";
 import { openNowLabel } from "@/components/find/companyListing";
+import CoverSlideshow from "./CoverSlideshow";
 
 const socialIcons: { key: keyof NonNullable<Plumber["socialLinks"]>; label: string; Icon: IconType }[] = [
   { key: "facebook", label: "Facebook", Icon: FaFacebook },
@@ -517,7 +518,8 @@ export default function ProfileHeader({ plumber }: { plumber: Plumber }) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
   const isFreelancer = plumber.providerType === "freelancer";
-  const cover = plumber.coverImage || plumber.media?.images?.[0];
+  // Cover photos for the banner slideshow; sample plumbers use their first gallery photos.
+  const covers = plumber.coverImages?.length ? plumber.coverImages : plumber.coverImage ? [plumber.coverImage] : (plumber.media?.images ?? []).slice(0, 4);
   const status = openNowLabel(plumber.openingHours?.weekly);
   const socials = socialIcons.filter(({ key }) => plumber.socialLinks?.[key]);
   const topServices = (plumber.specializations.length ? plumber.specializations : plumber.services).slice(0, 4);
@@ -540,8 +542,8 @@ export default function ProfileHeader({ plumber }: { plumber: Plumber }) {
     <header className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
       {/* Cover banner */}
       <div className="relative h-32 bg-gradient-to-br from-[#0b1f3b] via-[#17345a] to-[#0b1f3b] sm:h-44 lg:h-52">
-        {cover && <Image src={cover} alt="" fill priority sizes="(max-width: 1024px) 100vw, 66vw" className="object-cover" />}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-black/20" aria-hidden />
+        <CoverSlideshow images={covers} name={plumber.companyName} />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-black/20" aria-hidden />
         <div className="absolute left-3 top-3 flex flex-wrap gap-1.5 sm:left-5 sm:top-4">
           {plumber.isVerified && <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-[#0b1f3b] shadow sm:text-xs"><FaCheckCircle className="text-emerald-600" aria-hidden /> Verified</span>}
           {plumber.isEmergency && <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-bold text-white shadow sm:text-xs">24/7 Emergency</span>}
@@ -590,7 +592,7 @@ export default function ProfileHeader({ plumber }: { plumber: Plumber }) {
         <div className="mt-4 flex flex-wrap gap-2 text-xs sm:text-sm">
           {plumber.ownerName && <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-gray-700"><FaUserTie className="text-gray-500" aria-hidden /> Owner: <span className="font-semibold text-gray-900">{plumber.ownerName}</span></span>}
           {!isFreelancer && plumber.teamSize > 0 && <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-gray-700"><FaUsers className="text-gray-500" aria-hidden /><span className="font-semibold text-gray-900">{plumber.teamSize}</span> plumbers</span>}
-          {plumber.responseTime && <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-gray-700"><FaClock className="text-gray-500" aria-hidden /> Responds {plumber.responseTime.toLowerCase().startsWith("within") ? "" : "in "}<span className="font-semibold text-gray-900">{plumber.responseTime}</span></span>}
+          {plumber.responseTime && !/^contact/i.test(plumber.responseTime) && <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-gray-700"><FaClock className="text-gray-500" aria-hidden /> Responds {plumber.responseTime.toLowerCase().startsWith("within") ? "" : "in "}<span className="font-semibold text-gray-900">{plumber.responseTime}</span></span>}
         </div>
         {topServices.length > 0 && (
           <ul className="mt-3 flex flex-wrap gap-2" aria-label="Top services">

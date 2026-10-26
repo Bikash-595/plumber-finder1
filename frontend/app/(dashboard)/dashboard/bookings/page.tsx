@@ -8,9 +8,13 @@ import { useUserData } from "@/components/dashboard/useUserData";
 import { formatDate, formatMoney, userApi, type Booking } from "@/components/utils/userApi";
 
 const filters: { label: string; value: Booking["status"] | "all" }[] = [
-  { label: "All", value: "all" }, { label: "Pending", value: "pending" }, { label: "Scheduled", value: "scheduled" },
-  { label: "Completed", value: "completed" }, { label: "Cancelled", value: "cancelled" },
+  { label: "All", value: "all" }, { label: "Waiting for reply", value: "pending" }, { label: "Confirmed", value: "scheduled" },
+  { label: "Completed", value: "completed" }, { label: "Declined", value: "declined" }, { label: "Cancelled", value: "cancelled" },
 ];
+// What each status means to the customer.
+const statusLabels: Record<Booking["status"], string> = { pending: "Waiting for reply", scheduled: "Confirmed", completed: "Completed", declined: "Declined", cancelled: "Cancelled" };
+const historyLabels: Record<Booking["status"], string> = { pending: "Request sent", scheduled: "Accepted", completed: "Completed", declined: "Declined", cancelled: "Cancelled" };
+const byLabels = { customer: "You", provider: "Plumber", admin: "Plumber Finder", system: "System" };
 
 const getStatusColor = (status: Booking["status"]) => {
   switch (status) {
@@ -39,10 +43,11 @@ export default function BookingsPage() {
   if (!signedIn) return <SignInPrompt what="your bookings" />;
 
   const cancel = async (booking: Booking) => {
-    if (!window.confirm(`Cancel your ${booking.service} booking with ${booking.providerName}?`)) return;
+    const reason = window.prompt(`Cancel your ${booking.service} booking with ${booking.providerName}?\n\nReason (optional — the plumber will see it):`);
+    if (reason === null) return;
     setBusyId(booking._id);
     try {
-      const { data } = await userApi.cancelBooking(booking._id);
+      const { data } = await userApi.cancelBooking(booking._id, reason.trim() || undefined);
       setData(bookings?.map((item) => (item._id === data._id ? data : item)));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not cancel the booking.");
@@ -86,6 +91,7 @@ export default function BookingsPage() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 flex-1">
                 <h3 className="text-lg font-bold text-gray-900">{booking.providerName}</h3>
+                {booking.reference && <p className="mt-0.5 font-mono text-xs text-gray-500">{booking.reference}</p>}
                 <p className="mt-1 text-sm text-gray-600">{booking.service}{booking.quantity > 1 ? ` × ${booking.quantity}` : ""}</p>
                 <div className="mt-4 space-y-2">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -103,11 +109,19 @@ export default function BookingsPage() {
               <div className="flex flex-row items-center justify-between gap-4 sm:flex-col sm:items-end">
                 <div className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold capitalize ${getStatusColor(booking.status)}`}>
                   {getStatusIcon(booking.status)}
-                  {booking.status}
+                  {statusLabels[booking.status]}
                 </div>
                 {booking.price !== undefined && booking.price !== null && <p className="text-2xl font-bold text-gray-900">{formatMoney(booking.price * booking.quantity)}</p>}
               </div>
             </div>
+
+            {booking.status === "pending" && <p className="mt-4 rounded-lg bg-amber-50 px-4 py-2.5 text-sm text-amber-800">Waiting for {booking.providerName} to accept. You&apos;ll get a notification as soon as they reply.</p>}
+            {booking.responseNote && (
+              <p className={`mt-4 rounded-lg px-4 py-2.5 text-sm ${booking.status === "declined" || booking.status === "cancelled" ? "bg-red-50 text-red-800" : "bg-blue-50 text-blue-800"}`}>
+                <span className="font-semibold">{booking.status === "declined" ? "Reason: " : booking.status === "cancelled" ? "Cancellation reason: " : `Message from ${booking.providerName}: `}</span>{booking.responseNote}
+              </p>
+            )}
+            {booking.status === "declined" && <p className="mt-2 text-sm"><Link href="/find" className="font-semibold text-[#0b1f3b] underline">Find another plumber</Link></p>}
 
             {expanded === booking._id && (
               <dl className="mt-4 grid gap-2 rounded-lg bg-gray-50 p-4 text-sm text-gray-700 sm:grid-cols-2">
@@ -115,6 +129,21 @@ export default function BookingsPage() {
                 <div><dt className="font-semibold">Sent</dt><dd>{formatDate(booking.createdAt)}</dd></div>
                 {booking.phone && <div><dt className="font-semibold">Phone</dt><dd>{booking.phone}</dd></div>}
                 {booking.details && <div className="sm:col-span-2"><dt className="font-semibold">Notes</dt><dd className="whitespace-pre-line">{booking.details}</dd></div>}
+                {booking.history && booking.history.length > 0 && (
+                  <div className="sm:col-span-2">
+                    <dt className="font-semibold">Timeline</dt>
+                    <dd>
+                      <ol className="mt-2 space-y-1.5 border-l-2 border-gray-200 pl-4">
+                        {booking.history.map((entry, index) => (
+                          <li key={index}>
+                            <span className="font-medium text-gray-900">{historyLabels[entry.status]}</span> <span className="text-gray-500">· {byLabels[entry.by]} · {new Date(entry.at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+                            {entry.note && <p className="text-gray-600">“{entry.note}”</p>}
+                          </li>
+                        ))}
+                      </ol>
+                    </dd>
+                  </div>
+                )}
               </dl>
             )}
 

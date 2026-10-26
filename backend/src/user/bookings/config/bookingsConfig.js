@@ -1,8 +1,9 @@
 // Booking requests a customer sends to a plumber (directly, or created by checkout).
-// Customers can create and cancel bookings; only the plumber/admin side may schedule or complete them.
+// Customers can create and cancel bookings; the plumber (or an admin) accepts, declines, and completes them.
 export const bookingsConfig = {
   label: "Booking",
-  statuses: ["pending", "scheduled", "completed", "cancelled"],
+  // pending = waiting for the plumber; scheduled = accepted (confirmed); declined = the plumber said no.
+  statuses: ["pending", "scheduled", "completed", "cancelled", "declined"],
   cancellable: ["pending", "scheduled"],
   fields: {
     providerType: { type: "enum", values: ["company", "freelancer"], required: true },

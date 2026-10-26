@@ -9,6 +9,7 @@ const freelancerListingSchema = new mongoose.Schema({
   headline: { type: String, trim: true, maxlength: 120 },
   photo: { type: String },
   coverImage: { type: String },
+  coverImages: { type: [String], default: undefined },
   phone: { type: String, trim: true, maxlength: 40 },
   city: { type: String, trim: true, maxlength: 100 },
   state: { type: String, trim: true, maxlength: 100 },

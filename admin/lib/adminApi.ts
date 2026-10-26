@@ -49,8 +49,16 @@ export type CompanyStatus = "pending" | "approved" | "suspended";
 export type AdminCompany = { _id: string; companyName: string; email: string; phone?: string; status: CompanyStatus; createdAt: string; listing: { _id: string; isPublished: boolean; city?: string; state?: string; services?: string[] } | null };
 export type FreelancerStatus = "pending" | "verified" | "rejected";
 export type AdminFreelancer = { _id: string; name: string; email: string; phone?: string; verificationStatus: FreelancerStatus; createdAt: string; listing: { _id: string; displayName: string; headline?: string; city?: string; state?: string; isPublished: boolean } | null };
-export type BookingStatus = "pending" | "scheduled" | "completed" | "cancelled";
-export type AdminBooking = { _id: string; providerName: string; service: string; status: BookingStatus; scheduledDate?: string; timeSlot?: string; address?: string; createdAt: string; source: string; user: { _id: string; name: string; email: string } | null };
+// pending = waiting for the plumber; scheduled = confirmed; declined = the plumber (or an admin) said no.
+export type BookingStatus = "pending" | "scheduled" | "completed" | "cancelled" | "declined";
+export type BookingHistoryEntry = { status: BookingStatus; by: "customer" | "provider" | "admin" | "system"; note?: string; at: string };
+export type AdminBooking = {
+  _id: string; reference?: string; customerName?: string; customerEmail?: string; providerType: "company" | "freelancer"; providerId: string; providerAccount?: string | null;
+  providerName: string; service: string; quantity?: number; price?: number; status: BookingStatus; scheduledDate?: string; timeSlot?: string; address?: string; phone?: string; details?: string;
+  responseNote?: string; history?: BookingHistoryEntry[]; createdAt: string; source: string; user: { _id: string; name: string; email: string; phone?: string } | null;
+};
+export type AdminBookingDetail = AdminBooking & { provider: { hasAccount: boolean; phone?: string; email?: string; url: string } };
+export type AdminNotice = { _id: string; type: "booking" | "system"; title: string; message?: string; link?: string; read: boolean; createdAt: string };
 export type Registration = { _id: string; accountType: "user" | "company" | "freelancer"; name: string; email: string; status?: string; createdAt: string };
 
 const query = (params: Record<string, string | number | undefined>) => {
@@ -66,8 +74,15 @@ export const adminApi = {
   setCompanyStatus: (id: string, status: CompanyStatus) => adminRequest<{ data: AdminCompany }>(`/admin/companies/${id}/status`, { method: "PATCH", body: { status } }),
   freelancers: (params: { search?: string; status?: string; page?: number }) => adminRequest<Paginated<AdminFreelancer>>(`/admin/freelancers${query(params)}`),
   setFreelancerStatus: (id: string, verificationStatus: FreelancerStatus) => adminRequest<{ data: AdminFreelancer }>(`/admin/freelancers/${id}/verification`, { method: "PATCH", body: { verificationStatus } }),
-  bookings: (params: { search?: string; status?: string; page?: number }) => adminRequest<Paginated<AdminBooking>>(`/admin/bookings${query(params)}`),
-  setBookingStatus: (id: string, status: Exclude<BookingStatus, "pending">) => adminRequest<{ data: AdminBooking }>(`/admin/bookings/${id}/status`, { method: "PATCH", body: { status } }),
+  bookings: (params: { search?: string; status?: string; page?: number }) => adminRequest<Paginated<AdminBooking> & { counts: Record<BookingStatus, number> }>(`/admin/bookings${query(params)}`),
+  booking: (id: string) => adminRequest<{ data: AdminBookingDetail }>(`/admin/bookings/${id}`),
+  // note is shown to the customer and the plumber (required to decline or cancel); confirming can set the visit date/time.
+  setBookingStatus: (id: string, status: Exclude<BookingStatus, "pending">, extra: { note?: string; scheduledDate?: string; timeSlot?: string } = {}) => adminRequest<{ data: AdminBooking; message: string }>(`/admin/bookings/${id}/status`, { method: "PATCH", body: { status, ...extra } }),
+  notifications: () => adminRequest<{ data: AdminNotice[]; unread: number }>("/admin/notifications"),
+  unreadNotifications: () => adminRequest<{ data: { unread: number } }>("/admin/notifications/unread-count"),
+  markNotificationRead: (id: string) => adminRequest<{ data: AdminNotice }>(`/admin/notifications/${id}/read`, { method: "PATCH" }),
+  markAllNotificationsRead: () => adminRequest<{ message: string }>("/admin/notifications/read-all", { method: "PATCH" }),
+  removeNotification: (id: string) => adminRequest<{ message: string }>(`/admin/notifications/${id}`, { method: "DELETE" }),
   registrations: (days = 30) => adminRequest<{ data: Registration[]; days: number }>(`/admin/registrations?days=${days}`),
 };
 

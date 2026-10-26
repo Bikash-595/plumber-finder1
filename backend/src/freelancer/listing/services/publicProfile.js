@@ -1,4 +1,5 @@
 import { Freelancer } from "../../../auth/freelancer/models/Freelancer.js";
+import { cardOffer, publicOffer } from "../../../shared/profileSections/specialOffersSection.js";
 import { currentOffers, publishedBlogs, visibleProjects } from "../../../shared/profileSections/publicFilters.js";
 import { firstPoint, galleryCounts, publishedBlogCounts } from "../../../shared/profileSections/cardExtras.js";
 import { FreelancerBlog } from "../../blogs/models/FreelancerBlog.js";
@@ -29,9 +30,9 @@ export async function cardSummaries(listings) {
   const match = { freelancer: { $in: freelancers } };
   const [ratings, headers, overviews, offers, hours, emergencyServices, accounts, serviceAreas, blogCounts, mediaCounts] = await Promise.all([
     FreelancerReview.aggregate([{ $match: match }, { $group: { _id: "$freelancer", rating: { $avg: "$rating" }, reviewCount: { $sum: 1 } } }]),
-    FreelancerHeaderProfile.find(match).select("freelancer licenseNumber insurance").lean(),
+    FreelancerHeaderProfile.find(match).select("freelancer licenseNumber insurance bio").lean(),
     FreelancerOverview.find(match).select("freelancer bio specialties certifications languages responseTime jobsCompleted averageCost emergencyAvailable").lean(),
-    FreelancerSpecialOffer.find({ ...match, ...currentOffers() }).sort(byPosition).select("freelancer title discount promoCode").lean(),
+    FreelancerSpecialOffer.find({ ...match, ...currentOffers() }).sort(byPosition).select("freelancer title discount promoCode coupons").lean(),
     FreelancerOpeningHours.find(match).select("freelancer weeklyHours availability24x7").lean(),
     FreelancerServiceOffering.find({ ...match, emergency: true }).select("freelancer").lean(),
     Freelancer.find({ _id: { $in: freelancers } }).select("verificationStatus").lean(),
@@ -42,7 +43,8 @@ export async function cardSummaries(listings) {
   const areasByOwner = byOwner(serviceAreas);
   const maps = { ratings: byOwner(ratings), headers: byOwner(headers), overviews: byOwner(overviews), hours: byOwner(hours), accounts: byOwner(accounts) };
   const offerByOwner = new Map();
-  for (const offer of offers) if (!offerByOwner.has(String(offer.freelancer))) offerByOwner.set(String(offer.freelancer), offer);
+  // Every current offer per owner (in display order), summed up for the card.
+  for (const offer of offers) offerByOwner.set(String(offer.freelancer), [...(offerByOwner.get(String(offer.freelancer)) ?? []), offer]);
   const emergency = new Set(emergencyServices.map((item) => String(item.freelancer)));
 
   return new Map(listings.map((listing) => {
@@ -51,7 +53,7 @@ export async function cardSummaries(listings) {
     const header = maps.headers.get(key) ?? {};
     const overview = maps.overviews.get(key) ?? {};
     const week = maps.hours.get(key) ?? {};
-    const offer = offerByOwner.get(key);
+    const offer = cardOffer(offerByOwner.get(key) ?? []);
     const area = areasByOwner.get(key) ?? {};
     return [key, {
       coordinates: firstPoint({ lat: area.latitude, lng: area.longitude }),
@@ -63,6 +65,7 @@ export async function cardSummaries(listings) {
       verified: maps.accounts.get(key)?.verificationStatus === "verified",
       licenseNumber: header.licenseNumber,
       insurance: header.insurance,
+      headerBio: header.bio,
       bio: overview.bio,
       specialties: overview.specialties ?? [],
       certifications: overview.certifications,
@@ -70,7 +73,7 @@ export async function cardSummaries(listings) {
       responseTime: overview.responseTime,
       jobsCompleted: overview.jobsCompleted,
       averageCost: overview.averageCost,
-      offer: offer ? { title: offer.title, discount: offer.discount, promoCode: offer.promoCode } : undefined,
+      offer,
       isEmergency: Boolean(overview.emergencyAvailable || week.availability24x7 || emergency.has(key)),
       weeklyHours: week.weeklyHours ?? [],
     }];
@@ -106,7 +109,7 @@ export async function fullProfile(listing) {
     ...publicListing,
     ...summaries.get(String(freelancer)),
     services: services.length ? services : (listing.services ?? []).map((name) => ({ name })),
-    gallery, projects, reviews, faqs, blogs, offers,
+    gallery, projects, reviews, faqs, blogs, offers: offers.map(publicOffer),
     booking: booking ?? null,
     serviceArea: withCurrentServices(serviceArea, services),
     socialLinks: socialLinks ?? {},

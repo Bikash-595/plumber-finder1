@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { blogsRouter } from "./blogs/routers/blogsRouter.js";
 import { bookingRouter } from "./booking/routers/bookingRouter.js";
+import { freelancerBookingsRouter } from "./bookings/routers/bookingsRouter.js";
+import { freelancerNotificationsRouter } from "./notifications/routers/notificationsRouter.js";
 import { socialLinksRouter } from "./social-links/routers/socialLinksRouter.js";
 import { faqsRouter } from "./faqs/routers/faqsRouter.js";
 import { galleryRouter } from "./gallery/routers/galleryRouter.js";
@@ -30,6 +32,9 @@ export const freelancerSections = [
   { path: "/social-links", router: socialLinksRouter },
   { path: "/opening-hours", router: openingHoursRouter },
   { path: "/special-offers", router: specialOffersRouter },
+  // Booking requests from customers (accept / decline) and the freelancer's notifications.
+  { path: "/bookings", router: freelancerBookingsRouter },
+  { path: "/notifications", router: freelancerNotificationsRouter },
 ];
 
 export const freelancerRouter = Router();

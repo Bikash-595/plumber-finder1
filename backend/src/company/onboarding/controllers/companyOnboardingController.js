@@ -49,12 +49,13 @@ async function seedGallery(company, images, videos) {
 /** Dashboard sections own these listing fields once they have data (name/logo/cover, services, areas). */
 async function sectionOverrides(company) {
   const [header, services, serviceArea] = await Promise.all([
-    CompanyHeaderProfile.findOne({ company }).select("companyName logo coverImage").lean(),
+    CompanyHeaderProfile.findOne({ company }).select("companyName logo coverImage tagline bio").lean(),
     CompanyServiceOffering.find({ company }).sort({ position: 1, createdAt: 1 }).select("name").lean(),
     CompanyServiceArea.findOne({ company }).select("areas").lean(),
   ]);
   return {
-    ...Object.fromEntries(["companyName", "logo", "coverImage"].filter((field) => header?.[field]).map((field) => [field, header[field]])),
+    ...Object.fromEntries(["companyName", "logo", "coverImage", "tagline"].filter((field) => header?.[field]).map((field) => [field, header[field]])),
+    ...(header?.bio ? { description: header.bio } : {}),
     ...(services.length ? { services: services.map((service) => service.name) } : {}),
     ...(serviceArea ? { serviceAreas: serviceArea.areas } : {}),
   };

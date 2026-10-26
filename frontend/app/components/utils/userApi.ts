@@ -29,7 +29,8 @@ export type ListItem = ProviderSnapshot & { _id: string; createdAt: string };
 export type CartItem = ProviderRef & { _id: string; providerName: string; name: string; price: number; quantity: number; image?: string; itemType: "service" | "offer" };
 export type CartSummary = { itemCount: number; subtotal: number; promoCode: string | null; discountPercent: number; discount: number; taxRate: number; tax: number; total: number };
 export type Cart = { items: CartItem[]; summary: CartSummary };
-export type Booking = ProviderRef & { _id: string; providerName: string; service: string; quantity: number; price?: number; scheduledDate?: string; timeSlot?: string; address?: string; phone?: string; details?: string; status: "pending" | "scheduled" | "completed" | "cancelled"; source: "request" | "checkout"; createdAt: string };
+export type BookingHistoryEntry = { status: Booking["status"]; by: "customer" | "provider" | "admin" | "system"; note?: string; at: string };
+export type Booking = ProviderRef & { _id: string; reference?: string; responseNote?: string; history?: BookingHistoryEntry[]; acceptedAt?: string; providerName: string; service: string; quantity: number; price?: number; scheduledDate?: string; timeSlot?: string; address?: string; phone?: string; details?: string; status: "pending" | "scheduled" | "completed" | "cancelled" | "declined"; source: "request" | "checkout"; createdAt: string };
 export type Notification = { _id: string; type: "booking" | "order" | "offer" | "system"; title: string; message?: string; link?: string; read: boolean; createdAt: string };
 export type Invoice = { _id: string; number: string; items: { name: string; providerName?: string; quantity: number; price: number }[]; subtotal: number; discount: number; tax: number; total: number; promoCode?: string; status: "pending" | "paid" | "cancelled" | "refunded"; dueDate?: string; createdAt: string };
 export type PaymentMethod = { _id: string; brand: "visa" | "mastercard" | "amex" | "discover" | "other"; last4: string; expMonth: number; expYear: number; holderName?: string; label?: string; isDefault: boolean };
@@ -90,7 +91,7 @@ export const userApi = {
 
   bookings: (status?: Booking["status"]) => call<Booking[]>(`/bookings${status ? `?status=${status}` : ""}`),
   requestBooking: (body: ProviderRef & { providerName: string; service: string; scheduledDate?: string; timeSlot?: string; address?: string; phone?: string; details?: string; offer?: string }) => mutate<Booking>("/bookings", { method: "POST", body }),
-  cancelBooking: (id: string) => mutate<Booking>(`/bookings/${id}/cancel`, { method: "PATCH" }),
+  cancelBooking: (id: string, reason?: string) => mutate<Booking>(`/bookings/${id}/cancel`, { method: "PATCH", body: { reason } }),
 
   notifications: () => call<Notification[]>("/notifications"),
   markNotificationRead: (id: string) => mutate<Notification>(`/notifications/${id}/read`, { method: "PATCH" }),

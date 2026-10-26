@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { blogsRouter } from "./blogs/routers/blogsRouter.js";
 import { bookingRouter } from "./booking/routers/bookingRouter.js";
+import { companyBookingsRouter } from "./bookings/routers/bookingsRouter.js";
+import { companyNotificationsRouter } from "./notifications/routers/notificationsRouter.js";
 import { socialLinksRouter } from "./social-links/routers/socialLinksRouter.js";
 import { openingHoursRouter } from "./opening-hours/routers/openingHoursRouter.js";
 import { companyOverviewRouter } from "./company-overview/routers/companyOverviewRouter.js";
@@ -31,6 +33,9 @@ export const companySections = [
   { path: "/social-links", router: socialLinksRouter },
   { path: "/opening-hours", router: openingHoursRouter },
   { path: "/special-offers", router: specialOffersRouter },
+  // Booking requests from customers (accept / decline) and the company's notifications.
+  { path: "/bookings", router: companyBookingsRouter },
+  { path: "/notifications", router: companyNotificationsRouter },
 ];
 
 export const companySectionsRouter = Router();
