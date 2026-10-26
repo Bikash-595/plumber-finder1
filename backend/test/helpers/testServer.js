@@ -41,8 +41,8 @@ export async function startTestServer() {
   const server = app.listen(0);
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
-  const api = async (method, url, { body, token, raw } = {}) => {
-    const headers = { "Content-Type": "application/json" };
+  const api = async (method, url, { body, token, raw, headers: extra } = {}) => {
+    const headers = { "Content-Type": "application/json", ...extra };
     if (token) headers.Authorization = `Bearer ${token}`;
     const res = await fetch(baseUrl + url, { method, headers, body: raw ?? (body === undefined ? undefined : JSON.stringify(body)) });
     const text = await res.text();

@@ -11,6 +11,7 @@ import {
   FaLifeRing,
   FaListAlt,
   FaMapMarkedAlt,
+  FaNewspaper,
   FaShieldAlt,
   FaStar,
   FaUsers,
@@ -240,6 +241,12 @@ export const adminNavSections = [
           { label: "Geo Controls", href: "/locations?tab=geo" },
         ],
       },
+    ],
+  },
+  {
+    label: "Content",
+    items: [
+      { label: "Blogs", href: "/blogs", icon: FaNewspaper },
     ],
   },
   {

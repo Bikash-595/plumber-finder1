@@ -11,7 +11,6 @@ import {
   FaCalendarAlt,
   FaCheckCircle,
   FaClock,
-  FaCommentDots,
   FaEnvelope,
   FaEye,
   FaFacebookF,
@@ -25,6 +24,9 @@ import {
 import { plumbers } from "@/data/plumbers";
 import { usePlumber } from "@/components/plumber/usePlumber";
 import LatestArticleCard from "@/components/plumber/LatestArticleCard";
+import BlogEngagement from "@/components/blog/BlogEngagement";
+import BlogFaqs from "@/components/blog/BlogFaqs";
+import { formatCount, useBlogViews } from "@/components/blog/useBlogViews";
 import { plumberHref } from "@/components/find/companyListing";
 
 type TocItem = {
@@ -98,6 +100,8 @@ export default function BlogPostPage({ params }: { params: Promise<{ id: string;
   // Demo plumber or live company (its posts are escaped into safe HTML by the mapper).
   const plumber = usePlumber(id);
   const post = plumber?.blogs?.find((b) => b.slug === slug);
+  // Live count of reads (this visit is counted once); demo posts start from their sample number until it loads.
+  const counted = useBlogViews(plumber && post ? (post.id ? `${plumber.providerType ?? "company"}/${post.id}` : `demo/${plumber.id}--${post.slug}`) : null);
 
   const article = useMemo(() => buildArticleMarkup(post?.content ?? ""), [post?.content]);
   const relatedPosts = useMemo(() => {
@@ -118,7 +122,12 @@ export default function BlogPostPage({ params }: { params: Promise<{ id: string;
 
   const [activeSection, setActiveSection] = useState(article.toc[0]?.id ?? "");
   const [email, setEmail] = useState("");
-  const [comment, setComment] = useState("");
+  // Share links use the page address, known only in the browser (set after loading so server and browser HTML match).
+  const [currentUrl, setCurrentUrl] = useState("");
+  useEffect(() => {
+    const timer = window.setTimeout(() => setCurrentUrl(window.location.href.split("#")[0]), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -149,7 +158,6 @@ export default function BlogPostPage({ params }: { params: Promise<{ id: string;
   const galleryImages = [post.image, ...(plumber.media?.images ?? [])]
     .filter((image, index, array) => image && array.indexOf(image) === index)
     .slice(0, 4);
-  const currentUrl = typeof window === "undefined" ? "" : window.location.href;
   const encodedUrl = encodeURIComponent(currentUrl || "");
   const encodedTitle = encodeURIComponent(post.title);
   const shareLinks = {
@@ -209,7 +217,7 @@ export default function BlogPostPage({ params }: { params: Promise<{ id: string;
                 <div className="flex flex-wrap gap-4 text-sm text-slate-500 dark:text-slate-500">
                   <span className="inline-flex items-center gap-2"><FaCalendarAlt /> {post.date}</span>
                   <span className="inline-flex items-center gap-2"><FaClock /> {post.readTime} min read</span>
-                  <span className="inline-flex items-center gap-2"><FaEye /> {post.readCount.toLocaleString()} views</span>
+                  <span className="inline-flex items-center gap-2" title={counted ? `${counted.readers.toLocaleString()} readers` : undefined}><FaEye /> {formatCount(counted?.views ?? post.readCount)} views</span>
                 </div>
               </div>
             </div>
@@ -381,55 +389,9 @@ export default function BlogPostPage({ params }: { params: Promise<{ id: string;
             </section>
           </section>
 
-          {plumber.faqs && plumber.faqs.length > 0 && (
-            <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-200 dark:bg-white">
-              <h2 className="text-3xl font-black text-slate-950 dark:text-slate-950">FAQs</h2>
-              <div className="mt-5 divide-y divide-slate-200 dark:divide-white/10">
-                {plumber.faqs.slice(0, 4).map((faq) => (
-                  <details key={faq.question} className="group py-4">
-                    <summary className="cursor-pointer list-none text-lg font-bold text-slate-950 transition group-open:text-[#f7672c] dark:text-slate-950">
-                      {faq.question}
-                    </summary>
-                    <p className="mt-3 leading-7 text-slate-600 dark:text-slate-700">{faq.answer}</p>
-                  </details>
-                ))}
-              </div>
-            </section>
-          )}
-
-          <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-200 dark:bg-white">
-            <h2 className="flex items-center gap-3 text-3xl font-black text-slate-950 dark:text-slate-950">
-              <FaCommentDots className="text-[#f7672c]" /> Comments
-            </h2>
-            <div className="mt-5 space-y-4">
-              {(post.comments.length ? post.comments : [{ name: "Avery M.", comment: "Clear and practical advice. The checklist made it much easier to understand what to ask before booking.", date: post.date }]).map((item) => (
-                <div key={`${item.name}-${item.date}`} className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-50">
-                  <p className="font-bold text-slate-950 dark:text-slate-950">{item.name}</p>
-                  <p className="mt-1 text-sm text-slate-500">{item.date}</p>
-                  <p className="mt-3 leading-7 text-slate-700 dark:text-slate-700">{item.comment}</p>
-                </div>
-              ))}
-            </div>
-            <form
-              className="mt-5"
-              onSubmit={(event) => {
-                event.preventDefault();
-                setComment("");
-              }}
-            >
-              <label htmlFor="comment" className="text-sm font-bold text-slate-700 dark:text-slate-700">Add a comment</label>
-              <textarea
-                id="comment"
-                value={comment}
-                onChange={(event) => setComment(event.target.value)}
-                className="mt-2 min-h-28 w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-900 outline-none transition focus:border-[#f7672c] dark:border-slate-200 dark:bg-slate-50 dark:text-slate-950"
-                placeholder="Share your question or experience"
-              />
-              <button type="submit" className="mt-3 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-[#f7672c] dark:bg-slate-950 dark:text-white">
-                Post comment
-              </button>
-            </form>
-          </section>
+          {/* The article's own FAQs (written with the post), then likes, dislikes, and comments. */}
+          <BlogFaqs faqs={post.faqs ?? []} />
+          <BlogEngagement postPath={post.id ? `${plumber.providerType ?? "company"}/${post.id}` : `demo/${plumber.id}--${post.slug}`} postTitle={post.title} />
         </article>
 
         <aside className="space-y-5">

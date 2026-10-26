@@ -3,16 +3,19 @@
 import { useState } from "react";
 import { saveProfileDraft } from "./profileStore";
 import LocalMediaUpload from "./LocalMediaUpload";
+import FaqListEditor, { cleanFaqs, type FaqItem } from "./FaqListEditor";
+import BlogStatsPanel from "@/components/blog/BlogStatsPanel";
 import { toFormValues } from "./companyApi";
 import { ExampleCard, NoticeMessage, SavedItemsList, useSavedItems } from "./SavedItems";
 
 type Blog = {
   title: string; category: string; excerpt: string; content: string; coverImage: string;
   author: string; publishDate: string; tags: string; status: "draft" | "published";
+  faqs: FaqItem[];
 };
 
-const emptyBlog: Blog = { title: "", category: "Maintenance tips", excerpt: "", content: "", coverImage: "", author: "", publishDate: "", tags: "", status: "draft" };
-const seedBlog: Blog = { title: "Emergency Plumbing: What to Do First", category: "Emergency advice", excerpt: "Simple steps homeowners can take before a plumber arrives.", content: "Turn off the water supply if it is safe to do so, move valuables away from the affected area, and contact a licensed plumber.", coverImage: "", author: "Dallas Rapid Plumbers", publishDate: "", tags: "emergency, plumbing", status: "draft" };
+const emptyBlog: Blog = { title: "", category: "Maintenance tips", excerpt: "", content: "", coverImage: "", author: "", publishDate: "", tags: "", status: "draft", faqs: [] };
+const seedBlog: Blog = { title: "Emergency Plumbing: What to Do First", category: "Emergency advice", excerpt: "Simple steps homeowners can take before a plumber arrives.", content: "Turn off the water supply if it is safe to do so, move valuables away from the affected area, and contact a licensed plumber.", coverImage: "", author: "Dallas Rapid Plumbers", publishDate: "", tags: "emergency, plumbing", status: "draft", faqs: [] };
 
 type Props = {
   /** Backend endpoint; freelancers use "/freelancers/blogs". */
@@ -26,12 +29,14 @@ type Props = {
 export default function CompanyBlogForm({ apiEndpoint = "/companies/blogs", draftKey = "blogs", startEmpty = false }: Props) {
   const [blog, setBlog] = useState<Blog>(emptyBlog);
   const saved = useSavedItems(apiEndpoint, { singular: "blog post" });
-  const update = (name: keyof Blog, value: string) => setBlog((current) => ({ ...current, [name]: value }));
+  const update = (name: Exclude<keyof Blog, "faqs">, value: string) => setBlog((current) => ({ ...current, [name]: value }));
   // A publish date in the future schedules the post: it stays off the public profile until then.
   const today = new Date().toISOString().slice(0, 10);
   const scheduled = saved.items.filter((item) => item.status === "published" && item.publishDate && String(item.publishDate).slice(0, 10) > today);
   const save = async (status: Blog["status"]) => {
-    const value = { ...blog, status };
+    const { faqs, error } = cleanFaqs(blog.faqs);
+    if (error) return saved.setNotice({ tone: "error", text: error });
+    const value = { ...blog, status, faqs };
     setBlog(value);
     saveProfileDraft(draftKey, { items: [value] }, status === "draft"); // keep a local copy as before
     const isScheduled = status === "published" && value.publishDate && value.publishDate > today;
@@ -58,9 +63,10 @@ export default function CompanyBlogForm({ apiEndpoint = "/companies/blogs", draf
         </ul>
       </div>
     )}
+    <BlogStatsPanel refreshKey={saved.items.length} />
     <SavedItemsList title="Your articles" items={saved.items} editingId={saved.editingId}
       describe={(item) => ({ heading: String(item.title), meta: [item.category, item.publishDate ? String(item.publishDate).slice(0, 10) : ""].filter(Boolean).join(" · "), badge: item.status !== "published" ? "Draft — not public" : item.publishDate && new Date(String(item.publishDate)) > new Date() ? `Scheduled for ${String(item.publishDate).slice(0, 10)}` : "Published" })}
-      onEdit={(item) => { setBlog({ ...emptyBlog, ...toFormValues(item, Object.keys(emptyBlog)) } as Blog); saved.setEditingId(item._id); saved.setNotice(null); }}
+      onEdit={(item) => { setBlog({ ...emptyBlog, ...toFormValues(item, Object.keys(emptyBlog).filter((key) => key !== "faqs")), faqs: Array.isArray(item.faqs) ? (item.faqs as FaqItem[]) : [] } as Blog); saved.setEditingId(item._id); saved.setNotice(null); }}
       onDelete={(id) => { saved.remove(id); if (saved.editingId === id) setBlog(emptyBlog); }} />
     {/* The example disappears once there is a saved article or the form is being filled in. */}
     {!startEmpty && !saved.loading && !saved.items.length && !saved.editingId && JSON.stringify(blog) === JSON.stringify(emptyBlog) && <ExampleCard itemName="article"><p className="font-semibold text-gray-900">{seedBlog.title}</p><p className="mt-1 text-sm text-gray-600">{seedBlog.excerpt}</p></ExampleCard>}
@@ -78,7 +84,8 @@ export default function CompanyBlogForm({ apiEndpoint = "/companies/blogs", draf
         <label><span className="text-sm font-semibold text-gray-700">Tags</span><input value={blog.tags} onChange={(e) => update("tags", e.target.value)} placeholder="leaks, maintenance, homeowner" className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#FFD60A]" /></label>
         <div className="md:col-span-2"><LocalMediaUpload label="Cover image" value={blog.coverImage} onChange={(value) => update("coverImage", value)} /></div>
         <label className="md:col-span-2"><span className="text-sm font-semibold text-gray-700">Short summary</span><textarea required rows={3} value={blog.excerpt} onChange={(e) => update("excerpt", e.target.value)} placeholder="Write a short description for the blog listing." className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#FFD60A]" /></label>
-        <label className="md:col-span-2"><span className="text-sm font-semibold text-gray-700">Article content</span><textarea required rows={12} value={blog.content} onChange={(e) => update("content", e.target.value)} placeholder="Write your article here. Use short paragraphs and clear advice." className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm leading-6 outline-none focus:border-[#FFD60A]" /></label>
+        <label className="md:col-span-2"><span className="text-sm font-semibold text-gray-700">Article content</span><span className="ml-2 text-xs text-gray-400">Blank line = new paragraph · “## ” starts a heading · “- ” starts a bullet</span><textarea required rows={12} value={blog.content} onChange={(e) => update("content", e.target.value)} placeholder="Write your article here. Use short paragraphs and clear advice." className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm leading-6 outline-none focus:border-[#FFD60A]" /></label>
+        <div className="md:col-span-2"><FaqListEditor value={blog.faqs} onChange={(faqs) => setBlog((current) => ({ ...current, faqs }))} /></div>
       </div>
       <NoticeMessage notice={saved.notice} />
       <div className="flex flex-wrap gap-3 border-t border-gray-100 pt-5"><button type="submit" disabled={saved.saving} className="rounded-xl bg-[#0b1f3b] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60">{saved.saving ? "Saving…" : "Publish article"}</button><button type="button" onClick={() => save("draft")} className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700">Save as draft</button><button type="button" onClick={startNew} className="rounded-xl px-4 py-2.5 text-sm font-bold text-gray-500">Clear form</button></div>

@@ -2,6 +2,6 @@
 // read, mark as read, and delete them, but never create them.
 export const notificationsConfig = {
   label: "Notification",
-  types: ["booking", "order", "offer", "system"],
+  types: ["booking", "order", "offer", "comment", "system"],
   listLimit: 100,
 };

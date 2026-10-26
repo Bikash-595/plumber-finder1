@@ -123,6 +123,24 @@ Declining or cancelling (by the plumber or an admin) needs a reason, shown to th
 - Admin: `GET /api/admin/bookings` (with `counts`), `GET /api/admin/bookings/:id` (customer, plumber, history), `PATCH /api/admin/bookings/:id/status` `{ status, note?, scheduledDate?, timeSlot? }`.
 - Notifications for companies, freelancers, and admins (`src/shared/notifications`, collection `account_notifications`): `/api/companies/notifications`, `/api/freelancers/notifications`, `/api/admin/notifications` — `GET /` (with `unread`), `GET /unread-count`, `PATCH /read-all`, `PATCH /:id/read`, `DELETE /:id`. A new request's notification has `actionRequired: true` until the booking is answered. Admin notifications are shared by all admins.
 
+## Blogs: FAQs, Plumber Finder's own posts, likes and comments
+
+- **FAQs:** company, freelancer, and Plumber Finder posts take `faqs` — up to 15 `{ question, answer }` (`src/shared/profileSections/blogFaqs.js`), shown under the article with FAQPage structured data.
+- **Plumber Finder's posts** (`platform_blogs`): admins manage them at `/api/admin/blogs` (`GET /`, `POST /`, `GET /:id`, `PUT /:id`, `DELETE /:id`; drafts, scheduled dates, unique slugs). Published ones are in `GET /api/blogs` (provider `platform`) and at `GET /api/blogs/platform/:slug`; the site shows them at `/blogs/<slug>`.
+- **Likes, dislikes, comments** (`src/blogs/engagement`), for posts identified as `company/<id>`, `freelancer/<id>`, `platform/<id>`, or `demo/<plumber id>--<slug>` (the site's sample posts). Anyone can read; any signed-in account (customer, company, freelancer, admin — shown as "Plumber Finder") can take part:
+  - `GET /api/blogs/posts/:type/:id/engagement` — likes, dislikes, comment count, and the reader's own reaction
+  - `PUT /api/blogs/posts/:type/:id/reaction` `{ reaction: "like" | "dislike" | "none" }`
+  - `GET /api/blogs/posts/:type/:id/comments?sort=newest|top|oldest&page=` — top-level comments, each with its replies
+  - `POST /api/blogs/posts/:type/:id/comments` `{ body, parentId? }` — `parentId` may be a comment or a reply; replies stay in the top comment's thread and record who they answer (`replyTo`)
+  - `PATCH /api/blogs/comments/:id` `{ body }` (author only, marked edited) · `DELETE /api/blogs/comments/:id` (author, the post's author, or an admin; a comment with replies becomes "[deleted]" and keeps its thread)
+  - `PUT /api/blogs/comments/:id/reaction` `{ reaction }`
+  
+  - `POST /api/blogs/posts/:type/:id/view` `{ visitorId? }` — counts a read; `GET /api/blogs/stats/mine` — the signed-in author's posts with views, readers, likes, comments, and totals (admins: Plumber Finder's posts plus `site` totals by author type)
+
+  **Views and readers** (`src/blogs/engagement/views.js`): a view is one opening of a post; the same reader opening it again within 30 minutes counts once. Readers are different people — accounts when signed in, otherwise the browser's anonymous `visitorId`. The post's author and bots aren't counted. Totals are kept per post (`blog_post_stats`) and shown on articles, in the blog feed and profiles (`views`), and in the dashboards.
+
+  One reaction per account per post/comment (unique indexes); comment counters change by the difference from the account's previous reaction, so repeated or simultaneous clicks never double count. The post's author is notified of new comments and each person of replies to them (never of their own).
+
 ## Admin
 
 The admin panel is a separate app in `../admin`. Admin APIs live in `src/admin/<area>/` (mounted at `/api/admin` by `src/admin/adminRouter.js`) and require an **active admin** token:

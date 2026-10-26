@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { FaArrowRight, FaBookOpen, FaClock, FaEnvelope, FaSearch, FaStar } from "react-icons/fa";
+import { FaArrowRight, FaBookOpen, FaClock, FaEnvelope, FaEye, FaSearch, FaStar } from "react-icons/fa";
 import { plumbers } from "@/data/plumbers";
 import { BlogPost } from "@/components/find/types";
 import LatestArticleCard from "@/components/plumber/LatestArticleCard";
@@ -47,6 +47,7 @@ const BLOG_CATEGORIES = [
 type BlogFeedItem = {
   plumberId: string;
   href: string; // the author's profile URL; posts live at <href>/blog/<slug>
+  postHref?: string; // the article's URL when it isn't <href>/blog/<slug> (Plumber Finder's own posts)
   companyName: string;
   companyRating: number;
   post: BlogPost;
@@ -144,7 +145,7 @@ export default function BlogsPage() {
 
             {blogFeed[0] && (
               <Link
-                href={`${blogFeed[0].href}/blog/${blogFeed[0].post.slug}`}
+                href={blogFeed[0].postHref ?? `${blogFeed[0].href}/blog/${blogFeed[0].post.slug}`}
                 className="group overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl shadow-slate-200/80 transition hover:-translate-y-1 dark:border-slate-200 dark:bg-white dark:shadow-black/30"
               >
                 <div className="relative h-72 overflow-hidden bg-slate-100 sm:h-96 dark:bg-slate-100">
@@ -163,6 +164,7 @@ export default function BlogsPage() {
                 <div className="p-6">
                   <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-500">
                     <span className="inline-flex items-center gap-2"><FaClock /> {blogFeed[0].post.readTime} min read</span>
+                    <span className="inline-flex items-center gap-2"><FaEye /> {blogFeed[0].post.readCount.toLocaleString()} views</span>
                     <span className="inline-flex items-center gap-2"><FaStar className="text-[#f7672c]" /> {blogFeed[0].companyRating}</span>
                   </div>
                   <h2 className="mt-4 text-3xl font-black leading-tight text-slate-950 transition group-hover:text-[#f7672c] dark:text-slate-950">
@@ -241,11 +243,11 @@ export default function BlogsPage() {
             </div>
 
             <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
-              {visibleBlogs.map(({ plumberId, href, post }) => (
+              {visibleBlogs.map(({ plumberId, href, postHref, post }) => (
                 <LatestArticleCard
                   key={`${plumberId}-${post.slug}`}
                   post={post}
-                  href={`${href}/blog/${post.slug}`}
+                  href={postHref ?? `${href}/blog/${post.slug}`}
                 />
               ))}
             </div>

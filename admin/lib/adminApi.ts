@@ -58,6 +58,11 @@ export type AdminBooking = {
   responseNote?: string; history?: BookingHistoryEntry[]; createdAt: string; source: string; user: { _id: string; name: string; email: string; phone?: string } | null;
 };
 export type AdminBookingDetail = AdminBooking & { provider: { hasAccount: boolean; phone?: string; email?: string; url: string } };
+export type BlogFaq = { question: string; answer: string };
+export type PlatformBlog = { _id: string; title: string; slug: string; category?: string; excerpt: string; content?: string; coverImage?: string; author?: string; publishDate?: string; tags?: string[]; faqs?: BlogFaq[]; status: "draft" | "published"; updatedAt: string };
+export type BlogComment = { _id: string; root: string | null; body: string; deleted: boolean; edited: boolean; createdAt: string; likes: number; dislikes: number; replyTo: { name: string } | null; author: { name: string; type: string; isPostAuthor: boolean }; replies?: BlogComment[] };
+export type BlogStatRow = { _id: string; title: string; views: number; readers: number; signedInReaders: number; likes: number; dislikes: number; comments: number };
+export type BlogStats = { data: BlogStatRow[]; totals: { views: number; readers: number; likes: number; comments: number }; site: { views: number; readers: number; byType: Record<"platform" | "company" | "freelancer" | "demo", { views: number; readers: number; postsRead: number }> } };
 export type AdminNotice = { _id: string; type: "booking" | "system"; title: string; message?: string; link?: string; read: boolean; createdAt: string };
 export type Registration = { _id: string; accountType: "user" | "company" | "freelancer"; name: string; email: string; status?: string; createdAt: string };
 
@@ -78,6 +83,16 @@ export const adminApi = {
   booking: (id: string) => adminRequest<{ data: AdminBookingDetail }>(`/admin/bookings/${id}`),
   // note is shown to the customer and the plumber (required to decline or cancel); confirming can set the visit date/time.
   setBookingStatus: (id: string, status: Exclude<BookingStatus, "pending">, extra: { note?: string; scheduledDate?: string; timeSlot?: string } = {}) => adminRequest<{ data: AdminBooking; message: string }>(`/admin/bookings/${id}/status`, { method: "PATCH", body: { status, ...extra } }),
+  // Plumber Finder's own blog posts (with FAQs), and the comments on them.
+  blogs: (params: { search?: string; status?: string; page?: number }) => adminRequest<Paginated<PlatformBlog>>(`/admin/blogs${query(params)}`),
+  blog: (id: string) => adminRequest<{ data: PlatformBlog }>(`/admin/blogs/${id}`),
+  saveBlog: (id: string | null, body: Partial<PlatformBlog>) => adminRequest<{ data: PlatformBlog; message: string }>(id ? `/admin/blogs/${id}` : "/admin/blogs", { method: id ? "PUT" : "POST", body }),
+  // Views (each read) and readers (different people) for Plumber Finder's posts and every blog on the site.
+  blogStats: () => adminRequest<BlogStats>("/blogs/stats/mine"),
+  deleteBlog: (id: string) => adminRequest<{ message: string }>(`/admin/blogs/${id}`, { method: "DELETE" }),
+  blogComments: (postId: string, page = 1) => adminRequest<{ data: BlogComment[]; total: number }>(`/blogs/posts/platform/${postId}/comments?sort=newest&page=${page}`),
+  replyToComment: (postId: string, parentId: string, body: string) => adminRequest<{ data: BlogComment }>(`/blogs/posts/platform/${postId}/comments`, { method: "POST", body: { body, parentId } }),
+  deleteComment: (id: string) => adminRequest<{ message: string }>(`/blogs/comments/${id}`, { method: "DELETE" }),
   notifications: () => adminRequest<{ data: AdminNotice[]; unread: number }>("/admin/notifications"),
   unreadNotifications: () => adminRequest<{ data: { unread: number } }>("/admin/notifications/unread-count"),
   markNotificationRead: (id: string) => adminRequest<{ data: AdminNotice }>(`/admin/notifications/${id}/read`, { method: "PATCH" }),

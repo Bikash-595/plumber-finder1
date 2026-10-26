@@ -19,6 +19,7 @@ import { CompanyTeamMember } from "../../team/models/CompanyTeamMember.js";
 import { CompanySocialLinks } from "../../social-links/models/CompanySocialLinks.js";
 import { CompanyOpeningHours } from "../../opening-hours/models/CompanyOpeningHours.js";
 import { publicHours } from "../../../shared/profileSections/openingHoursSection.js";
+import { withViews } from "../../../blogs/engagement/views.js";
 import { cardOffer, publicOffer } from "../../../shared/profileSections/specialOffersSection.js";
 import { currentOffers, publishedBlogs, visibleProjects } from "../../../shared/profileSections/publicFilters.js";
 import { firstPoint, galleryCounts, publishedBlogCounts } from "../../../shared/profileSections/cardExtras.js";
@@ -156,7 +157,7 @@ export async function fullProfile(listing) {
     branches: (locations?.locations ?? []).map(({ _id, ...branch }) => branch),
     // Wizard-only service names still show when the Services section is empty.
     services: services.length ? services : (listing.services ?? []).map((name) => ({ name })),
-    gallery, projects, reviews, team, faqs, blogs, offers: offers.map(publicOffer),
+    gallery, projects, reviews, team, faqs, blogs: await withViews(blogs, "company"), offers: offers.map(publicOffer),
     booking: booking ?? null,
     serviceArea: withCurrentServices(serviceArea, services),
     socialLinks: socialLinks ?? {},

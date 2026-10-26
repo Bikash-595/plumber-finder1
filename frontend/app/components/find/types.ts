@@ -214,6 +214,10 @@ export interface BlogPost {
   readCount: number;
   reactions: { like: number; love: number; helpful: number };
   comments: { name: string; comment: string; date: string }[];
+  id?: string; // live posts: database id, used for likes and comments
+  faqs?: { question: string; answer: string }[]; // questions and answers under the article
+  category?: string;
+  tags?: string[];
 }
 
 export interface OpeningHoursDay {

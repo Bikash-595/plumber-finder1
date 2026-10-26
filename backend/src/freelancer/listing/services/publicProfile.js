@@ -1,4 +1,5 @@
 import { Freelancer } from "../../../auth/freelancer/models/Freelancer.js";
+import { withViews } from "../../../blogs/engagement/views.js";
 import { cardOffer, publicOffer } from "../../../shared/profileSections/specialOffersSection.js";
 import { currentOffers, publishedBlogs, visibleProjects } from "../../../shared/profileSections/publicFilters.js";
 import { firstPoint, galleryCounts, publishedBlogCounts } from "../../../shared/profileSections/cardExtras.js";
@@ -109,7 +110,7 @@ export async function fullProfile(listing) {
     ...publicListing,
     ...summaries.get(String(freelancer)),
     services: services.length ? services : (listing.services ?? []).map((name) => ({ name })),
-    gallery, projects, reviews, faqs, blogs, offers: offers.map(publicOffer),
+    gallery, projects, reviews, faqs, blogs: await withViews(blogs, "freelancer"), offers: offers.map(publicOffer),
     booking: booking ?? null,
     serviceArea: withCurrentServices(serviceArea, services),
     socialLinks: socialLinks ?? {},

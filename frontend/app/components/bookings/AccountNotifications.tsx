@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { FaBell, FaCalendarCheck, FaCheckDouble, FaTrash } from "react-icons/fa";
+import { FaBell, FaCalendarCheck, FaCheckDouble, FaCommentDots, FaTrash } from "react-icons/fa";
 import { notificationsChanged, providerApi, timeAgo, type AccountNotice, type ProviderBase } from "./bookingsApi";
 
 /** A company's or freelancer's notifications: new booking requests (with Accept / Decline), cancellations, and admin decisions. */
@@ -57,7 +57,7 @@ export default function AccountNotifications({ base }: { base: ProviderBase }) {
       <ul className="space-y-2">
         {visible.map((item) => (
           <li key={item._id} className={`flex gap-3 rounded-2xl border p-4 transition ${item.read ? "border-gray-200 bg-white" : "border-[#FFD60A] bg-[#FFD60A]/10"}`}>
-            <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${item.type === "booking" ? "bg-blue-50 text-blue-700" : "bg-gray-100 text-gray-600"}`} aria-hidden>{item.type === "booking" ? <FaCalendarCheck className="h-4 w-4" /> : <FaBell className="h-4 w-4" />}</span>
+            <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${item.type === "booking" ? "bg-blue-50 text-blue-700" : item.type === "comment" ? "bg-orange-50 text-[#f7672c]" : "bg-gray-100 text-gray-600"}`} aria-hidden>{item.type === "booking" ? <FaCalendarCheck className="h-4 w-4" /> : item.type === "comment" ? <FaCommentDots className="h-4 w-4" /> : <FaBell className="h-4 w-4" />}</span>
             <div className="min-w-0 flex-1">
               <p className="flex flex-wrap items-center gap-2 font-semibold text-gray-900">{item.title}{!item.read && <span className="rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">NEW</span>}</p>
               {item.message && <p className="mt-0.5 text-sm text-gray-600">{item.message}</p>}
@@ -65,7 +65,7 @@ export default function AccountNotifications({ base }: { base: ProviderBase }) {
                 <span>{timeAgo(item.createdAt)}</span>
                 {item.link && (
                   <Link href={item.link} onClick={() => markRead(item)} className={`rounded-lg px-3 py-1.5 font-bold ${item.actionRequired ? "bg-emerald-600 text-white hover:bg-emerald-700" : "border border-gray-200 bg-white text-[#0b1f3b] hover:bg-gray-50"}`}>
-                    {item.actionRequired ? "Accept or decline" : "View booking"}
+                    {item.actionRequired ? "Accept or decline" : item.type === "comment" ? "View comment" : "View booking"}
                   </Link>
                 )}
                 {!item.read && <button type="button" onClick={() => markRead(item)} className="rounded-lg px-2 py-1.5 font-semibold text-gray-600 hover:bg-white">Mark as read</button>}

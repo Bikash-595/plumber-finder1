@@ -29,7 +29,7 @@ export type ProviderBooking = {
   createdAt: string;
 };
 export type BookingList = { data: ProviderBooking[]; page: number; limit: number; total: number; counts: Record<BookingStatus, number> };
-export type AccountNotice = { _id: string; type: "booking" | "system"; title: string; message?: string; link?: string; booking?: string; actionRequired: boolean; read: boolean; createdAt: string };
+export type AccountNotice = { _id: string; type: "booking" | "comment" | "system"; title: string; message?: string; link?: string; booking?: string; actionRequired: boolean; read: boolean; createdAt: string };
 
 /** "/companies" or "/freelancers". */
 export type ProviderBase = "/companies" | "/freelancers";

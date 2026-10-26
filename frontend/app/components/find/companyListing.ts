@@ -63,7 +63,7 @@ export type CompanyProfile = Omit<CompanyListing, "services"> & {
   reviews?: { _id: string; customer: string; rating: number; review: string; photo?: string; createdAt: string }[];
   team?: { _id: string; name: string; role?: string; bio?: string; photo?: string; specialties?: string[]; experienceYears?: number; certificates?: string[]; licenseNumber?: string; availability?: string; joinedYear?: number }[];
   faqs?: { question: string; answer: string }[];
-  blogs?: { _id: string; slug: string; title: string; category?: string; excerpt: string; content: string; coverImage?: string; author?: string; publishDate?: string; tags?: string[] }[];
+  blogs?: { _id: string; slug: string; title: string; category?: string; excerpt: string; content: string; coverImage?: string; author?: string; publishDate?: string; tags?: string[]; faqs?: { question: string; answer: string }[]; views?: number }[];
   offers?: PublicOffer[];
   booking?: { emergencyBooking?: boolean } | null;
   serviceArea?: { areaDetails?: { name: string; services?: string[]; address?: string; radius?: number; latitude?: number; longitude?: number }[]; branchLocation?: string; latitude?: number; longitude?: number; radius?: number } | null;
@@ -213,9 +213,13 @@ export function companyProfileToPlumber(profile: CompanyProfile): Plumber {
     author: post.author || card.companyName,
     date: (post.publishDate ?? "").slice(0, 10),
     readTime: Math.max(1, Math.round(post.content.split(/\s+/).length / 200)),
-    readCount: 0,
+    readCount: post.views ?? 0,
     reactions: { like: 0, love: 0, helpful: 0 },
     comments: [],
+    id: post._id,
+    faqs: post.faqs ?? [],
+    category: post.category,
+    tags: post.tags ?? [],
   }));
 
   const reviews: PlumberReview[] = (profile.reviews ?? []).map((review) => ({ name: review.customer, rating: review.rating, text: review.review, date: review.createdAt.slice(0, 10), photo: displayableImage(review.photo) || undefined }));
@@ -418,17 +422,22 @@ export async function fetchLiveProfile(id: string): Promise<Plumber | null> {
 
 // ---- Site-wide blog feed (GET /blogs) ----
 
-type PublicBlogPost = { id: string; slug: string; title: string; category?: string; excerpt: string; coverImage?: string; author?: string; publishDate?: string; tags?: string[]; readTime: number; provider: { type: "company" | "freelancer"; id: string; slug?: string; name: string; rating: number } };
-export type BlogFeedEntry = { plumberId: string; href: string; companyName: string; companyRating: number; post: BlogPost };
+type PublicBlogPost = { id: string; views?: number; slug: string; title: string; category?: string; excerpt: string; coverImage?: string; author?: string; publishDate?: string; tags?: string[]; readTime: number; provider: { type: "company" | "freelancer" | "platform"; id: string; slug?: string; name: string; rating: number } };
+// href: the author's profile ("/blogs" for Plumber Finder); postHref: the article itself.
+export type BlogFeedEntry = { plumberId: string; href: string; postHref: string; companyName: string; companyRating: number; post: BlogPost };
 
 /** Published posts from live companies and freelancers, shaped for the blog pages (newest first). */
 export async function fetchPublicBlogFeed(): Promise<BlogFeedEntry[]> {
   const posts = (await getData<PublicBlogPost[]>("/blogs")) ?? [];
-  return posts.map((post) => ({
+  return posts.map((post) => {
+    const href = post.provider.type === "platform" ? "/blogs" : plumberHref({ id: post.provider.id, slug: post.provider.slug, providerType: post.provider.type });
+    return {
     plumberId: post.provider.id,
-    href: plumberHref({ id: post.provider.id, slug: post.provider.slug, providerType: post.provider.type }),
+    href,
+    postHref: post.provider.type === "platform" ? `/blogs/${post.slug}` : `${href}/blog/${post.slug}`,
     companyName: post.provider.name,
     companyRating: post.provider.rating,
-    post: { slug: post.slug, title: post.title, summary: post.excerpt, content: [post.category, ...(post.tags ?? [])].filter(Boolean).join(" "), image: displayableImage(post.coverImage) || "/Plumber.png", video: null, author: post.author || post.provider.name, date: (post.publishDate ?? "").slice(0, 10), readTime: post.readTime, readCount: 0, reactions: { like: 0, love: 0, helpful: 0 }, comments: [] },
-  }));
+    post: { slug: post.slug, title: post.title, summary: post.excerpt, content: [post.category, ...(post.tags ?? [])].filter(Boolean).join(" "), image: displayableImage(post.coverImage) || "/Plumber.png", video: null, author: post.author || post.provider.name, date: (post.publishDate ?? "").slice(0, 10), readTime: post.readTime, readCount: post.views ?? 0, reactions: { like: 0, love: 0, helpful: 0 }, comments: [], id: post.id },
+    };
+  });
 }

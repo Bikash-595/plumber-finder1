@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { blogFaqsSchema } from "../../../shared/profileSections/blogFaqs.js";
 
 const companyBlogSchema = new mongoose.Schema({
   company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true, index: true },
@@ -11,6 +12,7 @@ const companyBlogSchema = new mongoose.Schema({
   author: { type: String, trim: true, maxlength: 120 },
   publishDate: { type: Date },
   tags: [{ type: String, trim: true, maxlength: 40 }],
+  faqs: blogFaqsSchema,
   status: { type: String, enum: ["draft", "published"], default: "draft" },
   position: { type: Number, default: 0 },
 }, { timestamps: true, collection: "company_blogs" });

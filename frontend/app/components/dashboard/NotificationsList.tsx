@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FaBell, FaCalendarCheck, FaReceipt, FaTag, FaTrash } from "react-icons/fa";
+import { FaBell, FaCalendarCheck, FaCommentDots, FaReceipt, FaTag, FaTrash } from "react-icons/fa";
 import SignInPrompt from "@/components/dashboard/SignInPrompt";
 import { useUserData } from "@/components/dashboard/useUserData";
 import { formatDate, userApi, type Notification } from "@/components/utils/userApi";
@@ -10,10 +10,11 @@ const icons: Record<Notification["type"], React.ReactNode> = {
   booking: <FaCalendarCheck className="h-5 w-5 text-blue-600" />,
   order: <FaReceipt className="h-5 w-5 text-green-600" />,
   offer: <FaTag className="h-5 w-5 text-amber-600" />,
+  comment: <FaCommentDots className="h-5 w-5 text-orange-600" />,
   system: <FaBell className="h-5 w-5 text-gray-600" />,
 };
 const unreadBg: Record<Notification["type"], string> = {
-  booking: "bg-blue-50 border-blue-200", order: "bg-green-50 border-green-200", offer: "bg-amber-50 border-amber-200", system: "bg-gray-50",
+  booking: "bg-blue-50 border-blue-200", order: "bg-green-50 border-green-200", offer: "bg-amber-50 border-amber-200", comment: "bg-orange-50 border-orange-200", system: "bg-gray-50",
 };
 
 function timeAgo(value: string) {

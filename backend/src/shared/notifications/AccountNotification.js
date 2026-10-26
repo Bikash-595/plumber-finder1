@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 const accountNotificationSchema = new mongoose.Schema({
   recipientType: { type: String, enum: ["company", "freelancer", "admin"], required: true },
   recipient: { type: mongoose.Schema.Types.ObjectId, default: null },
-  type: { type: String, enum: ["booking", "system"], default: "system" },
+  type: { type: String, enum: ["booking", "comment", "system"], default: "system" },
   title: { type: String, required: true, trim: true, maxlength: 150 },
   message: { type: String, trim: true, maxlength: 1000 },
   link: { type: String, trim: true, maxlength: 300 },
