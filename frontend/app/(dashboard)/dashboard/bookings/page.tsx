@@ -111,7 +111,13 @@ export default function BookingsPage() {
                   {getStatusIcon(booking.status)}
                   {statusLabels[booking.status]}
                 </div>
-                {booking.price !== undefined && booking.price !== null && <p className="text-2xl font-bold text-gray-900">{formatMoney(booking.price * booking.quantity)}</p>}
+                {booking.price !== undefined && booking.price !== null && (
+                  <div className="text-right">
+                    {booking.discountAmount ? <p className="text-sm text-gray-400 line-through">{formatMoney((booking.originalPrice ?? booking.price) * booking.quantity)}</p> : null}
+                    <p className="text-2xl font-bold text-gray-900">{formatMoney(booking.price * booking.quantity)}</p>
+                  </div>
+                )}
+                {booking.couponCode && <p className="rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-800">Coupon {booking.couponCode} · {booking.couponLabel}</p>}
               </div>
             </div>
 

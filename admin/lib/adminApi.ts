@@ -55,7 +55,7 @@ export type BookingHistoryEntry = { status: BookingStatus; by: "customer" | "pro
 export type AdminBooking = {
   _id: string; reference?: string; customerName?: string; customerEmail?: string; providerType: "company" | "freelancer"; providerId: string; providerAccount?: string | null;
   providerName: string; service: string; quantity?: number; price?: number; status: BookingStatus; scheduledDate?: string; timeSlot?: string; address?: string; phone?: string; details?: string;
-  responseNote?: string; history?: BookingHistoryEntry[]; createdAt: string; source: string; user: { _id: string; name: string; email: string; phone?: string } | null;
+  responseNote?: string; history?: BookingHistoryEntry[]; couponCode?: string; couponLabel?: string; originalPrice?: number; discountAmount?: number; createdAt: string; source: string; user: { _id: string; name: string; email: string; phone?: string } | null;
 };
 export type AdminBookingDetail = AdminBooking & { provider: { hasAccount: boolean; phone?: string; email?: string; url: string } };
 export type BlogFaq = { question: string; answer: string };
@@ -63,6 +63,19 @@ export type PlatformBlog = { _id: string; title: string; slug: string; category?
 export type BlogComment = { _id: string; root: string | null; body: string; deleted: boolean; edited: boolean; createdAt: string; likes: number; dislikes: number; replyTo: { name: string } | null; author: { name: string; type: string; isPostAuthor: boolean }; replies?: BlogComment[] };
 export type BlogStatRow = { _id: string; title: string; views: number; readers: number; signedInReaders: number; likes: number; dislikes: number; comments: number };
 export type BlogStats = { data: BlogStatRow[]; totals: { views: number; readers: number; likes: number; comments: number }; site: { views: number; readers: number; byType: Record<"platform" | "company" | "freelancer" | "demo", { views: number; readers: number; postsRead: number }> } };
+export type ActivityEvent = "profile_view" | "project_view" | "blog_read" | "compare_add" | "save" | "call_click" | "email_click" | "website_click" | "share" | "booking";
+export type ProviderActivityRow = {
+  providerType: "company" | "freelancer"; providerId: string; name: string; location?: string; url: string; sample?: boolean;
+  profileViews: number; visitors: number; projectViews: number; blogReads: number; compareAdds: number; saves: number; contactClicks: number; shares: number;
+  bookings: number; customers: number; repeatCustomers: number; pendingBookings: number; acceptedBookings: number; declinedBookings: number; cancelledBookings: number; lastActivity: string | null;
+};
+export type ActivityItem = { _id: string; event: ActivityEvent; createdAt: string; providerType: "company" | "freelancer"; providerId: string; providerName?: string; target?: { id?: string; title?: string }; actor: { type: string; name: string; email?: string | null; guestId?: string } };
+export type ProviderActivityDetail = ProviderActivityRow & {
+  daily: { date: string; profileViews: number; bookings: number }[];
+  customerList: { userId: string; name: string; email?: string; bookings: number; firstBooking: string; lastBooking: string; services: string[]; accepted: number; declined: number }[];
+  bookingList: { _id: string; reference?: string; customerName?: string; customerEmail?: string; service: string; status: BookingStatus; scheduledDate?: string; timeSlot?: string; createdAt: string; responseNote?: string }[];
+  activity: ActivityItem[];
+};
 export type AdminNotice = { _id: string; type: "booking" | "system"; title: string; message?: string; link?: string; read: boolean; createdAt: string };
 export type Registration = { _id: string; accountType: "user" | "company" | "freelancer"; name: string; email: string; status?: string; createdAt: string };
 
@@ -93,6 +106,10 @@ export const adminApi = {
   blogComments: (postId: string, page = 1) => adminRequest<{ data: BlogComment[]; total: number }>(`/blogs/posts/platform/${postId}/comments?sort=newest&page=${page}`),
   replyToComment: (postId: string, parentId: string, body: string) => adminRequest<{ data: BlogComment }>(`/blogs/posts/platform/${postId}/comments`, { method: "POST", body: { body, parentId } }),
   deleteComment: (id: string) => adminRequest<{ message: string }>(`/blogs/comments/${id}`, { method: "DELETE" }),
+  // Who visited, read, compared, saved, contacted, and booked each plumber.
+  activityProviders: (params: { type?: string; search?: string; sort?: string; page?: number }) => adminRequest<Paginated<ProviderActivityRow> & { totals: Record<string, number> }>(`/admin/activity/providers${query(params)}`),
+  activityProvider: (type: string, id: string) => adminRequest<{ data: ProviderActivityDetail }>(`/admin/activity/providers/${type}/${id}`),
+  recentActivity: (params: { event?: string; page?: number }) => adminRequest<Paginated<ActivityItem>>(`/admin/activity/recent${query(params)}`),
   notifications: () => adminRequest<{ data: AdminNotice[]; unread: number }>("/admin/notifications"),
   unreadNotifications: () => adminRequest<{ data: { unread: number } }>("/admin/notifications/unread-count"),
   markNotificationRead: (id: string) => adminRequest<{ data: AdminNotice }>(`/admin/notifications/${id}/read`, { method: "PATCH" }),

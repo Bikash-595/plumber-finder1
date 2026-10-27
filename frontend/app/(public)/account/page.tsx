@@ -2,8 +2,8 @@
 // app/account/page.tsx
 "use client";
 
+import UserAvatar from "@/components/UserAvatar";
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FaBell, FaHeart, FaShoppingCart, FaSignOutAlt } from "react-icons/fa";
@@ -28,7 +28,7 @@ export default function AccountPage() {
         <div className="rounded-3xl bg-white/95 p-6 shadow-lg ring-1 ring-gray-200/70 sm:p-8">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
             {user.avatarUrl ? (
-              <Image src={user.avatarUrl} alt={user.name} width={88} height={88} className="h-20 w-20 rounded-full object-cover ring-4 ring-amber-100" />
+              <UserAvatar name={user.name} src={user.avatarUrl} size={80} className="ring-4 ring-amber-100" />
             ) : (
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gray-900 text-3xl font-bold text-white ring-4 ring-amber-100">
                 {getInitials(user.name) || user.name.charAt(0)}

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import TrackView from "@/components/activity/TrackView";
 import {
   FaArrowLeft,
   FaBriefcase,
@@ -72,6 +73,7 @@ export default async function ProjectDetailPage({
 
   return (
     <main className="min-h-screen bg-[#f6f8fb] text-gray-900">
+      <TrackView providerType={plumber.providerType ?? "company"} providerId={plumber.id} providerName={plumber.companyName} event="project_view" target={{ id: projectId, title: project.title }} />
       <section className="bg-white">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <Link

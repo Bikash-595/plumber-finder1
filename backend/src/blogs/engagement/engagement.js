@@ -10,6 +10,7 @@ import { FreelancerBlog } from "../../freelancer/blogs/models/FreelancerBlog.js"
 import { PlatformBlog } from "../models/PlatformBlog.js";
 import { displayName, isOwner, resolvePost } from "./posts.js";
 import { BlogPostStats, isBot, recordView, statsFor, viewerOf } from "./views.js";
+import { actorOf, recordActivity } from "../../activity/recordActivity.js";
 
 // Likes/dislikes and comments on blog posts (company, freelancer, Plumber Finder, and sample posts).
 // Anyone can read; any signed-in account (customer, company, freelancer, admin) can react and comment.
@@ -254,6 +255,9 @@ engagementRouter.post("/posts/:type/:id/view", optionalAccount, findPost, async 
   try {
     const skip = isBot(req) || (req.auth && isOwner(req.post, req.auth.accountType, req.auth.sub));
     const result = skip ? { counted: false, newReader: false } : await recordView(req.post.key, viewerOf(req, req.auth));
+    // The plumber who wrote it gets a "read your blog" activity (admins see it on their record).
+    const provider = req.post.provider;
+    if (result.counted && provider) await recordActivity({ providerType: provider.type, providerId: provider.id, providerAccount: req.post.owner?.account ?? null, providerName: provider.name, event: "blog_read", target: { id: req.post.key, title: req.post.title }, actor: actorOf(req, req.auth) });
     const { views, readers } = (await statsFor([req.post.key])).get(req.post.key);
     res.json({ data: { views, readers, ...result } });
   } catch (error) { next(error); }

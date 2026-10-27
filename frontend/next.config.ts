@@ -38,6 +38,11 @@ const nextConfig: NextConfig = {
         hostname: "upload.wikimedia.org",
       },
       {
+        // Google account profile photos (Sign in with Google).
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
+      {
         protocol: 'https',
         hostname: 'randomuser.me',
       },

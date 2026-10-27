@@ -118,6 +118,7 @@ A customer books a company or freelancer from its profile (`POST /api/users/book
 
 Declining or cancelling (by the plumber or an admin) needs a reason, shown to the customer. Every change is added to the booking's `history` and announced: in-app notifications for the customer, the plumber, and admins, plus a best-effort email to the plumber for a new request and to the customer when it's accepted, declined, or cancelled. The plumber sees the customer's phone, email, and address only after accepting.
 
+- **Coupon codes:** `POST /api/booking-quote` `{ providerType, providerId, service, couponCode? }` (anyone) returns the service's price from the plumber's Services section and, for a code, the discount: the code must be in one of the plumber's current offers (active, within its dates), match its "applies to" service, and meet its minimum spend. A percentage comes off the price, an amount comes off up to the price, and "free" codes show their label; with no set price, the percentage comes off the final price. Creating a booking with `couponCode` re-checks it on the server and stores `couponCode`, `couponLabel`, `originalPrice`, `discountAmount`, and `price` (the total) — prices sent by the browser are ignored; an invalid code stops the booking (400). Sample plumbers' codes are kept as given (`src/shared/bookings/bookingQuote.js`).
 - Plumber's inbox: `/api/companies/bookings` and `/api/freelancers/bookings` — `GET /` (`?status=&search=&page=`, with `counts` per status), `GET /:id`, `PATCH /:id/accept` `{ scheduledDate?, timeSlot?, note? }` (a date is required if the customer gave none), `PATCH /:id/decline` `{ reason }`, `PATCH /:id/complete` `{ note? }`, `PATCH /:id/cancel` `{ reason }`.
 - Customer: `PATCH /api/users/bookings/:id/cancel` `{ reason? }`.
 - Admin: `GET /api/admin/bookings` (with `counts`), `GET /api/admin/bookings/:id` (customer, plumber, history), `PATCH /api/admin/bookings/:id/status` `{ status, note?, scheduledDate?, timeSlot? }`.
@@ -140,6 +141,15 @@ Declining or cancelling (by the plumber or an admin) needs a reason, shown to th
   **Views and readers** (`src/blogs/engagement/views.js`): a view is one opening of a post; the same reader opening it again within 30 minutes counts once. Readers are different people — accounts when signed in, otherwise the browser's anonymous `visitorId`. The post's author and bots aren't counted. Totals are kept per post (`blog_post_stats`) and shown on articles, in the blog feed and profiles (`views`), and in the dashboards.
 
   One reaction per account per post/comment (unique indexes); comment counters change by the difference from the account's previous reaction, so repeated or simultaneous clicks never double count. The post's author is notified of new comments and each person of replies to them (never of their own).
+
+## Plumber activity (admin)
+
+Everything people do with a company or freelancer is stored in `profile_activity` (`src/activity`): profile visits, project views, blog reads, compare and save, Call/Email/Website clicks, shares, and bookings — who (customer, company, freelancer, admin, or a guest's anonymous browser id), which plumber, what (the project, post, or booking), and when.
+
+- The site sends page events: `POST /api/activity` `{ providerType, providerId, event: profile_view | project_view | call_click | email_click | website_click | share, target?, visitorId? }`. Bookings, blog reads, compares, and saves are recorded by the server when they happen.
+- Visits and clicks count once per person per 30 minutes (a unique key per 30-minute window, so simultaneous requests can't double count). Plumbers' own visits and bots aren't counted.
+- Admin (`/api/admin/activity`): `GET /providers?type=&search=&sort=views|visitors|bookings|customers|recent&page=` — every plumber with visits, unique visitors, project views, blog reads, compares, saves, contact clicks, bookings (waiting/accepted/declined/cancelled), customers and repeat customers, plus totals; `GET /providers/:type/:id` — the same for one plumber with the last 30 days, `customerList` (who booked, how many times, first/last, outcome), `bookingList`, and the activity timeline with names; `GET /recent?event=&page=` — everything, newest first.
+- The plumber's own `GET /api/companies/bookings` (and freelancers') includes `customers: { total, repeat }`.
 
 ## Admin
 

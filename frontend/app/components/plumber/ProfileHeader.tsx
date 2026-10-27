@@ -499,6 +499,7 @@ import { FaXTwitter } from "react-icons/fa6";
 import type { Plumber } from "@/components/find/types";
 import { openNowLabel } from "@/components/find/companyListing";
 import CoverSlideshow from "./CoverSlideshow";
+import { trackActivity, type ActivityEvent } from "@/components/activity/track";
 
 const socialIcons: { key: keyof NonNullable<Plumber["socialLinks"]>; label: string; Icon: IconType }[] = [
   { key: "facebook", label: "Facebook", Icon: FaFacebook },
@@ -526,7 +527,11 @@ export default function ProfileHeader({ plumber }: { plumber: Plumber }) {
   const moreServices = Math.max(0, new Set([...plumber.specializations, ...plumber.services]).size - topServices.length);
   const longDescription = plumber.description.length > 180;
 
+  // Contact and share clicks are recorded for the plumber's activity (admins see them).
+  const track = (event: ActivityEvent) => trackActivity({ providerType: plumber.providerType ?? "company", providerId: plumber.id, providerName: plumber.companyName, event });
+
   const share = async () => {
+    track("share");
     const url = window.location.href;
     try {
       if (navigator.share) return await navigator.share({ title: plumber.companyName, url });
@@ -605,15 +610,15 @@ export default function ProfileHeader({ plumber }: { plumber: Plumber }) {
         <div className="mt-5 flex flex-col gap-4 border-t border-gray-100 pt-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             {plumber.phone && (
-              <a href={`tel:${plumber.phone.replace(/[^\d+]/g, "")}`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#FFD60A] px-4 text-sm font-bold text-[#0b1f3b] shadow-sm transition hover:brightness-95">
+              <a href={`tel:${plumber.phone.replace(/[^\d+]/g, "")}`} onClick={() => track("call_click")} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#FFD60A] px-4 text-sm font-bold text-[#0b1f3b] shadow-sm transition hover:brightness-95">
                 <FaPhoneAlt className="h-3.5 w-3.5" aria-hidden /> <span className="sm:hidden">Call</span><span className="hidden sm:inline">{plumber.phone}</span>
               </a>
             )}
             <a href="#booking" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#0b1f3b] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#17345a]">
               <FaCalendarCheck className="h-3.5 w-3.5" aria-hidden /> Book now
             </a>
-            {plumber.email && <a href={`mailto:${plumber.email}`} className={outlineButton}><FaEnvelope className="h-3.5 w-3.5" aria-hidden /> Email</a>}
-            {plumber.website && <a href={plumber.website} target="_blank" rel="noopener noreferrer" className={outlineButton}><FaGlobe className="h-3.5 w-3.5" aria-hidden /> Website</a>}
+            {plumber.email && <a href={`mailto:${plumber.email}`} onClick={() => track("email_click")} className={outlineButton}><FaEnvelope className="h-3.5 w-3.5" aria-hidden /> Email</a>}
+            {plumber.website && <a href={plumber.website} target="_blank" rel="noopener noreferrer" onClick={() => track("website_click")} className={outlineButton}><FaGlobe className="h-3.5 w-3.5" aria-hidden /> Website</a>}
           </div>
           {socials.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">

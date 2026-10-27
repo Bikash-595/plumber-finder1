@@ -120,6 +120,13 @@ export default function ProviderBookings({ base }: { base: ProviderBase }) {
         ))}
       </div>
 
+      {list?.customers && list.customers.total > 0 && (
+        <p className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl bg-gray-50 px-4 py-2.5 text-sm text-gray-700">
+          <span><span className="font-bold text-gray-900">{list.customers.total}</span> {list.customers.total === 1 ? "customer has" : "customers have"} booked you</span>
+          {list.customers.repeat > 0 && <span><span className="font-bold text-gray-900">{list.customers.repeat}</span> booked more than once</span>}
+        </p>
+      )}
+
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Booking status">
           {tabs.map(({ value, label }) => (
@@ -168,7 +175,8 @@ export default function ProviderBookings({ base }: { base: ProviderBase }) {
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Visit</p>
                   <p className="mt-1 flex items-center gap-2 font-semibold text-gray-900"><FaCalendarAlt className="h-3.5 w-3.5 text-[#f7672c]" aria-hidden /> {formatVisitDate(booking.scheduledDate)}</p>
                   <p className="mt-1 flex items-center gap-2 text-gray-700"><FaClock className="h-3.5 w-3.5 text-[#f7672c]" aria-hidden /> {booking.timeSlot || "Any time"}</p>
-                  {booking.price != null && <p className="mt-1 text-gray-700">Price: <span className="font-semibold">${(booking.price * booking.quantity).toFixed(2)}</span>{booking.offer ? ` · offer ${booking.offer}` : ""}</p>}
+                  {booking.price != null && <p className="mt-1 text-gray-700">Price: {booking.discountAmount ? <span className="text-gray-400 line-through">${(booking.originalPrice ?? booking.price).toFixed(2)}</span> : null} <span className="font-semibold">${(booking.price * booking.quantity).toFixed(2)}</span></p>}
+                  {booking.couponCode && <p className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-800">Coupon <span className="font-mono">{booking.couponCode}</span> · {booking.couponLabel}{booking.discountAmount ? ` · −$${booking.discountAmount.toFixed(2)}` : ""}</p>}
                 </div>
                 <div className="rounded-xl bg-gray-50 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Customer contact</p>

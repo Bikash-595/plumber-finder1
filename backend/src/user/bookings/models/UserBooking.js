@@ -35,6 +35,11 @@ const userBookingSchema = new mongoose.Schema({
   phone: { type: String, trim: true, maxlength: 40 },
   details: { type: String, trim: true, maxlength: 2000 },
   offer: { type: String, trim: true, maxlength: 120 },
+  // Coupon used: the code, what it gives ("10% off"), and the price before/after it. `price` is the total to pay.
+  couponCode: { type: String, trim: true, uppercase: true, maxlength: 40 },
+  couponLabel: { type: String, trim: true, maxlength: 120 },
+  originalPrice: { type: Number, min: 0 },
+  discountAmount: { type: Number, min: 0 },
   status: { type: String, enum: bookingsConfig.statuses, default: "pending" },
   source: { type: String, enum: ["request", "checkout"], default: "request" },
   invoice: { type: mongoose.Schema.Types.ObjectId, ref: "UserInvoice" },

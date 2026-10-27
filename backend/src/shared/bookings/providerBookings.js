@@ -42,14 +42,16 @@ export function createProviderBookingsController(providerType) {
         const status = bookingsConfig.statuses.includes(req.query.status) ? { status: req.query.status } : {};
         const filter = { ...mine(req), ...status, ...searchFilter(req.query.search, ["reference", "customerName", "service"]) };
         const { page, limit, skip } = pagination(req.query);
-        const [data, total, grouped] = await Promise.all([
+        const [data, total, grouped, people] = await Promise.all([
           // Requests waiting for an answer first, then the soonest visits.
           UserBooking.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
           UserBooking.countDocuments(filter),
           UserBooking.aggregate([{ $match: mine(req) }, { $group: { _id: "$status", count: { $sum: 1 } } }]),
+          // How many different customers booked, and how many booked again.
+          UserBooking.aggregate([{ $match: mine(req) }, { $group: { _id: "$user", n: { $sum: 1 } } }, { $group: { _id: null, customers: { $sum: 1 }, repeat: { $sum: { $cond: [{ $gt: ["$n", 1] }, 1, 0] } } } }]),
         ]);
         const counts = Object.fromEntries(bookingsConfig.statuses.map((name) => [name, grouped.find((row) => row._id === name)?.count ?? 0]));
-        res.json({ data: data.map(forProvider), page, limit, total, counts });
+        res.json({ data: data.map(forProvider), page, limit, total, counts, customers: { total: people[0]?.customers ?? 0, repeat: people[0]?.repeat ?? 0 } });
       } catch (error) { next(error); }
     },
     getOne: async (req, res, next) => {

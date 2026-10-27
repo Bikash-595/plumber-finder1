@@ -1,4 +1,6 @@
 import cors from "cors";
+import { bookingQuoteRouter } from "./shared/bookings/bookingQuote.js";
+import { activityRouter } from "./activity/activityRouter.js";
 import express from "express";
 import mongoose from "mongoose";
 import { companyListingRouter } from "./company/listing/routers/companyListingRouter.js";
@@ -45,6 +47,10 @@ app.use("/api/companies/onboarding", companyOnboardingRouter);
 app.use("/api/companies", companyListingRouter);
 app.use("/api/freelancers", freelancerRouter);
 app.use("/api/blogs", publicBlogsRouter);
+// Profile visits, project views, and contact clicks from the public site (admins see them per plumber).
+app.use("/api/activity", activityRouter);
+// Price of a booking with a coupon code (shown in the booking form before sending).
+app.use("/api/booking-quote", bookingQuoteRouter);
 app.use("/api/location", locationRouter);
 app.use("/api/users", userRouter);
 app.use("/api/admin", adminRouter);

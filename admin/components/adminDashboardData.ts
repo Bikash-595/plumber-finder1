@@ -39,6 +39,7 @@ export const adminNavSections = [
     label: "Dashboard",
     items: [
       { label: "Overview", href: "/", icon: FaHome },
+      { label: "Activity", href: "/activity", icon: FaChartBar },
       { label: "Live Statistics", href: "/live-statistics", icon: FaChartLine },
       { label: "Revenue Analytics", href: "/revenue-analytics", icon: FaDollarSign },
       { label: "Booking Analytics", href: "/booking-analytics", icon: FaClipboardList },

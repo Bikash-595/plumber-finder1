@@ -7,6 +7,7 @@ import { CompanyListing } from "../../company/listing/models/CompanyListing.js";
 import { FreelancerListing } from "../../freelancer/listing/models/FreelancerListing.js";
 import { notify as notifyCustomer } from "../../user/notifications/services/notify.js";
 import { AccountNotification, notifyAdmins, notifyProvider } from "../notifications/AccountNotification.js";
+import { recordActivity } from "../../activity/recordActivity.js";
 
 // How a booking moves between customer, plumber (company or freelancer), and admin:
 //   pending ──accept──▶ scheduled ──complete──▶ completed
@@ -112,9 +113,11 @@ export async function announce(booking, event, by = "customer", { tellCustomer =
   if (event !== "created") tasks.push(AccountNotification.updateMany({ booking: booking._id, actionRequired: true }, { $set: { actionRequired: false } }));
 
   if (event === "created") {
+    // The plumber's activity record (admins see who booked whom, and when).
+    tasks.push(recordActivity({ providerType: booking.providerType, providerId: booking.providerId, providerAccount: booking.providerAccount, providerName: booking.providerName, event: "booking", target: { id: id, title: booking.service }, actor: { type: "user", id: String(booking.user) } }));
     tasks.push(
       tellCustomer && toCustomer({ title: "Booking request sent", message: `Your request ${ref} for ${booking.service} was sent to ${booking.providerName}. You'll be notified when they accept it.` }),
-      toProvider({ title: "New booking request", message: `${booking.customerName ?? "A customer"} wants ${booking.service} on ${when(booking)} (${ref}). Accept or decline it.`, actionRequired: true }),
+      toProvider({ title: "New booking request", message: `${booking.customerName ?? "A customer"} wants ${booking.service} on ${when(booking)} (${ref})${booking.couponCode ? ` with coupon ${booking.couponCode} (${booking.couponLabel})` : ""}. Accept or decline it.`, actionRequired: true }),
       toAdmins({ title: "New booking", message: `${booking.customerName ?? "A customer"} booked ${booking.providerName} for ${booking.service} on ${when(booking)} (${ref}).${booking.providerAccount ? "" : " This is a sample plumber with no account: handle it here."}` }),
     );
     const to = await providerEmail(booking);

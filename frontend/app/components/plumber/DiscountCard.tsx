@@ -49,6 +49,8 @@ export default function DiscountCard({ plumber }: { plumber: Plumber }) {
                         <button type="button" onClick={() => copy(coupon.code)} aria-label={`Copy code ${coupon.code}`} className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 hover:text-green-900">
                           {copied === coupon.code ? <><FaCheck className="h-3 w-3" aria-hidden /> Copied</> : <><FaCopy className="h-3 w-3" aria-hidden /> Copy</>}
                         </button>
+                        {/* Applies the code in the booking form and scrolls there. */}
+                        <button type="button" onClick={() => { window.dispatchEvent(new CustomEvent("plumberfinder:apply-coupon", { detail: coupon.code })); document.getElementById("booking")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} aria-label={`Use code ${coupon.code} in the booking form`} className="rounded-full bg-green-700 px-2.5 py-0.5 text-xs font-bold text-white hover:bg-green-800">Use</button>
                       </div>
                     ) : <span className="text-xs text-gray-500">No code needed</span>}
                   </div>

@@ -1,6 +1,7 @@
 // components/Header.tsx
 "use client";
 
+import UserAvatar from "@/components/UserAvatar";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, FormEvent, useCallback } from "react";
@@ -40,7 +41,7 @@ import { allStateAbbrs, getStateName } from "../components/utils/location";
 import { serviceDefinitions } from "./services/serviceData";
 import { ServiceIcon } from "./services/serviceIcons";
 import SearchSuggestionsPanel from "./search/SearchSuggestionsPanel";
-import { getInitials, readStoredUser, clearStoredUser, type AppUser } from "../components/utils/auth";
+import { readStoredUser, clearStoredUser, type AppUser } from "../components/utils/auth";
 import { isCustomerSignedIn, USER_DATA_EVENT, userApi } from "./utils/userApi";
 import { useUserData } from "./dashboard/useUserData";
 import { accountMenuLinks, dashboardLink, type AccountLink } from "./utils/accountLinks";
@@ -225,15 +226,7 @@ export function Header() {
   const isBusiness = ownDashboard?.href === "/company-dashboard" || ownDashboard?.href === "/freelancer";
   const businessCta = isBusiness && ownDashboard ? { href: ownDashboard.href, label: "My Business" } : { href: "/business/login", label: "List Company" };
 
-  const accountAvatar = user && (user.avatarUrl ? (
-    <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-200 ring-2 ring-white">
-      <Image src={user.avatarUrl} alt="" fill sizes="32px" className="object-cover" />
-    </span>
-  ) : (
-    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0b1f3b] text-xs font-bold text-white ring-2 ring-white">
-      {getInitials(user.name)}
-    </span>
-  ));
+  const accountAvatar = user && <UserAvatar name={user.name} src={user.avatarUrl} size={32} className="ring-2 ring-white" />;
 
   const iconButton = "relative inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 hover:text-[#0b1f3b]";
 

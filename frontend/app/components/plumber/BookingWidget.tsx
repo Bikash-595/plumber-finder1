@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { isCustomerSignedIn, userApi } from "@/components/utils/userApi";
 import { Plumber } from "@/components/find/types";
 import { FaCalendarAlt, FaClock, FaWrench, FaCommentDots, FaPhoneAlt, FaMapMarkerAlt } from "react-icons/fa";
+import BookingCoupon from "./BookingCoupon";
 
 export default function BookingWidget({ plumber }: { plumber: Plumber }) {
   const [selectedDate, setSelectedDate] = useState("");
@@ -14,6 +15,9 @@ export default function BookingWidget({ plumber }: { plumber: Plumber }) {
   const [message, setMessage] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [couponCode, setCouponCode] = useState<string | null>(null);
+  // Changing this resets the coupon box after a booking is sent.
+  const [formKey, setFormKey] = useState(0);
 
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ tone: "success" | "error" | "login"; text: string } | null>(null);
@@ -48,10 +52,11 @@ export default function BookingWidget({ plumber }: { plumber: Plumber }) {
         providerType: plumber.providerType ?? "company", providerId: plumber.id, providerName: plumber.companyName,
         service: selectedService === "other" ? "Other plumbing service" : selectedService,
         scheduledDate: selectedDate || undefined, timeSlot: selectedTime || undefined, details: message || undefined,
-        phone: phone.trim(), address: address.trim(),
+        phone: phone.trim(), address: address.trim(), couponCode: couponCode ?? undefined,
       });
-      setResult({ tone: "success", text: `Request ${data.reference} sent to ${plumber.companyName}. You'll be notified when they accept it.` });
-      setSelectedDate(""); setSelectedTime(""); setSelectedService(""); setMessage("");
+      const saving = data.couponCode ? ` Coupon ${data.couponCode} (${data.couponLabel ?? "discount"})${data.discountAmount ? `: you save $${data.discountAmount.toFixed(2)}, total $${data.price?.toFixed(2)}` : " is included"}.` : "";
+      setResult({ tone: "success", text: `Request ${data.reference} sent to ${plumber.companyName}.${saving} You'll be notified when they accept it.` });
+      setSelectedDate(""); setSelectedTime(""); setSelectedService(""); setMessage(""); setCouponCode(null); setFormKey((key) => key + 1);
     } catch (caught) {
       setResult({ tone: "error", text: caught instanceof Error ? caught.message : "Could not send the request." });
     } finally {
@@ -135,6 +140,9 @@ export default function BookingWidget({ plumber }: { plumber: Plumber }) {
           </div>
           <p className="mt-1 text-xs text-gray-400">Shared with {plumber.companyName} only after they accept.</p>
         </div>
+
+        {/* Coupon: checked against the plumber's current offers, discount taken off the service's price */}
+        <BookingCoupon key={formKey} plumber={plumber} service={selectedService === "other" ? "" : selectedService} onApplied={setCouponCode} />
 
         {/* Message */}
         <div>

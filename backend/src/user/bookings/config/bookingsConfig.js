@@ -16,6 +16,8 @@ export const bookingsConfig = {
     phone: { type: "string", max: 40 },
     details: { type: "text", max: 2000 },
     offer: { type: "string", max: 120 },
+    // A coupon code from the plumber's special offers; checked and priced on the server (shared/bookings/bookingQuote.js).
+    couponCode: { type: "string", max: 40, uppercase: true },
   },
   // A requested date cannot be in the past (today is fine).
   validate: ({ scheduledDate }) => {

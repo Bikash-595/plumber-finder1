@@ -1,4 +1,5 @@
 import { announce, applyStatus, newBookingFields } from "../../../shared/bookings/bookingWorkflow.js";
+import { quoteBooking } from "../../../shared/bookings/bookingQuote.js";
 import { bookingsConfig } from "../config/bookingsConfig.js";
 import { UserBooking } from "../models/UserBooking.js";
 
@@ -16,7 +17,15 @@ export const bookingsController = {
   create: async (req, res, next) => {
     try {
       const fields = await newBookingFields(req.auth.sub, req.validated.providerType, req.validated.providerId);
-      const booking = await UserBooking.create({ ...req.validated, ...fields, user: req.auth.sub, source: "request", status: "pending" });
+      // The price and any coupon are worked out here, never taken from the browser.
+      const { couponCode, ...request } = req.validated;
+      const quote = await quoteBooking({ providerType: request.providerType, providerId: request.providerId, service: request.service, couponCode });
+      if (quote.error) return res.status(400).json({ message: quote.error, errors: { couponCode: quote.error } });
+      const pricing = {
+        ...(quote.price.base !== null ? { originalPrice: quote.price.base, price: quote.price.total } : {}),
+        ...(quote.coupon ? { couponCode: quote.coupon.code, couponLabel: quote.coupon.label, discountAmount: quote.price.discount, offer: quote.coupon.label } : {}),
+      };
+      const booking = await UserBooking.create({ ...request, ...pricing, ...fields, user: req.auth.sub, source: "request", status: "pending" });
       // The customer, the plumber (to accept or decline), and admins are notified.
       await announce(booking, "created", "customer");
       res.status(201).json({ message: `Booking request ${booking.reference} sent.`, data: booking });

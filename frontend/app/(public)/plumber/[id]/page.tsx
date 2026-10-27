@@ -195,6 +195,7 @@ import ProfileBlogSection from "@/components/plumber/ProfileBlogSection";
 import ProfileFaq from "@/components/plumber/ProfileFaq";
 import ProfileTeam from "@/components/plumber/ProfileTeam";
 import ProfileActions from "@/components/plumber/ProfileActions";
+import { useTrackView } from "@/components/activity/track";
 
 const RECENT_DEALS_KEY = "plumberfinder_recent_deals";
 
@@ -205,6 +206,8 @@ export default function PlumberProfilePage({ params }: { params: Promise<{ id: s
   const plumber = usePlumber(id);
   const pathname = usePathname();
   const router = useRouter();
+  // A profile visit (admins see visits per plumber); counted once per person per 30 minutes.
+  useTrackView(plumber ? { providerType: plumber.providerType ?? "company", providerId: plumber.id, providerName: plumber.companyName, event: "profile_view" } : null);
 
   // One URL per company: /plumber/<id> and old slugs (from before a rename) go to /company/<current slug>.
   useEffect(() => {

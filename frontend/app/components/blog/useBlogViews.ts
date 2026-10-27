@@ -3,25 +3,11 @@
 import { useEffect, useState } from "react";
 import { API_BASE_URL } from "@/components/utils/apiClient";
 import { readStoredUser } from "@/components/utils/auth";
+import { visitorId } from "@/components/utils/visitor";
 
 export type BlogViews = { views: number; readers: number };
-const VISITOR_KEY = "plumberfinder_visitor";
 // One request per post per page load, shared by every component showing the numbers.
 const recorded = new Map<string, Promise<BlogViews | null>>();
-
-/** This browser's anonymous id, so guests are counted once as readers (no personal data). */
-function visitorId() {
-  try {
-    let id = window.localStorage.getItem(VISITOR_KEY);
-    if (!id) {
-      id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
-      window.localStorage.setItem(VISITOR_KEY, id);
-    }
-    return id;
-  } catch {
-    return undefined;
-  }
-}
 
 function record(postPath: string) {
   if (!recorded.has(postPath)) {
