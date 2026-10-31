@@ -1,6 +1,6 @@
 // app/saved/page.tsx
 import Link from "next/link";
-import SavedList from "@/components/dashboard/SavedList";
+import SavedList from "@/components/dashboard/saved/SavedList";
 
 export default function SavedPage() {
   return (

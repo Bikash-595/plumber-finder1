@@ -54,7 +54,7 @@ function DashboardLayoutContent({
 
   // App shell: one screen tall. The sidebar and the page body scroll separately.
   return (
-        <div className="flex h-dvh flex-col overflow-hidden bg-gray-100">
+        <div className="flex h-dvh flex-col overflow-hidden bg-[#f5f6f8]">
       {/* Full Width Navbar */}
       <header className="relative z-50 w-full shrink-0 shadow-sm bg-white">
         <UserNavbar
@@ -101,10 +101,8 @@ function DashboardLayoutContent({
 
         {/* Page Content */}
         <main className="flex min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain">
-          <div className="flex-1 p-6 lg:p-8">
-            <div className="bg-white rounded-2xl shadow-sm min-h-[calc(100vh-180px)] p-6 text-gray-900">
-              {children}
-            </div>
+          <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 text-gray-900 sm:px-6 lg:px-8 lg:py-8">
+            {children}
           </div>
           <footer className="w-full bg-white border-t shadow-sm">
             <UserFooter />

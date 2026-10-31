@@ -76,6 +76,12 @@ export type ProviderActivityDetail = ProviderActivityRow & {
   bookingList: { _id: string; reference?: string; customerName?: string; customerEmail?: string; service: string; status: BookingStatus; scheduledDate?: string; timeSlot?: string; createdAt: string; responseNote?: string }[];
   activity: ActivityItem[];
 };
+export type ModerationReview = {
+  _id: string; providerType: "company" | "freelancer"; providerId: string; providerName?: string; rating: number; title: string; body: string; serviceCategory?: string; photos?: string[];
+  status: "published" | "pending" | "hidden"; moderation?: { reason?: string; by?: string; at?: string }; reportCount: number; verified: boolean; createdAt: string;
+  user: { _id: string; name: string; email: string } | null; userName?: string; reply?: { body?: string };
+  reports: { reason: string; details?: string; by: string; at: string }[];
+};
 export type AdminNotice = { _id: string; type: "booking" | "system"; title: string; message?: string; link?: string; read: boolean; createdAt: string };
 export type Registration = { _id: string; accountType: "user" | "company" | "freelancer"; name: string; email: string; status?: string; createdAt: string };
 
@@ -110,6 +116,9 @@ export const adminApi = {
   activityProviders: (params: { type?: string; search?: string; sort?: string; page?: number }) => adminRequest<Paginated<ProviderActivityRow> & { totals: Record<string, number> }>(`/admin/activity/providers${query(params)}`),
   activityProvider: (type: string, id: string) => adminRequest<{ data: ProviderActivityDetail }>(`/admin/activity/providers/${type}/${id}`),
   recentActivity: (params: { event?: string; page?: number }) => adminRequest<Paginated<ActivityItem>>(`/admin/activity/recent${query(params)}`),
+  // PlumberFinder review moderation.
+  reviews: (params: { status?: string; search?: string; page?: number }) => adminRequest<Paginated<ModerationReview> & { counts: Record<string, number> }>(`/admin/reviews${query(params)}`),
+  moderateReview: (id: string, status: "published" | "hidden", reason?: string) => adminRequest<{ message: string }>(`/admin/reviews/${id}`, { method: "PATCH", body: { status, reason } }),
   notifications: () => adminRequest<{ data: AdminNotice[]; unread: number }>("/admin/notifications"),
   unreadNotifications: () => adminRequest<{ data: { unread: number } }>("/admin/notifications/unread-count"),
   markNotificationRead: (id: string) => adminRequest<{ data: AdminNotice }>(`/admin/notifications/${id}/read`, { method: "PATCH" }),

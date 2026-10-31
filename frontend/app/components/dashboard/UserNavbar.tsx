@@ -9,7 +9,6 @@ import {
   FaBars,
   FaChevronDown,
   FaCog,
-  FaSearch,
   FaSignOutAlt,
   FaUser,
   FaWallet,
@@ -20,11 +19,15 @@ import {
   readStoredUser,
   type AppUser,
 } from "../utils/auth";
+import { userApi } from "../utils/userApi";
+import DashboardSearch from "./DashboardSearch";
+import { useUserData } from "./useUserData";
 
 const quickLinks = [
   { label: "Find", href: "/find" },
   { label: "Bookings", href: "/dashboard/bookings" },
   { label: "Saved", href: "/dashboard/saved" },
+  { label: "Invoices", href: "/dashboard/invoices" },
 ];
 
 interface UserNavbarProps {
@@ -48,6 +51,7 @@ export default function UserNavbar({ onToggleSidebar }: UserNavbarProps) {
   const router = useRouter();
   const [user, setUser] = useState<AppUser | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const unread = useUserData(userApi.dashboard).data?.counts.unreadNotifications ?? 0;
 
   const displayName = user?.name || "Guest User";
   const displayEmail = user?.email || "customer@plumberfinder.com";
@@ -67,7 +71,7 @@ export default function UserNavbar({ onToggleSidebar }: UserNavbarProps) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur text-gray-900">
-      <div className="flex min-h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+      <div className="flex min-h-16 flex-wrap items-center justify-between gap-x-4 px-4 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
@@ -82,20 +86,13 @@ export default function UserNavbar({ onToggleSidebar }: UserNavbarProps) {
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               Customer Area
             </p>
-            <h1 className="truncate text-lg font-bold text-gray-900 sm:text-xl">
+            <p className="truncate text-lg font-bold text-gray-900 sm:text-xl">
               {getPageLabel(pathname)}
-            </h1>
+            </p>
           </div>
         </div>
 
-        <div className="hidden min-w-[240px] max-w-md flex-1 items-center rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-500 md:flex">
-          <FaSearch className="h-4 w-4 flex-shrink-0" />
-          <input
-            type="search"
-            placeholder="Search bookings, invoices, plumbers"
-            className="ml-3 w-full bg-transparent text-sm text-gray-800 outline-none placeholder:text-gray-400"
-          />
-        </div>
+        <DashboardSearch />
         <nav className="hidden items-center gap-1 md:flex" aria-label="Dashboard quick links">
           {quickLinks.map((link) => {
             const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
@@ -113,7 +110,7 @@ export default function UserNavbar({ onToggleSidebar }: UserNavbarProps) {
         </nav>
 
         {/* Mobile quick links */}
-        <div className="md:hidden w-full border-t border-gray-100 bg-white/95 px-3 py-2">
+        <div className="order-last -mx-4 w-[calc(100%+2rem)] border-t border-gray-100 bg-white/95 px-3 py-2 sm:-mx-6 sm:w-[calc(100%+3rem)] md:hidden">
           <div className="-mx-1 flex w-full gap-2 overflow-x-auto px-1">
             {quickLinks.map((link) => {
               const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
@@ -135,10 +132,10 @@ export default function UserNavbar({ onToggleSidebar }: UserNavbarProps) {
           <Link
             href="/dashboard/notifications"
             className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:border-[#FFD60A] hover:text-[#0b1f3b]"
-            aria-label="Notifications"
+            aria-label={unread ? `Notifications (${unread} unread)` : "Notifications"}
           >
             <FaBell className="h-4 w-4" />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
+            {unread > 0 && <span className="absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-red-500 px-1 text-center text-[11px] font-bold leading-5 text-white">{unread > 99 ? "99+" : unread}</span>}
           </Link>
 
           <div className="relative">

@@ -1,4 +1,5 @@
 import CollectionForm from "../CollectionForm";
+import ProviderReviews from "@/components/reviews/ProviderReviews";
 import ServicesEditor from "../ServicesEditor";
 import OpeningHoursForm from "../OpeningHoursForm";
 import SectionForm from "../SectionForm";
@@ -52,8 +53,9 @@ export function SpecialOffersForm() {
   return <SpecialOffersEditor apiEndpoint="/companies/special-offers" servicesEndpoint="/companies/services" />;
 }
 
+/** Reviews & Ratings: customers' PlumberFinder reviews (reply, report) and the Google Business Profile link. */
 export function CustomerReviewsForm() {
-  return <CollectionForm section="reviews" apiEndpoint="/companies/reviews" title="Customer Reviews" description="Manage approved manual reviews while API-sourced reviews are being connected." itemName="Review" initial={{ customer: "Jordan Smith", rating: "5", review: "Fast and professional emergency repair.", photo: "" }} fields={[{ name: "customer", label: "Customer Name", required: true }, { name: "rating", label: "Rating (1–5)", type: "number", required: true }, { name: "review", label: "Review", type: "textarea", required: true }, { name: "photo", label: "Customer Photo", type: "image" }]} />;
+  return <ProviderReviews base="/companies" />;
 }
 
 export function ServiceAreasForm() {

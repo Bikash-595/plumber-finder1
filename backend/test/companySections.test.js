@@ -27,7 +27,6 @@ const collections = {
   services: { name: "Drain cleaning" },
   gallery: { media: tinyPng, caption: "Team" },
   "previous-projects": { title: "Repipe", service: "Pipe repair", description: "Whole home repipe" },
-  reviews: { customer: "Ann", rating: 5, review: "Great" },
   team: { name: "Chris", role: "Owner" },
   faqs: { question: "Do you do emergencies?", answer: "Yes" },
   blogs: { title: "Frozen pipes", excerpt: "Tips", content: "Body", status: "published" },
@@ -37,7 +36,7 @@ const collections = {
 describe("every section", () => {
   test("requires a company token", async () => {
     const { body: user } = await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: "U", email: "u-sections@example.com", password: "password123" } });
-    for (const section of [...singletons, ...Object.keys(collections)]) {
+    for (const section of [...singletons, ...Object.keys(collections), "reviews"]) {
       assert.equal((await api("GET", `/api/companies/${section}`)).status, 401, section);
       assert.equal((await api("GET", `/api/companies/${section}`, { token: user.token })).status, 403, `${section} (user token)`);
     }
@@ -123,9 +122,6 @@ describe("validation", () => {
     assert.equal(missing.status, 400);
     assert.equal(missing.body.errors.name, "is required");
 
-    const badReview = await api("POST", "/api/companies/reviews", { token, body: { customer: "A", review: "B", rating: 9 } });
-    assert.equal(badReview.status, 400);
-    assert.match(badReview.body.errors.rating, /at most 5/);
 
     const badTypes = await api("PUT", "/api/companies/booking", { token, body: { instantBooking: "yes", workingDays: 5 } });
     assert.equal(badTypes.status, 400);
@@ -341,8 +337,11 @@ describe("opening hours, deleting, and the public profile", () => {
     const { token, listingId } = await newCompany();
     await api("PUT", "/api/companies/onboarding/steps/business-profile", { token, body: { formData: { companyHistory: "Since 1999", taxIdentificationNumber: "SECRET-TAX", yearEstablished: "1999" } } });
     await api("POST", "/api/companies/team", { token, body: { name: "Sam", role: "Lead", specialties: "Drains, Heaters", experienceYears: 12, certificates: ["Master Plumber"] } });
-    await api("POST", "/api/companies/reviews", { token, body: { customer: "Ann", rating: 5, review: "Great" } });
-    await api("POST", "/api/companies/reviews", { token, body: { customer: "Bob", rating: 4, review: "Good" } });
+    // The rating comes from customers' PlumberFinder reviews.
+    for (const [i, rating] of [5, 4].entries()) {
+      const reviewer = (await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: `Reviewer ${i}`, email: `reviewer${Date.now()}${i}@example.com`, password: "password123" } })).body;
+      assert.equal((await api("POST", `/api/reviews/company/${listingId}`, { token: reviewer.token, body: { rating, title: "Good job", body: "Fixed our leak quickly and cleanly." } })).status, 201);
+    }
     await api("POST", "/api/companies/blogs", { token, body: { title: "Live post", excerpt: "E", content: "C", status: "published" } });
     await api("POST", "/api/companies/blogs", { token, body: { title: "Draft post", excerpt: "E", content: "C" } });
     await api("POST", "/api/companies/previous-projects", { token, body: { title: "Shown", service: "Repipe", description: "D" } });

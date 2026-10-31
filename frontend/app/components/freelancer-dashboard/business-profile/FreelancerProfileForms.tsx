@@ -1,6 +1,7 @@
 // Freelancer profile sections, saved to /api/freelancers/<section>.
 // They reuse the company business-profile form components; draft keys are prefixed so
 // freelancer drafts never mix with company drafts on the same device.
+import ProviderReviews from "@/components/reviews/ProviderReviews";
 import ServicesEditor from "@/components/company-dashboard/business-profile/ServicesEditor";
 import SpecialOffersEditor from "@/components/company-dashboard/business-profile/SpecialOffersEditor";
 import CollectionForm from "@/components/company-dashboard/business-profile/CollectionForm";
@@ -61,8 +62,9 @@ export function FreelancerProjectsForm() {
   return <PreviousProjectForm apiEndpoint="/freelancers/previous-projects" draftKey="freelancer-projects" startEmpty />;
 }
 
+/** Reviews & Ratings: customers' PlumberFinder reviews (reply, report) and the Google Business Profile link. */
 export function FreelancerReviewsForm() {
-  return <CollectionForm section="freelancer-reviews" apiEndpoint="/freelancers/reviews" title="Customer Reviews" description="Show reviews from customers you have worked with." itemName="Review" fields={[{ name: "customer", label: "Customer Name" }, { name: "rating", label: "Rating (1–5)", type: "number" }, { name: "review", label: "Review", type: "textarea" }, { name: "photo", label: "Customer Photo", type: "image" }]} />;
+  return <ProviderReviews base="/freelancers" />;
 }
 
 export function FreelancerFaqsForm() {
@@ -97,7 +99,7 @@ export const freelancerProfileSections = [
   { slug: "services", label: "Services", Form: FreelancerServicesForm },
   { slug: "gallery", label: "Work Gallery", Form: FreelancerGalleryForm },
   { slug: "projects", label: "Previous Projects", Form: FreelancerProjectsForm },
-  { slug: "reviews", label: "Reviews", Form: FreelancerReviewsForm },
+  { slug: "reviews", label: "Reviews & Ratings", Form: FreelancerReviewsForm },
   { slug: "faqs", label: "FAQs", Form: FreelancerFaqsForm },
   { slug: "service-areas", label: "Service Areas", Form: FreelancerServiceAreasForm },
   { slug: "blogs", label: "Blogs", Form: FreelancerBlogsForm },

@@ -20,6 +20,17 @@ const userBookingSchema = new mongoose.Schema({
   // Who booked, as it was when they booked (shown to the plumber and admins).
   customerName: { type: String, trim: true, maxlength: 120 },
   customerEmail: { type: String, trim: true, lowercase: true, maxlength: 200 },
+  // The customer's contact preferences from their profile, copied when they booked.
+  customerContact: {
+    type: new mongoose.Schema({
+      preferredContact: { type: String, enum: ["phone", "sms", "email"] },
+      contactTime: { type: String, enum: ["anytime", "morning", "afternoon", "evening"] },
+      language: { type: String, maxlength: 40 },
+      alternateName: { type: String, maxlength: 120 },
+      alternatePhone: { type: String, maxlength: 40 },
+    }, { _id: false }),
+    default: undefined,
+  },
   // providerType + providerId identify the public listing; providerAccount is the company/freelancer
   // account that owns it (null for the site's sample plumbers), so the plumber's dashboard can find it.
   providerType: { type: String, enum: ["company", "freelancer"], required: true },
@@ -53,6 +64,9 @@ const userBookingSchema = new mongoose.Schema({
   history: { type: [historySchema], default: () => [{ status: "pending", by: "customer" }] },
 }, { timestamps: true, collection: "user_bookings" });
 
+// Customer lists page by _id (see user/shared/paginate.js); status tabs and dashboard counts use { user, status }.
+userBookingSchema.index({ user: 1, _id: -1 });
+userBookingSchema.index({ user: 1, status: 1, _id: -1 });
 userBookingSchema.index({ user: 1, createdAt: -1 });
 userBookingSchema.index({ providerType: 1, providerAccount: 1, status: 1, createdAt: -1 });
 

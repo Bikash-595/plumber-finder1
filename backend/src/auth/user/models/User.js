@@ -9,6 +9,13 @@ const userSchema = new mongoose.Schema({
   appleId: { type: String, unique: true, sparse: true },
   phone: { type: String, trim: true, maxlength: 40 },
   address: { type: String, trim: true, maxlength: 300 },
+  altPhone: { type: String, trim: true, maxlength: 40 },
+  // Contact preferences shown to plumbers on bookings (see user/profile/config/profileConfig.js).
+  preferredContact: { type: String, enum: ["phone", "sms", "email", null] },
+  contactTime: { type: String, enum: ["anytime", "morning", "afternoon", "evening", null] },
+  language: { type: String, trim: true, maxlength: 40 },
+  alternateContactName: { type: String, trim: true, maxlength: 120 },
+  alternateContactPhone: { type: String, trim: true, maxlength: 40 },
   // From a real ZIP code lookup at signup.
   zipCode: { type: String, trim: true, maxlength: 10 },
   city: { type: String, trim: true, maxlength: 100 },

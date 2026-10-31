@@ -1,18 +1,23 @@
+import { findPage, pageParams } from "../../shared/paginate.js";
 import { notificationsConfig } from "../config/notificationsConfig.js";
 import { UserNotification } from "../models/UserNotification.js";
 
 const notFound = (res) => res.status(404).json({ message: "Notification not found." });
 
 export const notificationsController = {
-  // GET /?unread=true
+  // GET /?unread=true&type=booking&limit=20&cursor=… — newest first, one page at a time, plus the unread count.
   list: async (req, res, next) => {
     try {
-      const filter = { user: req.auth.sub, ...(req.query.unread === "true" ? { read: false } : {}) };
-      const [data, unreadCount] = await Promise.all([
-        UserNotification.find(filter).sort({ createdAt: -1 }).limit(notificationsConfig.listLimit),
+      const filter = {
+        user: req.auth.sub,
+        ...(req.query.unread === "true" ? { read: false } : {}),
+        ...(notificationsConfig.types.includes(req.query.type) ? { type: req.query.type } : {}),
+      };
+      const [page, unreadCount] = await Promise.all([
+        findPage(UserNotification, filter, pageParams(req.query, { maxLimit: notificationsConfig.listLimit })),
         UserNotification.countDocuments({ user: req.auth.sub, read: false }),
       ]);
-      res.json({ data, unreadCount });
+      res.json({ ...page, unreadCount });
     } catch (error) { next(error); }
   },
 

@@ -8,6 +8,7 @@ import { FaTrashAlt, FaShoppingCart, FaCcVisa, FaCcMastercard, FaPaypal, FaLock,
 import SignInPrompt from "@/components/dashboard/SignInPrompt";
 import { useUserData } from "@/components/dashboard/useUserData";
 import { formatMoney, userApi, type Cart, type Invoice } from "@/components/utils/userApi";
+import SavedAddressPicker from "@/components/dashboard/profile/SavedAddressPicker";
 
 export default function CartPage() {
   const { signedIn, data: cart, setData: setCart, error, setError, loading } = useUserData(userApi.cart);
@@ -188,6 +189,8 @@ export default function CartPage() {
                   <h3 className="font-semibold text-gray-900">Service details</h3>
                   <input required value={details.address} onChange={(e) => setDetails({ ...details, address: e.target.value })} placeholder="Service address *" className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-[#FFD60A] focus:outline-none" />
                   <input value={details.phone} onChange={(e) => setDetails({ ...details, phone: e.target.value })} placeholder="Phone" type="tel" className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-[#FFD60A] focus:outline-none" />
+                  <SavedAddressPicker currentAddress={details.address} currentPhone={details.phone} onPhone={(phone) => setDetails((current) => ({ ...current, phone }))}
+                    onAddress={(address, saved) => setDetails((current) => ({ ...current, address, details: current.details.trim() || !saved.accessNotes ? current.details : `Access notes: ${saved.accessNotes}` }))} />
                   <div className="grid grid-cols-2 gap-2">
                     <input value={details.scheduledDate} onChange={(e) => setDetails({ ...details, scheduledDate: e.target.value })} type="date" aria-label="Preferred date" className="rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-[#FFD60A] focus:outline-none" />
                     <select value={details.timeSlot} onChange={(e) => setDetails({ ...details, timeSlot: e.target.value })} aria-label="Preferred time" className="rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-[#FFD60A] focus:outline-none">

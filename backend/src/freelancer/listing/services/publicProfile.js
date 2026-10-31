@@ -11,7 +11,7 @@ import { FreelancerHeaderProfile } from "../../header-profile/models/FreelancerH
 import { FreelancerOpeningHours } from "../../opening-hours/models/FreelancerOpeningHours.js";
 import { FreelancerOverview } from "../../overview/models/FreelancerOverview.js";
 import { FreelancerProject } from "../../previous-projects/models/FreelancerProject.js";
-import { FreelancerReview } from "../../reviews/models/FreelancerReview.js";
+import { latestReviews, ratingsByAccount } from "../../../reviews/reviews.js";
 import { FreelancerServiceArea } from "../../service-areas/models/FreelancerServiceArea.js";
 import { FreelancerServiceOffering } from "../../services/models/FreelancerServiceOffering.js";
 import { FreelancerSpecialOffer } from "../../special-offers/models/FreelancerSpecialOffer.js";
@@ -30,7 +30,8 @@ export async function cardSummaries(listings) {
   const freelancers = listings.map((listing) => listing.freelancer);
   const match = { freelancer: { $in: freelancers } };
   const [ratings, headers, overviews, offers, hours, emergencyServices, accounts, serviceAreas, blogCounts, mediaCounts] = await Promise.all([
-    FreelancerReview.aggregate([{ $match: match }, { $group: { _id: "$freelancer", rating: { $avg: "$rating" }, reviewCount: { $sum: 1 } } }]),
+    // PlumberFinder rating: published customer reviews only (Google ratings are shown separately).
+    ratingsByAccount("freelancer", freelancers),
     FreelancerHeaderProfile.find(match).select("freelancer licenseNumber insurance bio").lean(),
     FreelancerOverview.find(match).select("freelancer bio specialties certifications languages responseTime jobsCompleted averageCost emergencyAvailable").lean(),
     FreelancerSpecialOffer.find({ ...match, ...currentOffers() }).sort(byPosition).select("freelancer title discount promoCode coupons").lean(),
@@ -42,7 +43,7 @@ export async function cardSummaries(listings) {
     galleryCounts(FreelancerGalleryItem, "freelancer", freelancers),
   ]);
   const areasByOwner = byOwner(serviceAreas);
-  const maps = { ratings: byOwner(ratings), headers: byOwner(headers), overviews: byOwner(overviews), hours: byOwner(hours), accounts: byOwner(accounts) };
+  const maps = { ratings, headers: byOwner(headers), overviews: byOwner(overviews), hours: byOwner(hours), accounts: byOwner(accounts) };
   const offerByOwner = new Map();
   // Every current offer per owner (in display order), summed up for the card.
   for (const offer of offers) offerByOwner.set(String(offer.freelancer), [...(offerByOwner.get(String(offer.freelancer)) ?? []), offer]);
@@ -61,8 +62,8 @@ export async function cardSummaries(listings) {
       baseLocation: area.branchLocation || undefined,
       blogCount: blogCounts.get(key) ?? 0,
       galleryCounts: mediaCounts.get(key) ?? { images: 0, videos: 0 },
-      rating: rating ? Math.round(rating.rating * 10) / 10 : listing.rating ?? 0,
-      reviewCount: rating?.reviewCount ?? listing.reviewCount ?? 0,
+      rating: rating?.rating ?? 0,
+      reviewCount: rating?.reviewCount ?? 0,
       verified: maps.accounts.get(key)?.verificationStatus === "verified",
       licenseNumber: header.licenseNumber,
       insurance: header.insurance,
@@ -96,7 +97,7 @@ export async function fullProfile(listing) {
     FreelancerServiceOffering.find({ freelancer }).sort(byPosition).select(hidden).lean(),
     FreelancerGalleryItem.find({ freelancer }).sort(byPosition).select(hidden).lean(),
     FreelancerProject.find({ freelancer, ...visibleProjects() }).sort(byPosition).select(hidden).lean(),
-    FreelancerReview.find({ freelancer }).sort({ createdAt: -1 }).select(hidden).lean(),
+    latestReviews("freelancer", listing._id),
     FreelancerFaq.find({ freelancer }).sort(byPosition).select(hidden).lean(),
     FreelancerBlog.find({ freelancer, ...publishedBlogs() }).sort({ publishDate: -1 }).select(hidden).lean(),
     FreelancerSpecialOffer.find({ freelancer, ...currentOffers() }).sort(byPosition).select(hidden).lean(),

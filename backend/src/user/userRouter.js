@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { addressesRouter } from "./addresses/routers/addressesRouter.js";
 import { bookingsRouter } from "./bookings/routers/bookingsRouter.js";
 import { cartRouter } from "./cart/routers/cartRouter.js";
 import { checkoutRouter } from "./checkout/routers/checkoutRouter.js";
@@ -16,6 +17,7 @@ import { settingsRouter } from "./settings/routers/settingsRouter.js";
 export const userSections = [
   { path: "/dashboard", router: dashboardRouter },
   { path: "/profile", router: profileRouter },
+  { path: "/addresses", router: addressesRouter },
   { path: "/settings", router: settingsRouter },
   { path: "/security", router: securityRouter },
   { path: "/saved", router: savedRouter },

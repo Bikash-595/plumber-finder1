@@ -1,16 +1,30 @@
 import { announce, applyStatus, newBookingFields } from "../../../shared/bookings/bookingWorkflow.js";
 import { quoteBooking } from "../../../shared/bookings/bookingQuote.js";
+import { countsByStatus, findPage, pageParams, textFilter, toObjectId } from "../../shared/paginate.js";
 import { bookingsConfig } from "../config/bookingsConfig.js";
 import { UserBooking } from "../models/UserBooking.js";
 
 const notFound = (res) => res.status(404).json({ message: "Booking not found." });
 
 export const bookingsController = {
-  // GET /?status=pending
+  // GET /?status=pending&q=leak&providerType=company&providerId=…&limit=20&cursor=…
+  // Newest first, one page at a time. The first page also carries `counts` per status for the filter tabs.
   list: async (req, res, next) => {
     try {
-      const status = bookingsConfig.statuses.includes(req.query.status) ? req.query.status : undefined;
-      res.json({ data: await UserBooking.find({ user: req.auth.sub, ...(status ? { status } : {}) }).sort({ createdAt: -1 }) });
+      const user = toObjectId(req.auth.sub);
+      const { status, providerType, providerId } = req.query;
+      const filter = {
+        user,
+        ...(bookingsConfig.statuses.includes(status) ? { status } : {}),
+        ...(["company", "freelancer"].includes(providerType) && typeof providerId === "string" ? { providerType, providerId } : {}),
+        ...textFilter(req.query.q, ["reference", "providerName", "service"]),
+      };
+      const params = pageParams(req.query);
+      const [page, groups] = await Promise.all([
+        findPage(UserBooking, filter, params),
+        params.cursor ? null : UserBooking.aggregate([{ $match: { user } }, { $group: { _id: "$status", count: { $sum: 1 } } }]),
+      ]);
+      res.json({ ...page, ...(groups ? { counts: countsByStatus(groups, bookingsConfig.statuses) } : {}) });
     } catch (error) { next(error); }
   },
 

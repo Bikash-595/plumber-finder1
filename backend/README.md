@@ -53,7 +53,7 @@ Everything company-related lives in feature folders under `src/company/`:
 | Services | `/api/companies/services` | list (syncs listing `services`): `name`, `category` (Repairs, Installation, Drains & Sewer, …), `description`, `priceType` (`fixed`, `from`, `hourly`, `quote`, `free`) + `priceAmount` — the shown `price` ("From $89", "$95/hr", "Free quote") is set from them; older services keep their free-text `price` — `duration`, `includes` (up to 12 "what's included" items), `warranty`, `emergency`, `featured`, `image`. Shared with freelancers in `src/shared/profileSections/servicesSection.js` |
 | Gallery | `/api/companies/gallery` | list (8 MB body limit for videos) |
 | Previous projects | `/api/companies/previous-projects` | list |
-| Reviews | `/api/companies/reviews` | list |
+| Reviews & Ratings | `/api/companies/reviews` | the company's PlumberFinder reviews (read-only) with replies, reports, and Google settings — see Reviews below |
 | Team | `/api/companies/team` | list |
 | FAQs | `/api/companies/faqs` | list |
 | Blogs | `/api/companies/blogs` | list (unique slug per company) |
@@ -150,6 +150,18 @@ Everything people do with a company or freelancer is stored in `profile_activity
 - Visits and clicks count once per person per 30 minutes (a unique key per 30-minute window, so simultaneous requests can't double count). Plumbers' own visits and bots aren't counted.
 - Admin (`/api/admin/activity`): `GET /providers?type=&search=&sort=views|visitors|bookings|customers|recent&page=` — every plumber with visits, unique visitors, project views, blog reads, compares, saves, contact clicks, bookings (waiting/accepted/declined/cancelled), customers and repeat customers, plus totals; `GET /providers/:type/:id` — the same for one plumber with the last 30 days, `customerList` (who booked, how many times, first/last, outcome), `bookingList`, and the activity timeline with names; `GET /recent?event=&page=` — everything, newest first.
 - The plumber's own `GET /api/companies/bookings` (and freelancers') includes `customers: { total, repeat }`.
+
+## Reviews: PlumberFinder and Google (`src/reviews`)
+
+Two sources, never mixed into one score:
+
+- **PlumberFinder reviews** (`customer_reviews`): written by signed-in customers about a company or freelancer — rating 1–5, title, text, optional service category, up to 4 photos, and optionally one of their own bookings with that plumber (a completed booking marks the review **verified**). One review per customer per plumber (editable) and one per booking. A plumber's PlumberFinder rating (cards, profile, dashboard) is the average of its **published** reviews only.
+  - Public: `GET /api/reviews/:type/:id?sort=newest|highest|lowest&rating=&page=` (summary with average, count, and 1–5 distribution; the signed-in customer's own review as `mine`).
+  - Customers: `POST /api/reviews/:type/:id`, `PATCH /api/reviews/item/:id`, `DELETE /api/reviews/item/:id`, `GET /api/reviews/mine/all`; anyone signed in: `POST /api/reviews/item/:id/report { reason }`.
+  - Spam protection: at most 5 reviews a day per customer, no repeated text, minimum lengths; reviews with links or flagged words are held (`pending`) for moderation; three reports from different people hold a review.
+  - Plumbers (`/api/companies/reviews`, `/api/freelancers/reviews`): `GET /` (all their reviews with status, reports, summary, unanswered count), `PUT|DELETE /:id/reply` (public reply; the customer is notified), `POST /:id/report`. Plumbers can't change ratings or review text.
+  - Admins (`/api/admin/reviews`): `GET /?status=pending|reported|published|hidden`, `PATCH /:id { status: published|hidden, reason }`.
+- **Google reviews** (`google_business_links`): each plumber saves its Google Business Profile/Maps link and Place ID (`GET|PUT /api/companies/reviews/google`, `POST …/google/search`, `POST …/google/refresh`; public `GET /api/reviews/:type/:id/google`). With `GOOGLE_PLACES_API_KEY` (Places API (New)) and a Place ID, the Google rating, count, and up to 5 reviews come from Google's Place Details API, kept for at most 24 hours and shown with Google and author attribution. Without them, profiles show only "Read Google Reviews" / "Write a Google Review" — nothing is invented, and Google reviews are never stored as or counted with PlumberFinder reviews.
 
 ## Admin
 

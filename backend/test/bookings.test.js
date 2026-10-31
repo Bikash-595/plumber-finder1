@@ -35,6 +35,17 @@ const titles = async (path, token) => (await api("GET", path, { token })).body.d
 const nextWeek = () => new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
 
 describe("booking requests to a company", () => {
+  test("the plumber sees the customer's contact preferences; the alternate contact only after accepting", async () => {
+    const company = await newCompany();
+    const customer = await newCustomer();
+    await api("PUT", "/api/users/profile", { token: customer.token, body: { name: "Pat", preferredContact: "sms", contactTime: "evening", language: "Spanish", alternateContactName: "Sam (tenant)", alternateContactPhone: "512-555-0142" } });
+    const { body } = await api("POST", "/api/users/bookings", { token: customer.token, body: { providerType: "company", providerId: company.listingId, providerName: company.name, service: "Leak repair", scheduledDate: nextWeek() } });
+    const find = async () => (await api("GET", "/api/companies/bookings", { token: company.token })).body.data.find((b) => b._id === body.data._id);
+    assert.deepEqual((await find()).customerContact, { preferredContact: "sms", contactTime: "evening", language: "Spanish" });
+    assert.equal((await api("PATCH", `/api/companies/bookings/${body.data._id}/accept`, { token: company.token, body: {} })).status, 200);
+    assert.deepEqual((await find()).customerContact, { preferredContact: "sms", contactTime: "evening", language: "Spanish", alternateName: "Sam (tenant)", alternatePhone: "512-555-0142" });
+  });
+
   test("the company accepts; everyone is notified and contact details are shared after accepting", async () => {
     const company = await newCompany();
     const customer = await newCustomer();

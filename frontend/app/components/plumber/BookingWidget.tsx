@@ -7,6 +7,7 @@ import { isCustomerSignedIn, userApi } from "@/components/utils/userApi";
 import { Plumber } from "@/components/find/types";
 import { FaCalendarAlt, FaClock, FaWrench, FaCommentDots, FaPhoneAlt, FaMapMarkerAlt } from "react-icons/fa";
 import BookingCoupon from "./BookingCoupon";
+import SavedAddressPicker from "@/components/dashboard/profile/SavedAddressPicker";
 
 export default function BookingWidget({ plumber }: { plumber: Plumber }) {
   const [selectedDate, setSelectedDate] = useState("");
@@ -138,6 +139,8 @@ export default function BookingWidget({ plumber }: { plumber: Plumber }) {
             <FaMapMarkerAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input id="booking-address" autoComplete="street-address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, city, ZIP" className="w-full rounded-full border border-gray-300 bg-white py-2 pl-10 pr-4 text-gray-900 placeholder-gray-400 focus:border-[#FFD60A] focus:ring-1 focus:ring-[#FFD60A]" />
           </div>
+          <SavedAddressPicker currentAddress={address} currentPhone={phone} onPhone={setPhone}
+            onAddress={(text, saved) => { setAddress(text); if (saved.accessNotes && !message.trim()) setMessage(`Access notes: ${saved.accessNotes}`); }} />
           <p className="mt-1 text-xs text-gray-400">Shared with {plumber.companyName} only after they accept.</p>
         </div>
 

@@ -5,6 +5,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FaCalendarAlt, FaCheck, FaClock, FaEnvelope, FaHistory, FaMapMarkerAlt, FaPhoneAlt, FaRedo, FaSearch, FaTimes, FaUser } from "react-icons/fa";
 import { formatVisitDate, notificationsChanged, providerApi, statusInfo, timeAgo, type BookingList, type BookingStatus, type ProviderBase, type ProviderBooking } from "./bookingsApi";
 
+const contactWords = { phone: "a phone call", sms: "text messages", email: "email", anytime: "any time", morning: "mornings", afternoon: "afternoons", evening: "evenings" } as const;
+/** "text messages · evenings · Spanish" from the customer's saved preferences. */
+const contactPreference = (contact?: ProviderBooking["customerContact"]) => [contact?.preferredContact && contactWords[contact.preferredContact], contact?.contactTime && contactWords[contact.contactTime], contact?.language].filter(Boolean).join(" · ");
+
 type Tab = BookingStatus | "all";
 const tabs: { value: Tab; label: string }[] = [
   { value: "pending", label: "Requests" },
@@ -186,8 +190,10 @@ export default function ProviderBookings({ base }: { base: ProviderBase }) {
                       {booking.customerEmail && <a href={`mailto:${booking.customerEmail}`} className="flex items-center gap-2 break-all text-[#0b1f3b] hover:underline"><FaEnvelope className="h-3 w-3 shrink-0" aria-hidden /> {booking.customerEmail}</a>}
                       {booking.address && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.address)}`} target="_blank" rel="noreferrer" className="flex items-start gap-2 text-gray-700 hover:underline"><FaMapMarkerAlt className="mt-0.5 h-3 w-3 shrink-0" aria-hidden /> {booking.address}</a>}
                       {!booking.phone && !booking.customerEmail && !booking.address && <p className="text-gray-500">No contact details given.</p>}
+                      {booking.customerContact?.alternatePhone && <p className="text-gray-700">Alternate contact: <span className="font-semibold">{booking.customerContact.alternateName || "—"}</span> · <a href={`tel:${booking.customerContact.alternatePhone}`} className="font-semibold text-[#0b1f3b] hover:underline">{booking.customerContact.alternatePhone}</a></p>}
                     </div>
                   ) : <p className="mt-1 text-gray-500">Phone, email, and address are shared once you accept.</p>}
+                  {contactPreference(booking.customerContact) && <p className="mt-2 border-t border-gray-200 pt-2 text-xs text-gray-600"><span className="font-semibold text-gray-700">Prefers:</span> {contactPreference(booking.customerContact)}</p>}
                 </div>
               </div>
               {booking.details && <p className="mt-3 rounded-xl border border-gray-100 p-3 text-sm text-gray-700"><span className="font-semibold text-gray-900">Customer notes: </span><span className="whitespace-pre-line">{booking.details}</span></p>}

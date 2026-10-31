@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { activityRouter } from "./activity/activityRouter.js";
+import { adminReviewsRouter } from "../reviews/reviews.js";
 import { blogsRouter } from "./blogs/routers/blogsRouter.js";
 import { bookingsRouter } from "./bookings/routers/bookingsRouter.js";
 import { notificationsRouter } from "./notifications/routers/notificationsRouter.js";
@@ -20,6 +21,7 @@ export const adminSections = [
   { path: "/notifications", router: notificationsRouter },
   { path: "/blogs", router: blogsRouter },
   { path: "/activity", router: activityRouter },
+  { path: "/reviews", router: adminReviewsRouter },
 ];
 
 export const adminRouter = Router();

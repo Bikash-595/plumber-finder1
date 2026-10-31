@@ -11,7 +11,7 @@ import { CompanyOnboardingDraft } from "../../onboarding/models/CompanyOnboardin
 import { CompanyOperations } from "../../onboarding/models/CompanyOperations.js";
 import { CompanyProfile } from "../../onboarding/models/CompanyProfile.js";
 import { CompanyProject } from "../../previous-projects/models/CompanyProject.js";
-import { CompanyReview } from "../../reviews/models/CompanyReview.js";
+import { latestReviews, ratingsByAccount } from "../../../reviews/reviews.js";
 import { CompanyServiceArea } from "../../service-areas/models/CompanyServiceArea.js";
 import { CompanyServiceOffering } from "../../services/models/CompanyServiceOffering.js";
 import { CompanySpecialOffer } from "../../special-offers/models/CompanySpecialOffer.js";
@@ -43,7 +43,8 @@ const pick = (source, fields) => Object.fromEntries(fields.filter((field) => sou
 export async function cardSummaries(listings) {
   const companies = listings.map((listing) => listing.company);
   const [ratings, overviews, headers, offers, operations, emergencyServices, accounts, teamCounts, drafts, serviceAreas, wizardLocations, blogCounts, teamMembers, mediaCounts, openingHours] = await Promise.all([
-    CompanyReview.aggregate([{ $match: { company: { $in: companies } } }, { $group: { _id: "$company", rating: { $avg: "$rating" }, reviewCount: { $sum: 1 } } }]),
+    // PlumberFinder rating: published customer reviews only (Google ratings are shown separately).
+    ratingsByAccount("company", companies),
     CompanyOverview.find({ company: { $in: companies } }).lean(),
     CompanyHeaderProfile.find({ company: { $in: companies } }).select("company ownerName yearsInBusiness licenseNumber insurance certifications").lean(),
     CompanySpecialOffer.find({ company: { $in: companies }, ...currentOffers() }).sort(byPosition).select("company title discount promoCode coupons").lean(),
@@ -70,7 +71,7 @@ export async function cardSummaries(listings) {
     if (list.length < 4) list.push({ name: member.name, role: member.role });
     teamByCompany.set(String(member.company), list);
   }
-  const maps = { ratings: byCompany(ratings), overviews: byCompany(overviews), headers: byCompany(headers), operations: byCompany(operations), accounts: byCompany(accounts), teamCounts: byCompany(teamCounts), drafts: byCompany(drafts) };
+  const maps = { ratings, overviews: byCompany(overviews), headers: byCompany(headers), operations: byCompany(operations), accounts: byCompany(accounts), teamCounts: byCompany(teamCounts), drafts: byCompany(drafts) };
   const offersByCompany = new Map();
   // Every current offer per owner (in display order), summed up for the card.
   for (const offer of offers) offersByCompany.set(String(offer.company), [...(offersByCompany.get(String(offer.company)) ?? []), offer]);
@@ -93,8 +94,8 @@ export async function cardSummaries(listings) {
       blogCount: blogCounts.get(key) ?? 0,
       galleryCounts: mediaCounts.get(key) ?? { images: 0, videos: 0 },
       teamPreview: teamByCompany.get(key) ?? [],
-      rating: rating ? Math.round(rating.rating * 10) / 10 : listing.rating ?? 0,
-      reviewCount: rating?.reviewCount ?? listing.reviewCount ?? 0,
+      rating: rating?.rating ?? 0,
+      reviewCount: rating?.reviewCount ?? 0,
       verified: maps.accounts.get(key)?.status === "approved",
       ownerName: header.ownerName,
       established,
@@ -131,7 +132,7 @@ export async function fullProfile(listing) {
     CompanyServiceOffering.find({ company }).sort(byPosition).select(hidden).lean(),
     CompanyGalleryItem.find({ company }).sort(byPosition).select(hidden).lean(),
     CompanyProject.find({ company, ...visibleProjects() }).sort(byPosition).select(hidden).lean(),
-    CompanyReview.find({ company }).sort({ createdAt: -1 }).select(hidden).lean(),
+    latestReviews("company", listing._id),
     CompanyTeamMember.find({ company }).sort(byPosition).select(hidden).lean(),
     CompanyFaq.find({ company }).sort(byPosition).select(hidden).lean(),
     CompanyBlog.find({ company, ...publishedBlogs() }).sort({ publishDate: -1 }).select(hidden).lean(),

@@ -22,4 +22,8 @@ const userInvoiceSchema = new mongoose.Schema({
   bookings: [{ type: mongoose.Schema.Types.ObjectId, ref: "UserBooking" }],
 }, { timestamps: true, collection: "user_invoices" });
 
+// Customer lists page by _id (user/shared/paginate.js); totals per status group on { user, status }.
+userInvoiceSchema.index({ user: 1, _id: -1 });
+userInvoiceSchema.index({ user: 1, status: 1 });
+
 export const UserInvoice = mongoose.model("UserInvoice", userInvoiceSchema);

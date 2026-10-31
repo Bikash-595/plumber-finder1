@@ -24,13 +24,21 @@ import {
   FaTools,
   FaCheckCircle,
   FaShoppingCart,
+  FaStar,
 } from "react-icons/fa";
+import type { IconType } from "react-icons";
 import { TbSquareToggle } from "react-icons/tb";
 import { clearStoredUser } from "../utils/auth";
+import { userApi, type DashboardSummary } from "../utils/userApi";
+import { useUserData } from "./useUserData";
+
+type BadgeKey = "bookings" | "notifications" | "cart";
 
 export type DashboardSidebarState = "open" | "icons" | "closed";
 
-const navSections = [
+type NavItem = { label: string; href: string; icon: IconType; badge?: BadgeKey };
+
+const navSections: { label: string; items: NavItem[] }[] = [
   {
     label: "Dashboard",
     items: [
@@ -42,10 +50,11 @@ const navSections = [
     label: "Services",
     items: [
       { label: "Find Plumbers", href: "/find", icon: FaSearch },
-      { label: "Compare Companies", href: "/dashboard/compare", icon: FaBuilding },
-      { label: "Saved Deals", href: "/dashboard/saved", icon: FaHeart },
-      { label: "My Cart", href: "/checkout", icon: FaShoppingCart },
-      { label: "Booking History", href: "/dashboard/bookings", icon: FaHistory },
+      { label: "My Bookings", href: "/dashboard/bookings", icon: FaHistory, badge: "bookings" },
+      { label: "Saved Plumbers", href: "/dashboard/saved", icon: FaHeart },
+      { label: "Compare Plumbers", href: "/dashboard/compare", icon: FaBuilding },
+      { label: "My Cart", href: "/checkout", icon: FaShoppingCart, badge: "cart" },
+      { label: "My Reviews", href: "/dashboard/reviews", icon: FaStar },
     ],
   },
   {
@@ -60,12 +69,17 @@ const navSections = [
   {
     label: "Support",
     items: [
-      { label: "Notifications", href: "/dashboard/notifications", icon: FaBell },
+      { label: "Notifications", href: "/dashboard/notifications", icon: FaBell, badge: "notifications" },
       { label: "Help & Support", href: "/contact", icon: FaQuestionCircle },
       { label: "Security", href: "/dashboard/security", icon: FaShieldAlt },
     ],
   },
 ];
+
+const badgeCount = (counts: DashboardSummary["counts"] | undefined, key?: BadgeKey) => {
+  if (!counts || !key) return 0;
+  return key === "bookings" ? counts.activeBookings : key === "notifications" ? counts.unreadNotifications : counts.cart;
+};
 
 interface DashboardSidebarProps {
   sidebarState?: DashboardSidebarState;
@@ -90,6 +104,8 @@ export default function DashboardSidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [openSections, setOpenSections] = useState<string[]>([]);
+  // Same cached request as the dashboard home and navbar, so the badges cost nothing extra.
+  const counts = useUserData(userApi.dashboard).data?.counts;
   const activeSection =
     navSections.find((section) =>
       section.items.some((item) => isRouteActive(pathname, item.href))
@@ -158,7 +174,7 @@ export default function DashboardSidebar({
                 key={item.href}
                 href={item.href}
                 onClick={(event) => handleNavClick(event, item.href)}
-                className={`flex h-10 w-10 items-center justify-center rounded-lg transition ${
+                className={`relative flex h-10 w-10 items-center justify-center rounded-lg transition ${
                   isActive
                     ? "bg-[#FFD60A] text-[#0b1f3b]"
                     : "bg-white/[0.06] text-white/70 hover:bg-white/[0.12] hover:text-white"
@@ -167,6 +183,7 @@ export default function DashboardSidebar({
                 title={item.label}
               >
                 <Icon className="h-4 w-4" />
+                {badgeCount(counts, item.badge) > 0 && <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-[#FFD60A] ring-2 ring-[#0b1f3b]" />}
               </Link>
             );
           })}
@@ -225,9 +242,9 @@ export default function DashboardSidebar({
             <FaCheckCircle className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-semibold !text-white">Ready to book</p>
+            <p className="text-sm font-semibold !text-white">{counts?.activeBookings ? `${counts.activeBookings} active booking${counts.activeBookings === 1 ? "" : "s"}` : "Ready to book"}</p>
             <p className="mt-1 text-xs leading-5 !text-white/60">
-              Compare verified plumbers, saved deals, invoices, and support in one place.
+              {counts?.pendingBookings ? `${counts.pendingBookings} waiting for a plumber to reply.` : "Compare verified plumbers, saved deals, invoices, and support in one place."}
             </p>
           </div>
         </div>
@@ -297,7 +314,9 @@ export default function DashboardSidebar({
                               {item.label}
                             </span>
                           </div>
-                          {isActive && (
+                          {badgeCount(counts, item.badge) > 0 ? (
+                            <span className={`min-w-6 rounded-full px-1.5 text-center text-xs font-bold tabular-nums ${isActive ? "bg-[#0b1f3b] !text-[#FFD60A]" : "bg-[#FFD60A] !text-[#0b1f3b]"}`}>{badgeCount(counts, item.badge)}</span>
+                          ) : isActive && (
                             <FaChevronRight className="h-3.5 w-3.5 flex-shrink-0 !text-[#0b1f3b]" />
                           )}
                         </Link>

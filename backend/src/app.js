@@ -1,4 +1,5 @@
 import cors from "cors";
+import { reviewsRouter } from "./reviews/reviews.js";
 import { bookingQuoteRouter } from "./shared/bookings/bookingQuote.js";
 import { activityRouter } from "./activity/activityRouter.js";
 import express from "express";
@@ -21,7 +22,7 @@ const adminUrl = process.env.ADMIN_URL || "http://localhost:3001";
 
 app.use(cors({ origin: [...frontendUrl.split(","), ...adminUrl.split(",")].map((origin) => origin.trim()).filter(Boolean) }));
 // Gallery items may be videos and header profiles carry several cover photos, so those routes accept larger bodies.
-const largeBodyPaths = ["/api/companies/gallery", "/api/freelancers/gallery", "/api/companies/header-profile", "/api/freelancers/header-profile"];
+const largeBodyPaths = ["/api/companies/gallery", "/api/freelancers/gallery", "/api/companies/header-profile", "/api/freelancers/header-profile", "/api/reviews"];
 const jsonDefault = express.json({ limit: "3mb" });
 const jsonLarge = express.json({ limit: "8mb" });
 app.use((req, res, next) => (largeBodyPaths.some((path) => req.path.startsWith(path)) ? jsonLarge : jsonDefault)(req, res, next));
@@ -51,6 +52,8 @@ app.use("/api/blogs", publicBlogsRouter);
 app.use("/api/activity", activityRouter);
 // Price of a booking with a coupon code (shown in the booking form before sending).
 app.use("/api/booking-quote", bookingQuoteRouter);
+// PlumberFinder reviews (customers → plumbers) and Google review summaries.
+app.use("/api/reviews", reviewsRouter);
 app.use("/api/location", locationRouter);
 app.use("/api/users", userRouter);
 app.use("/api/admin", adminRouter);

@@ -26,7 +26,6 @@ const collections = {
   services: { name: "Leak repair" },
   gallery: { media: tinyPng, caption: "Recent job" },
   "previous-projects": { title: "Bathroom refit", service: "Bathroom plumbing", description: "Full refit" },
-  reviews: { customer: "Sam", rating: 5, review: "Quick and tidy" },
   faqs: { question: "Do you work weekends?", answer: "Yes" },
   blogs: { title: "Fixing a dripping tap", excerpt: "How-to", content: "Body", status: "published" },
   "special-offers": { title: "10% off first job" },
@@ -35,7 +34,7 @@ const collections = {
 describe("access", () => {
   test("every section requires a freelancer token", async () => {
     const { body: company } = await api("POST", "/api/auth/companies/signup", { body: { companyName: "Co", email: "co-fl@example.com", password: "password123" } });
-    for (const section of [...singletons, ...Object.keys(collections)]) {
+    for (const section of [...singletons, ...Object.keys(collections), "reviews"]) {
       assert.equal((await api("GET", `/api/freelancers/${section}`)).status, 401, section);
       assert.equal((await api("GET", `/api/freelancers/${section}`, { token: company.token })).status, 403, `${section} (company token)`);
     }
@@ -170,8 +169,11 @@ describe("opening hours, public profile, and removing the listing", () => {
     const { token, listingId, freelancerId } = await newFreelancer();
     await api("PUT", "/api/freelancers/overview", { token, body: { bio: "Twenty years on the tools.", specialties: "Drains, Boilers", languages: "English, Spanish", emergencyAvailable: true, averageCost: 150 } });
     await api("POST", "/api/freelancers/services", { token, body: { name: "Drain unblocking", price: "$90" } });
-    await api("POST", "/api/freelancers/reviews", { token, body: { customer: "Ann", rating: 5, review: "Great" } });
-    await api("POST", "/api/freelancers/reviews", { token, body: { customer: "Bo", rating: 3, review: "Fine" } });
+    // The rating comes from customers' PlumberFinder reviews.
+    for (const [i, rating] of [5, 3].entries()) {
+      const reviewer = (await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: `Reviewer ${i}`, email: `reviewer${Date.now()}${i}@example.com`, password: "password123" } })).body;
+      assert.equal((await api("POST", `/api/reviews/freelancer/${listingId}`, { token: reviewer.token, body: { rating, title: "Good job", body: "Fixed our leak quickly and cleanly." } })).status, 201);
+    }
     await api("POST", "/api/freelancers/blogs", { token, body: { title: "Live", excerpt: "E", content: "C", status: "published" } });
     await api("POST", "/api/freelancers/blogs", { token, body: { title: "Draft", excerpt: "E", content: "C" } });
     await api("POST", "/api/freelancers/previous-projects", { token, body: { title: "Hidden job", service: "Drains", description: "D", visible: false } });

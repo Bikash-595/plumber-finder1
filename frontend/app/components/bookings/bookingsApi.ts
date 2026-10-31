@@ -12,6 +12,7 @@ export type ProviderBooking = {
   reference: string;
   customerName?: string;
   customerEmail?: string;
+  customerContact?: { preferredContact?: "phone" | "sms" | "email"; contactTime?: "anytime" | "morning" | "afternoon" | "evening"; language?: string; alternateName?: string; alternatePhone?: string };
   phone?: string;
   address?: string;
   contactVisible: boolean;

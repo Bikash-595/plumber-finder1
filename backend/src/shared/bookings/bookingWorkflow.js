@@ -41,8 +41,16 @@ export async function resolveProviderAccount(providerType, providerId) {
 
 /** Fields every new booking gets: who booked it, and which plumber account receives it. */
 export async function newBookingFields(userId, providerType, providerId) {
-  const [user, providerAccount] = await Promise.all([User.findById(userId).select("name email").lean(), resolveProviderAccount(providerType, providerId)]);
-  return { customerName: user?.name, customerEmail: user?.email, providerAccount };
+  const [user, providerAccount] = await Promise.all([
+    User.findById(userId).select("name email preferredContact contactTime language alternateContactName alternateContactPhone").lean(),
+    resolveProviderAccount(providerType, providerId),
+  ]);
+  // How the customer likes to be contacted, as it was when they booked (set on their profile page).
+  const customerContact = Object.fromEntries(Object.entries({
+    preferredContact: user?.preferredContact, contactTime: user?.contactTime, language: user?.language,
+    alternateName: user?.alternateContactName, alternatePhone: user?.alternateContactPhone,
+  }).filter(([, value]) => value));
+  return { customerName: user?.name, customerEmail: user?.email, providerAccount, ...(Object.keys(customerContact).length ? { customerContact } : {}) };
 }
 
 /**
@@ -70,7 +78,11 @@ export function applyStatus(booking, { to, by, note, scheduledDate, timeSlot }) 
 export function forProvider(booking) {
   const value = typeof booking.toObject === "function" ? booking.toObject() : { ...booking };
   const contactVisible = Boolean(value.acceptedAt);
-  if (!contactVisible) { delete value.phone; delete value.customerEmail; delete value.address; }
+  if (!contactVisible) {
+    delete value.phone; delete value.customerEmail; delete value.address;
+    // Contact preferences are fine to see before accepting; the alternate person's details are not.
+    if (value.customerContact) { const { alternateName, alternatePhone, ...preferences } = value.customerContact; value.customerContact = preferences; }
+  }
   delete value.user;
   return { ...value, contactVisible };
 }
