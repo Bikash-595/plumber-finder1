@@ -24,7 +24,7 @@ import { FaShareAlt,
 import { RiDiscountPercentLine } from "react-icons/ri";
 import type { IconType } from "react-icons";
 
-export type CompanySidebarState = "open" | "icons" | "closed";
+export type CompanySidebarState = "open" | "icons";
 
 export type CompanyNavItem = {
   label: string;

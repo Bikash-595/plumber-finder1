@@ -213,7 +213,8 @@ export default function PlumberProfilePage({ params }: { params: Promise<{ id: s
   useEffect(() => {
     if (!plumber || plumber.providerType !== "company") return;
     const canonical = plumberHref(plumber);
-    if (canonical !== pathname) router.replace(canonical);
+    // Keep ?query and #anchor (e.g. a review-request link: ?review=<booking>#reviews).
+    if (canonical !== pathname) router.replace(`${canonical}${window.location.search}${window.location.hash}`);
   }, [plumber, pathname, router]);
 
   useEffect(() => {

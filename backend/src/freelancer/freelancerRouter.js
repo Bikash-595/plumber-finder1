@@ -11,7 +11,7 @@ import { freelancerListingRouter } from "./listing/routers/freelancerListingRout
 import { openingHoursRouter } from "./opening-hours/routers/openingHoursRouter.js";
 import { overviewRouter } from "./overview/routers/overviewRouter.js";
 import { previousProjectsRouter } from "./previous-projects/routers/previousProjectsRouter.js";
-import { createProviderReviewsRouter } from "../reviews/reviews.js";
+import { freelancerReviewsRouter } from "./reviews/routers/reviewsRouter.js";
 import { serviceAreasRouter } from "./service-areas/routers/serviceAreasRouter.js";
 import { servicesRouter } from "./services/routers/servicesRouter.js";
 import { specialOffersRouter } from "./special-offers/routers/specialOffersRouter.js";
@@ -24,8 +24,8 @@ export const freelancerSections = [
   { path: "/services", router: servicesRouter },
   { path: "/gallery", router: galleryRouter },
   { path: "/previous-projects", router: previousProjectsRouter },
-  // Customers' PlumberFinder reviews (read, reply, report) and the Google Business Profile link.
-  { path: "/reviews", router: createProviderReviewsRouter("freelancer") },
+  // Customers' PlumberFinder reviews (read, reply, report).
+  { path: "/reviews", router: freelancerReviewsRouter },
   { path: "/faqs", router: faqsRouter },
   { path: "/service-areas", router: serviceAreasRouter },
   { path: "/blogs", router: blogsRouter },

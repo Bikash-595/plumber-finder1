@@ -27,14 +27,13 @@ import {
   FaStar,
 } from "react-icons/fa";
 import type { IconType } from "react-icons";
-import { TbSquareToggle } from "react-icons/tb";
 import { clearStoredUser } from "../utils/auth";
 import { userApi, type DashboardSummary } from "../utils/userApi";
 import { useUserData } from "./useUserData";
 
 type BadgeKey = "bookings" | "notifications" | "cart";
 
-export type DashboardSidebarState = "open" | "icons" | "closed";
+export type DashboardSidebarState = "open" | "icons";
 
 type NavItem = { label: string; href: string; icon: IconType; badge?: BadgeKey };
 
@@ -84,7 +83,6 @@ const badgeCount = (counts: DashboardSummary["counts"] | undefined, key?: BadgeK
 interface DashboardSidebarProps {
   sidebarState?: DashboardSidebarState;
   onLinkClick?: () => void;
-  onToggle?: () => void;
 }
 
 function isRouteActive(pathname: string, href: string) {
@@ -99,7 +97,6 @@ function isModifiedClick(event: MouseEvent<HTMLAnchorElement>) {
 export default function DashboardSidebar({
   sidebarState = "open",
   onLinkClick,
-  onToggle,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -135,34 +132,11 @@ export default function DashboardSidebar({
     onLinkClick?.();
   };
 
-  if (sidebarState === "closed") {
-    return (
-      <aside className="contents">
-        <button
-          type="button"
-          onClick={onToggle}
-          className="fixed left-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-lg bg-transparent text-black transition hover:text-[#0b1f3b]"
-          aria-label="Open sidebar"
-        >
-          <TbSquareToggle className="h-6 w-6" />
-        </button>
-      </aside>
-    );
-  }
-
   if (sidebarState === "icons") {
     const iconItems = navSections.flatMap((section) => section.items);
 
     return (
       <aside className="flex h-full w-14 flex-shrink-0 flex-col items-center overflow-hidden border-r border-slate-900/10 bg-[#0b1f3b] py-4 text-white shadow-xl">
-        <button
-          type="button"
-          onClick={onToggle}
-          className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-[#FFD60A] text-[#0b1f3b] transition hover:bg-white"
-          aria-label="Open sidebar"
-        >
-          <TbSquareToggle className="h-5 w-5" />
-        </button>
 
         <nav className="flex min-h-0 flex-1 flex-col items-center gap-2 overflow-y-auto px-2">
           {iconItems.map((item) => {
@@ -223,16 +197,6 @@ export default function DashboardSidebar({
               </span>
             </span>
           </Link>
-          {onToggle && (
-            <button
-              type="button"
-              onClick={onToggle}
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.08] text-white transition hover:border-[#FFD60A] hover:bg-[#FFD60A] hover:text-[#0b1f3b]"
-              aria-label="Close sidebar"
-            >
-              <TbSquareToggle className="h-5 w-5" />
-            </button>
-          )}
         </div>
       </div>
 

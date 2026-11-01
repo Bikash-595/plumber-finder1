@@ -11,7 +11,7 @@ import { CompanyOnboardingDraft } from "../../onboarding/models/CompanyOnboardin
 import { CompanyOperations } from "../../onboarding/models/CompanyOperations.js";
 import { CompanyProfile } from "../../onboarding/models/CompanyProfile.js";
 import { CompanyProject } from "../../previous-projects/models/CompanyProject.js";
-import { latestReviews, ratingsByAccount } from "../../../reviews/reviews.js";
+import { latestReviews, ratingsByAccount } from "../../../reviews/services/stats.js";
 import { CompanyServiceArea } from "../../service-areas/models/CompanyServiceArea.js";
 import { CompanyServiceOffering } from "../../services/models/CompanyServiceOffering.js";
 import { CompanySpecialOffer } from "../../special-offers/models/CompanySpecialOffer.js";

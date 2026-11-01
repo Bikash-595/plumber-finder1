@@ -63,13 +63,13 @@ export default function FreelancerNavbar({ onToggleSidebar }: FreelancerNavbarPr
 
   return (
     <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur text-gray-900">
-      <div className="flex min-h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+      <div className="flex min-h-16 flex-wrap items-center justify-between gap-x-4 px-4 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
             onClick={onToggleSidebar}
             className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-[#0b1f3b] shadow-sm transition hover:border-[#FFD60A] hover:bg-[#FFD60A]"
-            aria-label="Toggle freelancer dashboard menu"
+            aria-label="Toggle menu"
           >
             <FaBars className="h-4 w-4" />
           </button>
@@ -110,7 +110,7 @@ export default function FreelancerNavbar({ onToggleSidebar }: FreelancerNavbarPr
         </nav>
 
         {/* Mobile quick links: horizontally scrollable so active link stays visible */}
-        <div className="md:hidden w-full border-t border-gray-100 bg-white/95 px-3 py-2">
+        <div className="order-last -mx-4 w-[calc(100%+2rem)] border-t border-gray-100 bg-white/95 px-3 py-2 sm:-mx-6 sm:w-[calc(100%+3rem)] md:hidden">
           <div className="-mx-1 flex w-full gap-2 overflow-x-auto px-1">
             {quickLinks.map((link) => {
               const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);

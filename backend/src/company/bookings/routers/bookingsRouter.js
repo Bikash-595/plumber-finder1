@@ -2,5 +2,5 @@ import { requireAuth } from "../../../auth/shared/middleware/requireAuth.js";
 import { createProviderBookingsRouter } from "../../../shared/bookings/providerBookings.js";
 
 // Mounted at /api/companies/bookings: booking requests customers sent to this company.
-// GET / (?status, search, page) · GET /:id · PATCH /:id/accept | decline | complete | cancel
+// GET / (?status, search, page) · GET /:id · PATCH /:id/accept | decline | start | complete (asks the customer to confirm) | cancel
 export const companyBookingsRouter = createProviderBookingsRouter("company", requireAuth("company"));

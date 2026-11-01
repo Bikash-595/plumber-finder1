@@ -67,4 +67,32 @@ export const bookingsController = {
       res.json({ message: "Booking cancelled.", data: booking });
     } catch (error) { next(error); }
   },
+
+  // PATCH /:id/confirm — the plumber marked the job as done and the customer agrees. Opens the verified review.
+  confirm: async (req, res, next) => {
+    try {
+      const booking = await UserBooking.findOne({ _id: req.params.id, user: req.auth.sub });
+      if (!booking) return notFound(res);
+      const problem = applyStatus(booking, { to: "completed", by: "customer", note: "Confirmed by the customer" });
+      if (problem) return res.status(409).json({ message: problem });
+      await booking.save();
+      await announce(booking, "completed", "customer");
+      res.json({ message: "Thanks for confirming! You can now write a verified review.", data: booking });
+    } catch (error) { next(error); }
+  },
+
+  // PATCH /:id/dispute { reason } — the customer says the job isn't done. An admin resolves it; no review request is sent.
+  dispute: async (req, res, next) => {
+    try {
+      const booking = await UserBooking.findOne({ _id: req.params.id, user: req.auth.sub });
+      if (!booking) return notFound(res);
+      const reason = typeof req.body?.reason === "string" ? req.body.reason.trim().slice(0, 500) : "";
+      if (reason.length < 5) return res.status(400).json({ message: "Tell us what isn't finished, so we can help.", errors: { reason: "is required" } });
+      const problem = applyStatus(booking, { to: "disputed", by: "customer", note: reason });
+      if (problem) return res.status(409).json({ message: problem });
+      await booking.save();
+      await announce(booking, "disputed", "customer");
+      res.json({ message: "Thanks — we've told the plumber and Plumber Finder will look into it.", data: booking });
+    } catch (error) { next(error); }
+  },
 };

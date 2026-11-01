@@ -345,12 +345,13 @@ export function Header() {
                     aria-expanded={userDropdownOpen}
                   >
                     {accountAvatar}
-                    <span className="hidden max-w-[7rem] truncate xl:inline">{user.name.split(" ")[0]}</span>
+                    <span className="hidden max-w-[7rem] truncate xl:inline">{user.name?.split(" ")[0] || "Account"}</span>
                     <FaChevronDown className="hidden h-2.5 w-2.5 text-slate-400 xl:block" aria-hidden />
                   </button>
 
                   {userDropdownOpen && (
-                    <div className="animate-nav-menu absolute right-0 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_48px_-12px_rgba(11,31,59,0.25)]">
+                    // z-50: above the nav row below (Book a Plumber, mega menus), which comes later in the page.
+                    <div className="animate-nav-menu absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_48px_-12px_rgba(11,31,59,0.25)]">
                       <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50 px-4 py-3">
                         {accountAvatar}
                         <div className="min-w-0">

@@ -11,7 +11,9 @@ import { bookingStatus, bookingTotal, canCancel } from "./bookingStatus";
 const providerHref = (booking: Booking) => `/plumber/${encodeURIComponent(booking.providerId)}`;
 
 /** One booking: who, what, when, price and status, with details and the timeline on demand. */
-export default function BookingCard({ booking, busy, onCancel }: { booking: Booking; busy: boolean; onCancel: (booking: Booking) => void }) {
+type Props = { booking: Booking; busy: boolean; onCancel: (booking: Booking) => void; onConfirm: (booking: Booking) => void; onDispute: (booking: Booking) => void };
+
+export default function BookingCard({ booking, busy, onCancel, onConfirm, onDispute }: Props) {
   const [open, setOpen] = useState(false);
   const status = bookingStatus[booking.status];
   const total = bookingTotal(booking);
@@ -44,6 +46,17 @@ export default function BookingCard({ booking, busy, onCancel }: { booking: Book
         </div>
       </div>
 
+      {booking.status === "awaiting_confirmation" && (
+        <div className="mx-5 mb-4 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 sm:mx-6">
+          <p className="text-sm font-semibold text-violet-900">{booking.providerName} says the job is done. Is everything finished?</p>
+          <p className="mt-0.5 text-xs text-violet-800">Confirming lets you write a Verified Booking review. If you don&apos;t answer, it&apos;s confirmed automatically after 7 days.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" disabled={busy} onClick={() => onConfirm(booking)} className="rounded-full bg-[#0b1f3b] px-4 py-2 text-sm font-bold text-white hover:bg-[#17345a] disabled:opacity-60">Yes, the job is complete</button>
+            <button type="button" disabled={busy} onClick={() => onDispute(booking)} className="rounded-full border border-violet-300 bg-white px-4 py-2 text-sm font-semibold text-violet-900 hover:bg-violet-100 disabled:opacity-60">Report a problem</button>
+          </div>
+        </div>
+      )}
+      {booking.status === "disputed" && <p className="mx-5 mb-4 rounded-xl bg-amber-50 px-4 py-2.5 text-sm text-amber-900 sm:mx-6"><span className="font-semibold">You reported a problem{booking.disputeReason ? `: “${booking.disputeReason}”` : "."}</span> Plumber Finder is looking into it and will be in touch.</p>}
       {booking.status === "pending" && <p className="mx-5 mb-4 rounded-xl bg-amber-50 px-4 py-2.5 text-sm text-amber-800 sm:mx-6">Waiting for {booking.providerName} to accept. You&apos;ll get a notification as soon as they reply.</p>}
       {booking.responseNote && (
         <p className={`mx-5 mb-4 rounded-xl px-4 py-2.5 text-sm sm:mx-6 ${booking.status === "declined" || booking.status === "cancelled" ? "bg-red-50 text-red-800" : "bg-blue-50 text-blue-800"}`}>
@@ -72,7 +85,7 @@ export default function BookingCard({ booking, busy, onCancel }: { booking: Book
         <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-100">
           {open ? "Hide details" : "View details"} <FaChevronDown className={`h-3 w-3 transition ${open ? "rotate-180" : ""}`} />
         </button>
-        {booking.status === "completed" && <Link href={`${providerHref(booking)}#reviews`} className="rounded-full px-3 py-1.5 text-sm font-semibold text-[#0b1f3b] hover:bg-[#FFD60A]/20">Write a review</Link>}
+        {booking.status === "completed" && <Link href={`${providerHref(booking)}?review=${booking._id}#reviews`} className="rounded-full bg-[#FFD60A] px-3 py-1.5 text-sm font-bold text-[#0b1f3b] hover:brightness-95">Write a verified review</Link>}
         {(booking.status === "completed" || booking.status === "cancelled" || booking.status === "declined") && (
           <Link href={`/book-plumber?plumber=${encodeURIComponent(booking.providerId)}`} className="rounded-full px-3 py-1.5 text-sm font-semibold text-[#0b1f3b] hover:bg-[#FFD60A]/20">{booking.status === "declined" ? "Try again" : "Book again"}</Link>
         )}

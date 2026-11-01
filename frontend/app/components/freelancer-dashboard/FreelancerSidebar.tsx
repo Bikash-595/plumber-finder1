@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { type MouseEvent, useState } from "react";
 import { FaCheckCircle, FaChevronRight, FaSignOutAlt, FaUserTie } from "react-icons/fa";
-import { TbSquareToggle } from "react-icons/tb";
 import { clearStoredUser } from "@/components/utils/auth";
 import {
   freelancerNavSections,
@@ -14,7 +13,6 @@ import {
 interface FreelancerSidebarProps {
   sidebarState?: FreelancerSidebarState;
   onLinkClick?: () => void;
-  onToggle?: () => void;
 }
 
 function isRouteActive(pathname: string, href: string) {
@@ -35,7 +33,6 @@ function isModifiedClick(event: MouseEvent<HTMLAnchorElement>) {
 export default function FreelancerSidebar({
   sidebarState = "open",
   onLinkClick,
-  onToggle,
 }: FreelancerSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -66,34 +63,11 @@ export default function FreelancerSidebar({
     onLinkClick?.();
   };
 
-  if (sidebarState === "closed") {
-    return (
-      <aside className="contents">
-        <button
-          type="button"
-          onClick={onToggle}
-          className="fixed left-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-lg bg-transparent text-black transition hover:text-[#0b1f3b]"
-          aria-label="Open freelancer sidebar"
-        >
-          <TbSquareToggle className="h-6 w-6" />
-        </button>
-      </aside>
-    );
-  }
-
   if (sidebarState === "icons") {
     const iconItems = freelancerNavSections.flatMap((section) => section.items);
 
     return (
       <aside className="flex h-full w-20 flex-shrink-0 flex-col items-center overflow-hidden border-r border-slate-900/10 bg-[#0b1f3b] py-4 text-white shadow-xl">
-        <button
-          type="button"
-          onClick={onToggle}
-          className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-[#FFD60A] text-[#0b1f3b] transition hover:bg-white"
-          aria-label="Open freelancer sidebar"
-        >
-          <TbSquareToggle className="h-5 w-5" />
-        </button>
         <nav className="flex min-h-0 flex-1 flex-col items-center gap-2 overflow-y-auto px-2">
           {iconItems.map((item) => {
             const Icon = item.icon;
@@ -151,16 +125,6 @@ export default function FreelancerSidebar({
               </span>
             </span>
           </Link>
-          {onToggle && (
-            <button
-              type="button"
-              onClick={onToggle}
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.08] text-white transition hover:border-[#FFD60A] hover:bg-[#FFD60A] hover:text-[#0b1f3b]"
-              aria-label="Collapse freelancer sidebar"
-            >
-              <TbSquareToggle className="h-5 w-5" />
-            </button>
-          )}
         </div>
       </div>
 

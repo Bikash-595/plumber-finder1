@@ -6,6 +6,7 @@ import { plural } from "../ui/format";
 /** Greeting with what needs attention right now, and the two most common next steps. */
 export default function WelcomeBanner({ name, counts }: { name: string; counts?: DashboardSummary["counts"] }) {
   const attention = counts && [
+    counts.awaitingConfirmation > 0 && `${plural(counts.awaitingConfirmation, "job")} to confirm`,
     counts.pendingBookings > 0 && `${plural(counts.pendingBookings, "booking")} waiting for a reply`,
     counts.scheduledBookings > 0 && `${plural(counts.scheduledBookings, "confirmed visit")}`,
     counts.unreadNotifications > 0 && `${plural(counts.unreadNotifications, "unread notification")}`,

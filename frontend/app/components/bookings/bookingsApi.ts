@@ -5,7 +5,7 @@ import { apiRequest } from "@/components/utils/apiClient";
 
 // Booking requests as a plumber (company or freelancer) sees them, and the account's notifications.
 
-export type BookingStatus = "pending" | "scheduled" | "completed" | "cancelled" | "declined";
+export type BookingStatus = "pending" | "scheduled" | "in_progress" | "awaiting_confirmation" | "completed" | "disputed" | "cancelled" | "declined";
 export type BookingHistory = { status: BookingStatus; by: "customer" | "provider" | "admin" | "system"; note?: string; at: string };
 export type ProviderBooking = {
   _id: string;
@@ -30,11 +30,13 @@ export type ProviderBooking = {
   status: BookingStatus;
   source: "request" | "checkout";
   responseNote?: string;
+  disputeReason?: string;
+  completionConfirmedBy?: "customer" | "admin" | "system";
   history: BookingHistory[];
   createdAt: string;
 };
 export type BookingList = { data: ProviderBooking[]; page: number; limit: number; total: number; counts: Record<BookingStatus, number>; customers?: { total: number; repeat: number } };
-export type AccountNotice = { _id: string; type: "booking" | "comment" | "system"; title: string; message?: string; link?: string; booking?: string; actionRequired: boolean; read: boolean; createdAt: string };
+export type AccountNotice = { _id: string; type: "booking" | "comment" | "review" | "system"; title: string; message?: string; link?: string; booking?: string; actionRequired: boolean; read: boolean; createdAt: string };
 
 /** "/companies" or "/freelancers". */
 export type ProviderBase = "/companies" | "/freelancers";
@@ -45,7 +47,7 @@ export const providerApi = {
     return apiRequest<ProviderBooking[]>(`${base}/bookings?${params}`, { loginMessage }) as Promise<BookingList>;
   },
   getOne: (base: ProviderBase, id: string) => apiRequest<ProviderBooking>(`${base}/bookings/${id}`, { loginMessage }),
-  respond: (base: ProviderBase, id: string, action: "accept" | "decline" | "complete" | "cancel", body: Record<string, string | undefined>) =>
+  respond: (base: ProviderBase, id: string, action: "accept" | "decline" | "start" | "complete" | "cancel", body: Record<string, string | undefined>) =>
     apiRequest<ProviderBooking>(`${base}/bookings/${id}/${action}`, { method: "PATCH", body, loginMessage }),
   notifications: (base: ProviderBase) => apiRequest<AccountNotice[]>(`${base}/notifications`, { loginMessage }) as Promise<{ data: AccountNotice[]; unread: number }>,
   markRead: (base: ProviderBase, id: string) => apiRequest(`${base}/notifications/${id}/read`, { method: "PATCH", loginMessage }),
@@ -56,7 +58,10 @@ export const providerApi = {
 export const statusInfo: Record<BookingStatus, { label: string; tone: string }> = {
   pending: { label: "New request", tone: "bg-amber-50 text-amber-800 border-amber-200" },
   scheduled: { label: "Confirmed", tone: "bg-blue-50 text-blue-700 border-blue-200" },
+  in_progress: { label: "In progress", tone: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+  awaiting_confirmation: { label: "Waiting for customer", tone: "bg-violet-50 text-violet-700 border-violet-200" },
   completed: { label: "Completed", tone: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  disputed: { label: "Disputed", tone: "bg-orange-50 text-orange-800 border-orange-200" },
   declined: { label: "Declined", tone: "bg-gray-100 text-gray-600 border-gray-200" },
   cancelled: { label: "Cancelled", tone: "bg-red-50 text-red-700 border-red-200" },
 };

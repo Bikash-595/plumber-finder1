@@ -74,7 +74,7 @@ export default function CompanyNavbar({ onToggleSidebar }: CompanyNavbarProps) {
             type="button"
             onClick={onToggleSidebar}
             className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-[#0b1f3b] shadow-sm transition hover:border-[#FFD60A] hover:bg-[#FFD60A]"
-            aria-label="Toggle company dashboard menu"
+            aria-label="Toggle menu"
           >
             <FaBars className="h-4 w-4" />
           </button>

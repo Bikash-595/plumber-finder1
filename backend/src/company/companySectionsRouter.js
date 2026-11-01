@@ -10,7 +10,7 @@ import { faqsRouter } from "./faqs/routers/faqsRouter.js";
 import { galleryRouter } from "./gallery/routers/galleryRouter.js";
 import { headerProfileRouter } from "./header-profile/routers/headerProfileRouter.js";
 import { previousProjectsRouter } from "./previous-projects/routers/previousProjectsRouter.js";
-import { createProviderReviewsRouter } from "../reviews/reviews.js";
+import { companyReviewsRouter } from "./reviews/routers/reviewsRouter.js";
 import { serviceAreasRouter } from "./service-areas/routers/serviceAreasRouter.js";
 import { servicesRouter } from "./services/routers/servicesRouter.js";
 import { specialOffersRouter } from "./special-offers/routers/specialOffersRouter.js";
@@ -24,8 +24,8 @@ export const companySections = [
   { path: "/services", router: servicesRouter },
   { path: "/gallery", router: galleryRouter },
   { path: "/previous-projects", router: previousProjectsRouter },
-  // Customers' PlumberFinder reviews (read, reply, report) and the Google Business Profile link.
-  { path: "/reviews", router: createProviderReviewsRouter("company") },
+  // Customers' PlumberFinder reviews (read, reply, report) and the Google Business Profile.
+  { path: "/reviews", router: companyReviewsRouter },
   { path: "/team", router: teamRouter },
   { path: "/faqs", router: faqsRouter },
   { path: "/service-areas", router: serviceAreasRouter },

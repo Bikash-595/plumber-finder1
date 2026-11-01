@@ -10,10 +10,12 @@ import { announce, applyStatus, forProvider } from "./bookingWorkflow.js";
 export const responseConfigs = {
   accept: { label: "booking", fields: { scheduledDate: { type: "date" }, timeSlot: { type: "string", max: 60 }, note: { type: "text", max: 500 } } },
   decline: { label: "booking", fields: { reason: { type: "text", required: true, max: 500 } } },
+  start: { label: "booking", fields: { note: { type: "text", max: 500 } } },
+  // "Mark as done": the customer is asked to confirm (see bookingWorkflow.js).
   complete: { label: "booking", fields: { note: { type: "text", max: 500 } } },
   cancel: { label: "booking", fields: { reason: { type: "text", required: true, max: 500 } } },
 };
-const actions = { accept: "scheduled", decline: "declined", complete: "completed", cancel: "cancelled" };
+const actions = { accept: "scheduled", decline: "declined", start: "in_progress", complete: "awaiting_confirmation", cancel: "cancelled" };
 
 /** Bookings addressed to a company or freelancer: an inbox with Accept / Decline / Complete / Cancel. */
 export function createProviderBookingsController(providerType) {
@@ -30,7 +32,7 @@ export function createProviderBookingsController(providerType) {
       if (problem) return res.status(409).json({ message: problem });
       await booking.save();
       await announce(booking, actions[action], "provider");
-      const messages = { accept: "Booking accepted. The customer has been notified.", decline: "Booking declined. The customer has been notified.", complete: "Job marked as completed.", cancel: "Booking cancelled. The customer has been notified." };
+      const messages = { accept: "Booking accepted. The customer has been notified.", decline: "Booking declined. The customer has been notified.", start: "Job started. The customer has been notified.", complete: "Marked as done. We've asked the customer to confirm the job is complete.", cancel: "Booking cancelled. The customer has been notified." };
       res.json({ message: messages[action], data: forProvider(booking) });
     } catch (error) { next(error); }
   };
@@ -63,6 +65,7 @@ export function createProviderBookingsController(providerType) {
     },
     accept: respond("accept"),
     decline: respond("decline"),
+    start: respond("start"),
     complete: respond("complete"),
     cancel: respond("cancel"),
   };

@@ -11,3 +11,5 @@ bookingsRouter.get("/", bookingsController.list);
 bookingsRouter.post("/", validateBookingRequest, verifyProvider, bookingsController.create);
 bookingsRouter.get("/:id", bookingsController.getOne);
 bookingsRouter.patch("/:id/cancel", bookingsController.cancel);
+bookingsRouter.patch("/:id/confirm", bookingsController.confirm);
+bookingsRouter.patch("/:id/dispute", bookingsController.dispute);

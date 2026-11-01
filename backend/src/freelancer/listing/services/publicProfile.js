@@ -11,7 +11,7 @@ import { FreelancerHeaderProfile } from "../../header-profile/models/FreelancerH
 import { FreelancerOpeningHours } from "../../opening-hours/models/FreelancerOpeningHours.js";
 import { FreelancerOverview } from "../../overview/models/FreelancerOverview.js";
 import { FreelancerProject } from "../../previous-projects/models/FreelancerProject.js";
-import { latestReviews, ratingsByAccount } from "../../../reviews/reviews.js";
+import { latestReviews, ratingsByAccount } from "../../../reviews/services/stats.js";
 import { FreelancerServiceArea } from "../../service-areas/models/FreelancerServiceArea.js";
 import { FreelancerServiceOffering } from "../../services/models/FreelancerServiceOffering.js";
 import { FreelancerSpecialOffer } from "../../special-offers/models/FreelancerSpecialOffer.js";

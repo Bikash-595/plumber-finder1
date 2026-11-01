@@ -53,7 +53,7 @@ Everything company-related lives in feature folders under `src/company/`:
 | Services | `/api/companies/services` | list (syncs listing `services`): `name`, `category` (Repairs, Installation, Drains & Sewer, …), `description`, `priceType` (`fixed`, `from`, `hourly`, `quote`, `free`) + `priceAmount` — the shown `price` ("From $89", "$95/hr", "Free quote") is set from them; older services keep their free-text `price` — `duration`, `includes` (up to 12 "what's included" items), `warranty`, `emergency`, `featured`, `image`. Shared with freelancers in `src/shared/profileSections/servicesSection.js` |
 | Gallery | `/api/companies/gallery` | list (8 MB body limit for videos) |
 | Previous projects | `/api/companies/previous-projects` | list |
-| Reviews & Ratings | `/api/companies/reviews` | the company's PlumberFinder reviews (read-only) with replies, reports, and Google settings — see Reviews below |
+| Reviews & Ratings | `/api/companies/reviews` | the company's directory and verified reviews (read-only) with replies and reports, and its Google connection — see Reviews below |
 | Team | `/api/companies/team` | list |
 | FAQs | `/api/companies/faqs` | list |
 | Blogs | `/api/companies/blogs` | list (unique slug per company) |
@@ -151,17 +151,37 @@ Everything people do with a company or freelancer is stored in `profile_activity
 - Admin (`/api/admin/activity`): `GET /providers?type=&search=&sort=views|visitors|bookings|customers|recent&page=` — every plumber with visits, unique visitors, project views, blog reads, compares, saves, contact clicks, bookings (waiting/accepted/declined/cancelled), customers and repeat customers, plus totals; `GET /providers/:type/:id` — the same for one plumber with the last 30 days, `customerList` (who booked, how many times, first/last, outcome), `bookingList`, and the activity timeline with names; `GET /recent?event=&page=` — everything, newest first.
 - The plumber's own `GET /api/companies/bookings` (and freelancers') includes `customers: { total, repeat }`.
 
-## Reviews: PlumberFinder and Google (`src/reviews`)
+## Reviews (`src/reviews` + a `reviews/` folder in each area)
 
-Two sources, never mixed into one score:
+Three sources, never mixed into one score:
 
-- **PlumberFinder reviews** (`customer_reviews`): written by signed-in customers about a company or freelancer — rating 1–5, title, text, optional service category, up to 4 photos, and optionally one of their own bookings with that plumber (a completed booking marks the review **verified**). One review per customer per plumber (editable) and one per booking. A plumber's PlumberFinder rating (cards, profile, dashboard) is the average of its **published** reviews only.
-  - Public: `GET /api/reviews/:type/:id?sort=newest|highest|lowest&rating=&page=` (summary with average, count, and 1–5 distribution; the signed-in customer's own review as `mine`).
-  - Customers: `POST /api/reviews/:type/:id`, `PATCH /api/reviews/item/:id`, `DELETE /api/reviews/item/:id`, `GET /api/reviews/mine/all`; anyone signed in: `POST /api/reviews/item/:id/report { reason }`.
-  - Spam protection: at most 5 reviews a day per customer, no repeated text, minimum lengths; reviews with links or flagged words are held (`pending`) for moderation; three reports from different people hold a review.
-  - Plumbers (`/api/companies/reviews`, `/api/freelancers/reviews`): `GET /` (all their reviews with status, reports, summary, unanswered count), `PUT|DELETE /:id/reply` (public reply; the customer is notified), `POST /:id/report`. Plumbers can't change ratings or review text.
-  - Admins (`/api/admin/reviews`): `GET /?status=pending|reported|published|hidden`, `PATCH /:id { status: published|hidden, reason }`.
-- **Google reviews** (`google_business_links`): each plumber saves its Google Business Profile/Maps link and Place ID (`GET|PUT /api/companies/reviews/google`, `POST …/google/search`, `POST …/google/refresh`; public `GET /api/reviews/:type/:id/google`). With `GOOGLE_PLACES_API_KEY` (Places API (New)) and a Place ID, the Google rating, count, and up to 5 reviews come from Google's Place Details API, kept for at most 24 hours and shown with Google and author attribution. Without them, profiles show only "Read Google Reviews" / "Write a Google Review" — nothing is invented, and Google reviews are never stored as or counted with PlumberFinder reviews.
+| Source | Who | Companies | Freelancers |
+|---|---|---|---|
+| **Directory review** (`source: directory`) | any signed-in customer, no booking needed — one per plumber | ✓ | ✓ |
+| **Verified Booking review** (`source: verified_booking`) | the customer of a **completed** booking — one per booking; only the server sets this | ✓ | ✓ |
+| **Google review** | read from Google for a connected business; never stored as a PlumberFinder review | ✓ | — |
+
+Folders: `src/reviews/` is the shared core (`config/`, `models/`, `services/` — stats, content checks, review requests, events, audit, scheduler, migration — `google/`, `routers/publicReviewsRouter.js`). Each area has its own section: `src/user/reviews/`, `src/company/reviews/` (incl. Google), `src/freelancer/reviews/`, `src/admin/reviews/`.
+
+- **Ratings** (`services/stats.js`) count **published** PlumberFinder reviews only (never held, hidden, rejected, or Google): `platform`, `directory`, and `verified`, each with average, count and 1–5 distribution — the same numbers on cards, profiles, dashboards and the API.
+- **Public** (`/api/reviews`): `GET /:type/:id?source=&rating=&sort=&page=` (reviews, `stats`, and for a signed-in customer `viewer` with their reviews and the completed bookings they can still review) · `GET /company/:id/google` · `POST /item/:id/report { reason }` (anyone signed in).
+- **Customers** (`/api/users/reviews`): `GET /` (theirs, every status) · `GET /eligible` (completed bookings without a review) · `GET /requests` (review requests sent and unanswered) · `POST / { providerType, providerId, bookingId?, rating, title?, body, serviceCategory?, photos? }` · `PATCH /:id` · `DELETE /:id`. With `bookingId` the booking must be the customer's, completed, with that plumber, and not reviewed yet.
+- **Plumbers** (`/api/companies/reviews`, `/api/freelancers/reviews`): `GET /?source=&status=&rating=&unanswered=true&search=&sort=&page=` (with stats by source, unanswered, new this week, reported) · `GET /unanswered` · `POST|PUT|DELETE /:id/reply` (the customer is notified) · `POST /:id/report`. Ratings and review text can't be changed.
+- **Admins** (`/api/admin/reviews`): `GET /?status=pending|reported|published|hidden|rejected&source=&providerType=&providerId=&rating=&from=&to=&search=` · `GET /:id/history` (audit log, reports, review requests) · `PATCH /:id { status: published|hidden|rejected, reason }` — a reason is required to hide or reject; it is logged (`review_audits`) and sent to the reviewer.
+- **Trust**: 5 reviews a day per customer, 10 writes per 10 minutes, no repeated text; links, flagged or abusive words, and text copied from another customer are held (`pending`); three reports hold a review; every change is in `review_audits`.
+
+### Job completion and review requests
+
+Bookings: `pending → scheduled → in_progress → awaiting_confirmation → completed` (plus `disputed`, `declined`, `cancelled`). The plumber's `PATCH …/bookings/:id/complete` ("Mark as done") asks the customer to confirm: `PATCH /api/users/bookings/:id/confirm`, or `…/dispute { reason }` — an admin resolves a dispute (`completed`, back to `scheduled`, or `cancelled`, with a note). Unanswered jobs are confirmed automatically after 7 days.
+
+When a booking becomes `completed`, `review_requests` gets a request (sent at once) and reminders at 24 h and 72 h — in-app always, email unless the customer turned email notifications off. Each row has a unique `idempotencyKey` and is claimed atomically before sending, so retries or several servers never send twice; the rest are cancelled when the customer reviews, or the booking is disputed or cancelled. `services/scheduler.js` runs every minute in the API server (auto-confirm, due requests, daily Google refresh).
+
+### Google (companies only)
+
+- `GET /api/companies/reviews/google` (status, sync, rating, reviews) · `GET …/google/matches` (businesses on Google matching the company's listing — nothing is connected until the owner picks one) · `POST …/google/search { query }` · `POST …/google/connect { placeId }` · `PUT …/google { profileUrl?, placeId? }` · `POST …/google/refresh` · `DELETE …/google`.
+- **Places API** — `GOOGLE_PLACES_API_KEY` (Places API (New), server key): rating, count and up to 5 reviews, kept at most 24 hours and refreshed daily by the scheduler.
+- **Business Profile OAuth** (optional, full review list and owner replies) — `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` = `<api>/api/companies/reviews/google/oauth/callback`, and a Google Cloud project approved for the Business Profile APIs: `POST …/google/oauth` (consent URL; single-use `state`), `GET …/google/oauth/callback`, `DELETE …/google/oauth`. Refresh tokens are encrypted (AES-256-GCM, key from `GOOGLE_TOKEN_SECRET` or `JWT_SECRET`) and never sent to a browser.
+- Without keys, profiles show the business's Google links only — nothing is invented. Replying to Google reviews from PlumberFinder is not implemented.
 
 ## Admin
 

@@ -1,95 +1,24 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import DashboardGuard from "@/components/auth/DashboardGuard";
+import DashboardFrame from "@/components/dashboard-shell/DashboardFrame";
 import CompanyFooter from "@/components/company-dashboard/CompanyFooter";
 import CompanyNavbar from "@/components/company-dashboard/CompanyNavbar";
 import CompanySidebar from "@/components/company-dashboard/CompanySidebar";
-import type { CompanySidebarState } from "@/components/company-dashboard/companyDashboardData";
-
-const nextSidebarState = (state: CompanySidebarState): CompanySidebarState => {
-  if (state === "open") return "icons";
-  if (state === "icons") return "closed";
-  return "open";
-};
-
-const getDesktopSidebarWidth = (state: CompanySidebarState) => {
-  if (state === "open") return "lg:w-72";
-  if (state === "icons") return "lg:w-20";
-  return "lg:w-0";
-};
-
-const getMobileSidebarWidth = (state: CompanySidebarState) => {
-  if (state === "open") return "w-72";
-  return "w-20";
-};
-
-function CompanyDashboardLayoutContent({ children }: { children: ReactNode }) {
-  const [mobileSidebarState, setMobileSidebarState] =
-    useState<CompanySidebarState>("closed");
-  const [desktopSidebarState, setDesktopSidebarState] =
-    useState<CompanySidebarState>("open");
-
-  const mobileSidebar = (
-    <CompanySidebar
-      sidebarState={mobileSidebarState}
-      onLinkClick={() => setMobileSidebarState("closed")}
-      onToggle={() => setMobileSidebarState(nextSidebarState)}
-    />
-  );
-
-  // App shell: one screen tall. The sidebar and the page body scroll separately.
-  return (
-        <div className="flex h-dvh flex-col overflow-hidden bg-gray-100">
-      <header className="relative z-50 w-full shrink-0 bg-white shadow-sm">
-        <CompanyNavbar onToggleSidebar={() => setMobileSidebarState(nextSidebarState)} />
-      </header>
-
-      <div className="flex min-h-0 flex-1">
-        <aside
-          className={`hidden min-h-0 overflow-hidden flex-col border-r bg-white transition-all duration-300 lg:flex ${getDesktopSidebarWidth(
-            desktopSidebarState
-          )}`}
-        >
-          <CompanySidebar
-            sidebarState={desktopSidebarState}
-            onToggle={() => setDesktopSidebarState(nextSidebarState)}
-          />
-        </aside>
-
-        {mobileSidebarState === "open" && (
-          <div
-            className="fixed inset-0 z-40 bg-black/40 lg:hidden"
-            onClick={() => setMobileSidebarState("closed")}
-          />
-        )}
-
-        {mobileSidebarState !== "closed" && (
-          <aside
-            className={`fixed inset-y-0 left-0 z-50 bg-white shadow-xl transition-all duration-300 lg:hidden ${getMobileSidebarWidth(
-              mobileSidebarState
-            )}`}
-          >
-            {mobileSidebar}
-          </aside>
-        )}
-
-        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain">
-          <div className="flex-1 p-4 sm:p-6 lg:p-8">
-            <div className="min-h-[calc(100vh-180px)] rounded-2xl bg-white p-4 shadow-sm sm:p-6 text-gray-900">
-              {children}
-            </div>
-          </div>
-          <footer className="w-full border-t bg-white shadow-sm">
-            <CompanyFooter />
-          </footer>
-        </main>
-      </div>
-    </div>
-  );
-}
 
 /** Only companies can open this dashboard (see DashboardGuard and proxy.ts). */
 export default function CompanyDashboardLayout({ children }: { children: ReactNode }) {
-  return <DashboardGuard area="company"><CompanyDashboardLayoutContent>{children}</CompanyDashboardLayoutContent></DashboardGuard>;
+  return (
+    <DashboardGuard area="company">
+      <DashboardFrame widths={{ open: "lg:w-72", icons: "lg:w-20", drawer: "w-72" }}
+        navbar={(onMenu) => <CompanyNavbar onToggleSidebar={onMenu} />}
+        sidebar={(mode, onNavigate) => <CompanySidebar sidebarState={mode} onLinkClick={onNavigate} />}
+        footer={<CompanyFooter />}>
+        <div className="flex-1 p-4 sm:p-6 lg:p-8">
+          <div className="min-h-[calc(100vh-180px)] rounded-2xl bg-white p-4 text-gray-900 shadow-sm sm:p-6">{children}</div>
+        </div>
+      </DashboardFrame>
+    </DashboardGuard>
+  );
 }

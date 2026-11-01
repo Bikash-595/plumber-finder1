@@ -15,7 +15,7 @@ import {
   FaTools,
 } from "react-icons/fa";
 
-export type FreelancerSidebarState = "open" | "icons" | "closed";
+export type FreelancerSidebarState = "open" | "icons";
 
 export const freelancerNavSections = [
   {

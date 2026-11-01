@@ -19,7 +19,7 @@ import {
 } from "react-icons/fa";
 import type { IconType } from "react-icons";
 
-export type AdminSidebarState = "open" | "icons" | "closed";
+export type AdminSidebarState = "open" | "icons";
 
 export type AdminNavSubItem = {
   label: string;

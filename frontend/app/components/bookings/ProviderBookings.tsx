@@ -13,7 +13,10 @@ type Tab = BookingStatus | "all";
 const tabs: { value: Tab; label: string }[] = [
   { value: "pending", label: "Requests" },
   { value: "scheduled", label: "Confirmed" },
+  { value: "in_progress", label: "In progress" },
+  { value: "awaiting_confirmation", label: "Waiting for customer" },
   { value: "completed", label: "Completed" },
+  { value: "disputed", label: "Disputed" },
   { value: "declined", label: "Declined" },
   { value: "cancelled", label: "Cancelled" },
   { value: "all", label: "All" },
@@ -21,7 +24,7 @@ const tabs: { value: Tab; label: string }[] = [
 const timeSlots = ["8:00 AM – 10:00 AM", "10:00 AM – 12:00 PM", "1:00 PM – 3:00 PM", "3:00 PM – 5:00 PM", "5:00 PM – 7:00 PM"];
 const declineReasons = ["Fully booked on that date", "Outside our service area", "We don't offer this service", "Need more details first"];
 const byLabel = { customer: "Customer", provider: "You", admin: "Plumber Finder", system: "System" };
-const historyLabel: Record<BookingStatus, string> = { pending: "Request sent", scheduled: "Accepted", completed: "Completed", declined: "Declined", cancelled: "Cancelled" };
+const historyLabel: Record<BookingStatus, string> = { pending: "Request sent", scheduled: "Accepted", in_progress: "Job started", awaiting_confirmation: "Marked as done", completed: "Completed", disputed: "Customer disputed", declined: "Declined", cancelled: "Cancelled" };
 const input = "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#FFD60A] focus:ring-2 focus:ring-[#FFD60A]/30";
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -75,15 +78,15 @@ export default function ProviderBookings({ base }: { base: ProviderBase }) {
     setNotice("");
   };
 
-  const respond = async (booking: ProviderBooking, action: "accept" | "decline" | "complete" | "cancel") => {
+  const respond = async (booking: ProviderBooking, action: "accept" | "decline" | "start" | "complete" | "cancel") => {
     if (action === "accept" && !form.scheduledDate) return setError("Choose the date of the visit.");
     if ((action === "decline" || action === "cancel") && !form.reason.trim()) return setError("Give a reason — the customer will see it.");
-    if (action === "complete" && !window.confirm(`Mark ${booking.reference} (${booking.service}) as completed?`)) return;
+    if (action === "complete" && !window.confirm(`Mark ${booking.reference} (${booking.service}) as done?\n\nThe customer will be asked to confirm the job is complete (it's confirmed automatically after 7 days).`)) return;
     setBusy(true);
     setError("");
     try {
       const body = action === "accept" ? { scheduledDate: form.scheduledDate, timeSlot: form.timeSlot || undefined, note: form.note.trim() || undefined }
-        : action === "complete" ? {} : { reason: form.reason.trim() };
+        : action === "complete" || action === "start" ? {} : { reason: form.reason.trim() };
       const { data, message } = await providerApi.respond(base, booking._id, action, body);
       setNotice(message ?? "Booking updated.");
       setPanel(null);
@@ -116,9 +119,9 @@ export default function ProviderBookings({ base }: { base: ProviderBase }) {
 
       {/* Summary */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {([["pending", "Waiting for your reply", "border-amber-200 bg-amber-50 text-amber-900"], ["scheduled", "Confirmed jobs", "border-blue-200 bg-blue-50 text-blue-900"], ["completed", "Completed", "border-emerald-200 bg-emerald-50 text-emerald-900"], ["declined", "Declined / cancelled", "border-gray-200 bg-gray-50 text-gray-800"]] as const).map(([key, label, tone]) => (
+        {([["pending", "Waiting for your reply", "border-amber-200 bg-amber-50 text-amber-900"], ["scheduled", "Confirmed / in progress", "border-blue-200 bg-blue-50 text-blue-900"], ["awaiting_confirmation", "Waiting for customer", "border-violet-200 bg-violet-50 text-violet-900"], ["completed", "Completed", "border-emerald-200 bg-emerald-50 text-emerald-900"]] as const).map(([key, label, tone]) => (
           <button key={key} type="button" onClick={() => { setTab(key); setPage(1); }} className={`rounded-2xl border p-4 text-left transition hover:shadow-sm ${tone}`}>
-            <p className="text-2xl font-bold">{counts ? (key === "declined" ? counts.declined + counts.cancelled : counts[key]) : "–"}</p>
+            <p className="text-2xl font-bold">{counts ? (key === "scheduled" ? counts.scheduled + counts.in_progress : counts[key]) : "–"}</p>
             <p className="mt-1 text-xs font-semibold">{label}</p>
           </button>
         ))}
@@ -254,12 +257,16 @@ export default function ProviderBookings({ base }: { base: ProviderBase }) {
                     <button type="button" onClick={() => open(booking, "decline")} className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50"><FaTimes className="h-3 w-3" /> Decline</button>
                   </>
                 )}
-                {booking.status === "scheduled" && !isPanel && (
+                {(booking.status === "scheduled" || booking.status === "in_progress") && !isPanel && (
                   <>
-                    <button type="button" disabled={busy} onClick={() => respond(booking, "complete")} className="inline-flex items-center gap-2 rounded-xl bg-[#0b1f3b] px-4 py-2 text-sm font-bold text-white hover:bg-[#17345a] disabled:opacity-60"><FaCheck className="h-3 w-3" /> Mark completed</button>
+                    {booking.status === "scheduled" && <button type="button" disabled={busy} onClick={() => respond(booking, "start")} className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-800 hover:bg-indigo-100 disabled:opacity-60">Start job</button>}
+                    <button type="button" disabled={busy} onClick={() => respond(booking, "complete")} className="inline-flex items-center gap-2 rounded-xl bg-[#0b1f3b] px-4 py-2 text-sm font-bold text-white hover:bg-[#17345a] disabled:opacity-60"><FaCheck className="h-3 w-3" /> Mark as done</button>
                     <button type="button" onClick={() => open(booking, "cancel")} className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel booking</button>
                   </>
                 )}
+                {booking.status === "awaiting_confirmation" && <p className="text-sm text-violet-800">Waiting for {booking.customerName ?? "the customer"} to confirm the job is complete. It&apos;s confirmed automatically after 7 days.</p>}
+                {booking.status === "disputed" && <p className="text-sm text-orange-800"><span className="font-semibold">The customer says the job isn&apos;t finished{booking.disputeReason ? `: “${booking.disputeReason}”` : "."}</span> Plumber Finder will contact you to resolve it.</p>}
+                {booking.status === "completed" && booking.completionConfirmedBy && <p className="text-sm text-emerald-800">Completion confirmed by {booking.completionConfirmedBy === "customer" ? "the customer" : booking.completionConfirmedBy === "admin" ? "Plumber Finder" : "the system after 7 days"}. The customer has been asked for a review.</p>}
                 <button type="button" onClick={() => setHistoryOpen(historyOpen === booking._id ? null : booking._id)} className="ml-auto inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"><FaHistory className="h-3 w-3" /> {historyOpen === booking._id ? "Hide history" : "History"}</button>
               </div>
             </li>

@@ -59,6 +59,13 @@ const userBookingSchema = new mongoose.Schema({
   acceptedAt: { type: Date },
   declinedAt: { type: Date },
   completedAt: { type: Date },
+  startedAt: { type: Date },
+  // The plumber said the job is done and asked the customer to confirm (auto-confirmed after 7 days).
+  completionRequestedAt: { type: Date },
+  completionConfirmedBy: { type: String, enum: ["customer", "admin", "system"] },
+  // The customer says the job isn't done; an admin resolves it.
+  disputedAt: { type: Date },
+  disputeReason: { type: String, trim: true, maxlength: 500 },
   cancelledAt: { type: Date },
   cancelledBy: { type: String, enum: ["customer", "provider", "admin"] },
   history: { type: [historySchema], default: () => [{ status: "pending", by: "customer" }] },
@@ -69,5 +76,7 @@ userBookingSchema.index({ user: 1, _id: -1 });
 userBookingSchema.index({ user: 1, status: 1, _id: -1 });
 userBookingSchema.index({ user: 1, createdAt: -1 });
 userBookingSchema.index({ providerType: 1, providerAccount: 1, status: 1, createdAt: -1 });
+// The scheduler's auto-confirm sweep.
+userBookingSchema.index({ status: 1, completionRequestedAt: 1 });
 
 export const UserBooking = mongoose.model("UserBooking", userBookingSchema);

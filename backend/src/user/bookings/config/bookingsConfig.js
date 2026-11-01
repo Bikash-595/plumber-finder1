@@ -2,8 +2,13 @@
 // Customers can create and cancel bookings; the plumber (or an admin) accepts, declines, and completes them.
 export const bookingsConfig = {
   label: "Booking",
-  // pending = waiting for the plumber; scheduled = accepted (confirmed); declined = the plumber said no.
-  statuses: ["pending", "scheduled", "completed", "cancelled", "declined"],
+  // pending = waiting for the plumber · scheduled = accepted · in_progress = the plumber started the job ·
+  // awaiting_confirmation = the plumber says it's done and the customer is asked to confirm · completed = confirmed
+  // (by the customer, an admin, or automatically after 7 days) · disputed = the customer says it isn't done ·
+  // declined = the plumber said no. See shared/bookings/bookingWorkflow.js for who may make each change.
+  statuses: ["pending", "scheduled", "in_progress", "awaiting_confirmation", "completed", "disputed", "cancelled", "declined"],
+  // Still needs something from someone (counts as "active" on dashboards).
+  active: ["pending", "scheduled", "in_progress", "awaiting_confirmation", "disputed"],
   cancellable: ["pending", "scheduled"],
   fields: {
     providerType: { type: "enum", values: ["company", "freelancer"], required: true },

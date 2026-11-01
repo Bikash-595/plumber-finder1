@@ -41,7 +41,7 @@ export async function setBookingStatus(req, res, next) {
     if (!booking) return res.status(404).json({ message: "Booking not found." });
     const { status: nextStatus, note, scheduledDate, timeSlot } = req.validated;
     if (!canMove("admin", booking.status, nextStatus)) return res.status(409).json({ message: `This booking is ${statusLabels[booking.status]} and can't be changed to ${nextStatus}.` });
-    if ((nextStatus === "declined" || nextStatus === "cancelled") && !note) return res.status(400).json({ message: "Give a reason — the customer will see it.", errors: { note: "is required" } });
+    if ((nextStatus === "declined" || nextStatus === "cancelled" || booking.status === "disputed") && !note) return res.status(400).json({ message: booking.status === "disputed" ? "Explain how the dispute was resolved — the customer and plumber will see it." : "Give a reason — the customer will see it.", errors: { note: "is required" } });
     const problem = applyStatus(booking, { to: nextStatus, by: "admin", note, scheduledDate, timeSlot });
     if (problem) return res.status(409).json({ message: problem });
     await booking.save();

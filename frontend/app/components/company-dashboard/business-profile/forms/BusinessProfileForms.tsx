@@ -1,5 +1,5 @@
 import CollectionForm from "../CollectionForm";
-import ProviderReviews from "@/components/reviews/ProviderReviews";
+import CompanyReviews from "@/components/company-dashboard/reviews/CompanyReviews";
 import ServicesEditor from "../ServicesEditor";
 import OpeningHoursForm from "../OpeningHoursForm";
 import SectionForm from "../SectionForm";
@@ -55,7 +55,7 @@ export function SpecialOffersForm() {
 
 /** Reviews & Ratings: customers' PlumberFinder reviews (reply, report) and the Google Business Profile link. */
 export function CustomerReviewsForm() {
-  return <ProviderReviews base="/companies" />;
+  return <CompanyReviews />;
 }
 
 export function ServiceAreasForm() {

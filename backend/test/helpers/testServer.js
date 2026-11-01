@@ -41,13 +41,14 @@ export async function startTestServer() {
   const server = app.listen(0);
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
-  const api = async (method, url, { body, token, raw, headers: extra } = {}) => {
+  // `redirect: "manual"` returns redirects (with their `location`) instead of following them.
+  const api = async (method, url, { body, token, raw, headers: extra, redirect } = {}) => {
     const headers = { "Content-Type": "application/json", ...extra };
     if (token) headers.Authorization = `Bearer ${token}`;
-    const res = await fetch(baseUrl + url, { method, headers, body: raw ?? (body === undefined ? undefined : JSON.stringify(body)) });
+    const res = await fetch(baseUrl + url, { method, headers, redirect, body: raw ?? (body === undefined ? undefined : JSON.stringify(body)) });
     const text = await res.text();
     let json; try { json = JSON.parse(text); } catch { json = text; }
-    return { status: res.status, body: json };
+    return { status: res.status, body: json, location: res.headers.get("location") };
   };
 
   const stop = async () => {

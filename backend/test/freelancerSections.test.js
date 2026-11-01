@@ -172,7 +172,7 @@ describe("opening hours, public profile, and removing the listing", () => {
     // The rating comes from customers' PlumberFinder reviews.
     for (const [i, rating] of [5, 3].entries()) {
       const reviewer = (await api("POST", "/api/auth/users/signup", { body: { zipCode: "78701", name: `Reviewer ${i}`, email: `reviewer${Date.now()}${i}@example.com`, password: "password123" } })).body;
-      assert.equal((await api("POST", `/api/reviews/freelancer/${listingId}`, { token: reviewer.token, body: { rating, title: "Good job", body: "Fixed our leak quickly and cleanly." } })).status, 201);
+      assert.equal((await api("POST", "/api/users/reviews", { token: reviewer.token, body: { providerType: "freelancer", providerId: listingId, rating, title: "Good job", body: `Fixed our leak quickly and cleanly (${rating} stars).` } })).status, 201);
     }
     await api("POST", "/api/freelancers/blogs", { token, body: { title: "Live", excerpt: "E", content: "C", status: "published" } });
     await api("POST", "/api/freelancers/blogs", { token, body: { title: "Draft", excerpt: "E", content: "C" } });

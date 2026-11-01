@@ -10,7 +10,7 @@
 export const CACHE_MS = 24 * 60 * 60 * 1000;
 const PLACES = "https://places.googleapis.com/v1";
 // Overridable in tests.
-export const googleHttp = { fetch: (...args) => fetch(...args) };
+export const googleHttp = { fetch: (...args) => fetch(...args) }; // every Google call (Places and OAuth) goes through this
 const apiKey = () => (process.env.GOOGLE_PLACES_API_KEY || "").trim();
 export const googleConfigured = () => Boolean(apiKey());
 
@@ -44,9 +44,11 @@ async function call(path, init = {}) {
 
 /** Rating, review count, and up to 5 reviews for a Place ID (Google decides which reviews). */
 export async function fetchPlace(placeId) {
-  const place = await call(`/places/${encodeURIComponent(placeId)}?languageCode=en`, { headers: { "X-Goog-FieldMask": "id,displayName,rating,userRatingCount,googleMapsUri,reviews" } });
+  const place = await call(`/places/${encodeURIComponent(placeId)}?languageCode=en`, { headers: { "X-Goog-FieldMask": "id,displayName,formattedAddress,rating,userRatingCount,googleMapsUri,reviews" } });
   return {
+    origin: "places",
     displayName: place.displayName?.text,
+    address: place.formattedAddress,
     rating: typeof place.rating === "number" ? place.rating : null,
     userRatingCount: typeof place.userRatingCount === "number" ? place.userRatingCount : 0,
     googleMapsUri: place.googleMapsUri,
@@ -57,44 +59,13 @@ export async function fetchPlace(placeId) {
       relativeTime: review.relativePublishTimeDescription,
       author: { name: review.authorAttribution?.displayName ?? "Google user", uri: review.authorAttribution?.uri, photoUri: review.authorAttribution?.photoUri },
       googleMapsUri: review.googleMapsUri,
+      ownerReply: null, // the Places API doesn't return owner replies (Business Profile OAuth does)
     })),
   };
 }
 
 /** Businesses matching a search (so an owner can find their own Place ID). */
 export async function searchPlaces(textQuery) {
-  const result = await call("/places:searchText", { method: "POST", headers: { "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.googleMapsUri" }, body: JSON.stringify({ textQuery, maxResultCount: 5 }) });
-  return (result.places ?? []).map((place) => ({ placeId: place.id, name: place.displayName?.text, address: place.formattedAddress, rating: place.rating ?? null, userRatingCount: place.userRatingCount ?? 0, googleMapsUri: place.googleMapsUri }));
-}
-
-/**
- * What to show for a plumber's Google reviews. Uses recent data when it's under a day old, otherwise asks
- * Google again (`refresh` forces it). `link` is a GoogleBusinessLink document (or null).
- */
-export async function googleSummary(link, { refresh = false } = {}) {
-  if (!link || (!link.profileUrl && !link.placeId)) return { connected: false, available: false, reason: "not_connected" };
-  const base = {
-    connected: true, profileUrl: link.profileUrl || null, placeId: link.placeId || null,
-    readUrl: readReviewsUrl(link.placeId, link.profileUrl, link.cache?.googleMapsUri), writeUrl: writeReviewUrl(link.placeId, link.profileUrl),
-  };
-  if (!link.placeId) return { ...base, available: false, reason: "no_place_id" };
-  if (!googleConfigured()) return { ...base, available: false, reason: "api_not_configured" };
-  const fresh = link.cache?.fetchedAt && Date.now() - new Date(link.cache.fetchedAt).getTime() < CACHE_MS;
-  if (!fresh || refresh) {
-    try {
-      const place = await fetchPlace(link.placeId);
-      link.cache = { ...place, fetchedAt: new Date() };
-      link.lastError = undefined;
-    } catch (error) {
-      // Nothing older than a day is shown.
-      link.cache = undefined;
-      link.lastError = { message: error.message, at: new Date() };
-    }
-    await link.save();
-  }
-  if (!link.cache?.fetchedAt) return { ...base, available: false, reason: "google_error", error: link.lastError?.message };
-  return {
-    ...base, available: true, readUrl: readReviewsUrl(link.placeId, link.profileUrl, link.cache.googleMapsUri),
-    displayName: link.cache.displayName, rating: link.cache.rating, count: link.cache.userRatingCount, reviews: link.cache.reviews ?? [], fetchedAt: link.cache.fetchedAt,
-  };
+  const result = await call("/places:searchText", { method: "POST", headers: { "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.rating,places.userRatingCount,places.googleMapsUri" }, body: JSON.stringify({ textQuery, maxResultCount: 5 }) });
+  return (result.places ?? []).map((place) => ({ placeId: place.id, name: place.displayName?.text, address: place.formattedAddress, phone: place.nationalPhoneNumber, website: place.websiteUri, rating: place.rating ?? null, userRatingCount: place.userRatingCount ?? 0, googleMapsUri: place.googleMapsUri }));
 }

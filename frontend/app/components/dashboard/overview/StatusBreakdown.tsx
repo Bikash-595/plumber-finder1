@@ -2,7 +2,7 @@ import type { Booking } from "@/components/utils/userApi";
 import { bookingStatus } from "../bookings/bookingStatus";
 import { toneClasses } from "../ui/tones";
 
-const order: Booking["status"][] = ["pending", "scheduled", "completed", "cancelled", "declined"];
+const order: Booking["status"][] = ["pending", "scheduled", "in_progress", "awaiting_confirmation", "completed", "disputed", "cancelled", "declined"];
 
 /** Share of bookings in each status: one segmented bar plus a labelled legend with counts. */
 export default function StatusBreakdown({ counts, total }: { counts: Record<Booking["status"], number>; total: number }) {

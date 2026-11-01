@@ -30,13 +30,13 @@ export type CartItem = ProviderRef & { _id: string; providerName: string; name: 
 export type CartSummary = { itemCount: number; subtotal: number; promoCode: string | null; discountPercent: number; discount: number; taxRate: number; tax: number; total: number };
 export type Cart = { items: CartItem[]; summary: CartSummary };
 export type BookingHistoryEntry = { status: Booking["status"]; by: "customer" | "provider" | "admin" | "system"; note?: string; at: string };
-export type Booking = ProviderRef & { _id: string; reference?: string; couponCode?: string; couponLabel?: string; originalPrice?: number; discountAmount?: number; responseNote?: string; history?: BookingHistoryEntry[]; acceptedAt?: string; providerName: string; service: string; quantity: number; price?: number; scheduledDate?: string; timeSlot?: string; address?: string; phone?: string; details?: string; status: "pending" | "scheduled" | "completed" | "cancelled" | "declined"; source: "request" | "checkout"; createdAt: string };
-export type Notification = { _id: string; type: "booking" | "order" | "offer" | "comment" | "system"; title: string; message?: string; link?: string; read: boolean; createdAt: string };
+export type Booking = ProviderRef & { _id: string; reference?: string; couponCode?: string; couponLabel?: string; originalPrice?: number; discountAmount?: number; responseNote?: string; history?: BookingHistoryEntry[]; acceptedAt?: string; providerName: string; service: string; quantity: number; price?: number; scheduledDate?: string; timeSlot?: string; address?: string; phone?: string; details?: string; status: "pending" | "scheduled" | "in_progress" | "awaiting_confirmation" | "completed" | "disputed" | "cancelled" | "declined"; source: "request" | "checkout"; disputeReason?: string; completionRequestedAt?: string; completedAt?: string; createdAt: string };
+export type Notification = { _id: string; type: "booking" | "order" | "offer" | "comment" | "review" | "system"; title: string; message?: string; link?: string; read: boolean; createdAt: string };
 export type Invoice = { _id: string; number: string; items: { name: string; providerName?: string; quantity: number; price: number }[]; subtotal: number; discount: number; tax: number; total: number; promoCode?: string; status: "pending" | "paid" | "cancelled" | "refunded"; dueDate?: string; createdAt: string };
 export type PaymentMethod = { _id: string; brand: "visa" | "mastercard" | "amex" | "discover" | "other"; last4: string; expMonth: number; expYear: number; holderName?: string; label?: string; isDefault: boolean };
 export type UserSettings = { emailNotifications: boolean; smsNotifications: boolean; pushNotifications: boolean; marketingEmails: boolean; bookingReminders: boolean; publicProfile: boolean };
 export type DashboardSummary = {
-  counts: { cart: number; saved: number; compare: number; activeBookings: number; pendingBookings: number; scheduledBookings: number; completedBookings: number; totalBookings: number; unreadNotifications: number; pendingInvoices: number };
+  counts: { cart: number; saved: number; compare: number; activeBookings: number; awaitingConfirmation: number; pendingBookings: number; scheduledBookings: number; completedBookings: number; totalBookings: number; unreadNotifications: number; pendingInvoices: number };
   totalSpent: number;
   amountDue: number;
   upcomingBookings: Booking[];
@@ -68,7 +68,9 @@ export type Address = { _id: string; label: string; line1: string; line2?: strin
 export type AddressInput = Omit<Address, "_id" | "isDefault"> & { isDefault?: boolean };
 /** "12 Oak St, Apt 4, Austin, TX 78701" (same format as the server). */
 export const formatAddress = (a: Pick<Address, "line1" | "line2" | "city" | "state" | "zipCode">) => [a.line1, a.line2, a.city, [a.state, a.zipCode].filter(Boolean).join(" ")].filter(Boolean).join(", ");
-export type MyReview = { _id: string; rating: number; title: string; body: string; serviceCategory?: string; photos: string[]; verified?: boolean; createdAt: string; edited?: boolean; reply: { body: string; createdAt: string } | null; status: "published" | "pending" | "hidden" | "removed" | string; providerType: ProviderRef["providerType"]; providerId: string; providerName: string };
+export type MyReview = { _id: string; source: "directory" | "verified_booking"; rating: number; title: string; body: string; serviceCategory?: string; photos: string[]; verified?: boolean; createdAt: string; edited?: boolean; reply: { body: string; createdAt: string } | null; status: "published" | "pending" | "hidden" | "rejected"; moderation?: { reason?: string } | null; bookingReference?: string | null; providerType: ProviderRef["providerType"]; providerId: string; providerName: string };
+/** A completed booking the customer hasn't reviewed yet (and, for /requests, when we asked). */
+export type EligibleBooking = ProviderRef & { _id: string; reference: string; providerName: string; service: string; completedAt?: string; requestedAt?: string; reminders?: number };
 
 /** One page of a long list (newest first). Pass `nextCursor` back as `cursor` for the next page; null means no more. */
 export type Page<T, Extra = object> = { data: T[]; nextCursor: string | null } & Partial<Extra>;
@@ -139,6 +141,8 @@ export const userApi = {
   bookingsPage: (params: { status?: Booking["status"]; q?: string; providerType?: string; providerId?: string; cursor?: string | null; limit?: number } = {}) => page<Booking, BookingPageExtra>("/bookings", params),
   requestBooking: (body: ProviderRef & { providerName: string; service: string; scheduledDate?: string; timeSlot?: string; address?: string; phone?: string; details?: string; offer?: string; couponCode?: string }) => mutate<Booking>("/bookings", { method: "POST", body }),
   cancelBooking: (id: string, reason?: string) => mutate<Booking>(`/bookings/${id}/cancel`, { method: "PATCH", body: { reason } }),
+  confirmBooking: (id: string) => mutate<Booking>(`/bookings/${id}/confirm`, { method: "PATCH" }),
+  disputeBooking: (id: string, reason: string) => mutate<Booking>(`/bookings/${id}/dispute`, { method: "PATCH", body: { reason } }),
 
   notifications: () => call<Notification[]>("/notifications"),
   notificationsPage: (params: { unread?: boolean; type?: Notification["type"]; cursor?: string | null; limit?: number } = {}) => page<Notification, NotificationPageExtra>("/notifications", { ...params, unread: params.unread ? "true" : undefined }),
@@ -149,8 +153,10 @@ export const userApi = {
   invoices: () => call<Invoice[]>("/invoices"),
   invoicesPage: (params: { status?: Invoice["status"]; q?: string; cursor?: string | null; limit?: number } = {}) => page<Invoice, InvoicePageExtra>("/invoices", params),
 
-  // The customer's own reviews (lives under /api/reviews, not /api/users).
-  myReviews: async (params: { cursor?: string | null; limit?: number } = {}) => (await apiRequest<MyReview[]>(`/reviews/mine/all${query(params)}`, { loginMessage: LOGIN_MESSAGE })) as unknown as Page<MyReview>,
+  // The customer's reviews, and completed bookings still waiting for one.
+  myReviews: (params: { cursor?: string | null; limit?: number } = {}) => page<MyReview>("/reviews", params),
+  eligibleReviews: () => call<EligibleBooking[]>("/reviews/eligible"),
+  reviewRequests: () => call<EligibleBooking[]>("/reviews/requests"),
 
   paymentMethods: () => call<PaymentMethod[]>("/payment-methods"),
   addPaymentMethod: (body: Omit<PaymentMethod, "_id" | "isDefault"> & { isDefault?: boolean }) => mutate<PaymentMethod>("/payment-methods", { method: "POST", body }),

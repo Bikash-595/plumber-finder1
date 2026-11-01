@@ -96,9 +96,12 @@ describe("booking requests to a company", () => {
     assert.equal((await api("GET", "/api/companies/notifications", { token: company.token })).body.data[0].actionRequired, false, "the prompt is answered");
     assert.ok((await titles("/api/admin/notifications", admin)).includes("Booking accepted"));
 
-    const completed = await api("PATCH", `/api/companies/bookings/${booking._id}/complete`, { token: company.token, body: {} });
+    // "Mark as done" asks the customer to confirm; confirming completes the job.
+    const done = await api("PATCH", `/api/companies/bookings/${booking._id}/complete`, { token: company.token, body: {} });
+    assert.equal(done.body.data.status, "awaiting_confirmation");
+    const completed = await api("PATCH", `/api/users/bookings/${booking._id}/confirm`, { token: customer.token });
     assert.equal(completed.body.data.status, "completed");
-    assert.deepEqual(completed.body.data.history.map((h) => `${h.status}:${h.by}`), ["pending:customer", "scheduled:provider", "completed:provider"]);
+    assert.deepEqual(completed.body.data.history.map((h) => `${h.status}:${h.by}`), ["pending:customer", "scheduled:provider", "awaiting_confirmation:provider", "completed:customer"]);
     list = (await api("GET", "/api/companies/bookings", { token: company.token })).body;
     assert.deepEqual([list.counts.pending, list.counts.completed], [0, 1]);
   });

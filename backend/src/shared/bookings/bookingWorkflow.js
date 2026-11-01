@@ -8,12 +8,16 @@ import { FreelancerListing } from "../../freelancer/listing/models/FreelancerLis
 import { notify as notifyCustomer } from "../../user/notifications/services/notify.js";
 import { AccountNotification, notifyAdmins, notifyProvider } from "../notifications/AccountNotification.js";
 import { recordActivity } from "../../activity/recordActivity.js";
+import { AUTO_CONFIRM_AFTER_MS } from "../../reviews/config/reviewsConfig.js";
+import { cancelReviewRequests, processDueReviewRequests, scheduleReviewRequests } from "../../reviews/services/requests.js";
+import { UserBooking } from "../../user/bookings/models/UserBooking.js";
 
-// How a booking moves between customer, plumber (company or freelancer), and admin:
-//   pending ──accept──▶ scheduled ──complete──▶ completed
-//      │                    └──cancel──▶ cancelled
-//      ├──decline──▶ declined
-//      └──cancel (customer/admin)──▶ cancelled
+// How a booking moves between customer, plumber (company or freelancer), admin and the system:
+//   pending ──accept──▶ scheduled ──start──▶ in_progress ──mark done──▶ awaiting_confirmation
+//      │                    │                                   │            │
+//      │                    └────────────mark done──────────────┘            ├─customer confirms (or 7 days pass)─▶ completed ─▶ review requests
+//      ├──decline──▶ declined                                                 └─customer disputes─▶ disputed ─admin─▶ completed | scheduled | cancelled
+//      └──cancel──▶ cancelled (customer: pending/scheduled; plumber: scheduled/in_progress; admin: any open booking)
 // Every change is added to the booking's history and announced to the other parties and to admins.
 
 const listings = { company: { Model: CompanyListing, owner: "company" }, freelancer: { Model: FreelancerListing, owner: "freelancer" } };
@@ -21,13 +25,18 @@ const accounts = { company: Company, freelancer: Freelancer };
 export const providerBookingsPath = { company: "/company-dashboard/bookings", freelancer: "/freelancer/bookings" };
 const siteUrl = () => (process.env.FRONTEND_URL || "http://localhost:3000").split(",")[0].trim();
 
-export const statusLabels = { pending: "waiting for a reply", scheduled: "confirmed", completed: "completed", cancelled: "cancelled", declined: "declined" };
+export const statusLabels = { pending: "waiting for a reply", scheduled: "confirmed", in_progress: "in progress", awaiting_confirmation: "waiting for the customer to confirm", completed: "completed", disputed: "disputed", cancelled: "cancelled", declined: "declined" };
+const verbs = { scheduled: "accepted", in_progress: "started", awaiting_confirmation: "marked as done", completed: "completed", disputed: "disputed", declined: "declined", cancelled: "cancelled" };
 
 /** Which status changes each party may make. */
 export const transitions = {
-  provider: { pending: ["scheduled", "declined"], scheduled: ["completed", "cancelled"] },
-  customer: { pending: ["cancelled"], scheduled: ["cancelled"] },
-  admin: { pending: ["scheduled", "declined", "cancelled"], scheduled: ["completed", "cancelled"] },
+  provider: { pending: ["scheduled", "declined"], scheduled: ["in_progress", "awaiting_confirmation", "cancelled"], in_progress: ["awaiting_confirmation", "cancelled"] },
+  customer: { pending: ["cancelled"], scheduled: ["cancelled"], awaiting_confirmation: ["completed", "disputed"] },
+  admin: {
+    pending: ["scheduled", "declined", "cancelled"], scheduled: ["in_progress", "completed", "cancelled"], in_progress: ["completed", "cancelled"],
+    awaiting_confirmation: ["completed", "cancelled"], disputed: ["completed", "scheduled", "cancelled"],
+  },
+  system: { awaiting_confirmation: ["completed"] },
 };
 export const canMove = (by, from, to) => (transitions[by][from] ?? []).includes(to);
 
@@ -58,8 +67,9 @@ export async function newBookingFields(userId, providerType, providerId) {
  * visit date and time. Returns an error message when the change isn't allowed.
  */
 export function applyStatus(booking, { to, by, note, scheduledDate, timeSlot }) {
-  if (!canMove(by, booking.status, to)) return `This booking is ${statusLabels[booking.status]} and can't be ${({ scheduled: "accepted", declined: "declined", completed: "completed", cancelled: "cancelled" })[to] ?? to} now.`;
+  if (!canMove(by, booking.status, to)) return `This booking is ${statusLabels[booking.status]} and can't be ${verbs[to] ?? to} now.`;
   const now = new Date();
+  const from = booking.status;
   booking.status = to;
   if (to === "scheduled") {
     booking.acceptedAt = now;
@@ -67,9 +77,13 @@ export function applyStatus(booking, { to, by, note, scheduledDate, timeSlot }) 
     if (timeSlot) booking.timeSlot = timeSlot;
   }
   if (to === "declined") booking.declinedAt = now;
-  if (to === "completed") booking.completedAt = now;
+  if (to === "in_progress") booking.startedAt = now;
+  if (to === "awaiting_confirmation") booking.completionRequestedAt = now;
+  if (to === "completed") { booking.completedAt = now; booking.completionConfirmedBy = by === "provider" ? undefined : by; }
+  if (to === "disputed") { booking.disputedAt = now; booking.disputeReason = note || undefined; }
+  if (to === "scheduled" && from === "disputed") booking.completionRequestedAt = undefined; // sent back to the plumber
   if (to === "cancelled") { booking.cancelledAt = now; booking.cancelledBy = by; }
-  if (by !== "customer") booking.responseNote = note || undefined;
+  if (by === "provider" || by === "admin") booking.responseNote = note || undefined;
   booking.history.push({ status: to, by, note: note || undefined, at: now });
   return null;
 }
@@ -154,13 +168,39 @@ export async function announce(booking, event, by = "customer", { tellCustomer =
     email(booking.customerEmail, `Booking declined: ${booking.service} (${ref})`, [`${booking.providerName} can't take your booking.`, ...(note ? [`Reason: ${note}`] : []), "", `Find another plumber: ${siteUrl()}/find`]);
   }
 
+  if (event === "in_progress") {
+    tasks.push(toCustomer({ title: "Your plumber has started", message: `${booking.providerName} started your ${booking.service} job (${ref}).` }));
+  }
+
+  if (event === "awaiting_confirmation") {
+    tasks.push(toCustomer({ title: "Please confirm your job is done", message: withNote(`${booking.providerName} marked your ${booking.service} job (${ref}) as completed. Confirm it — or tell us if something isn't finished.`, note) }));
+    if (by === "admin") tasks.push(toProvider({ title: "Job marked as done", message: `${ref} was marked as done by Plumber Finder. The customer is asked to confirm.` }));
+    email(booking.customerEmail, `Please confirm your job is done: ${booking.service} (${ref})`, [`${booking.providerName} marked your job as completed.`, "", `Confirm it, or report a problem: ${siteUrl()}${customerLink}`, "", "If we don't hear from you within 7 days, the job is confirmed automatically."]);
+  }
+
   if (event === "completed") {
-    tasks.push(toCustomer({ title: "Job completed", message: `${booking.providerName} marked your ${booking.service} job (${ref}) as completed. You can leave them a review.` }));
-    if (by === "admin") tasks.push(toProvider({ title: "Job marked completed", message: `${ref} — ${booking.service} was marked completed by Plumber Finder.` }));
-    else tasks.push(toAdmins({ title: "Job completed", message: `${booking.providerName} completed ${ref} (${booking.service}).` }));
+    const how = { customer: `${booking.customerName ?? "The customer"} confirmed`, admin: "Plumber Finder confirmed", system: "It was confirmed automatically (no answer in 7 days):" }[by] ?? "Confirmed:";
+    tasks.push(toProvider({ title: "Job completion confirmed", message: `${how} ${ref} — ${booking.service} is completed.` }));
+    if (by !== "customer") tasks.push(toCustomer({ title: "Job completed", message: `Your ${booking.service} job with ${booking.providerName} (${ref}) is completed.` }));
+    tasks.push(toAdmins({ title: "Job completed", message: `${ref} (${booking.service} with ${booking.providerName}) is completed${by === "system" ? " (auto-confirmed)" : by === "admin" ? " (confirmed by an admin)" : ""}.` }));
+    // The customer is asked for a verified review (now, then after 24 h and 72 h).
+    tasks.push(scheduleReviewRequests(booking).then(() => processDueReviewRequests()).catch(() => undefined));
+  }
+
+  if (event === "disputed") {
+    const reason = booking.disputeReason;
+    tasks.push(toProvider({ title: "Customer disputed completion", message: withNote(`${booking.customerName ?? "The customer"} says ${ref} (${booking.service}) isn't finished. Plumber Finder will look into it.`, reason) }));
+    tasks.push(toAdmins({ title: "Booking disputed", message: withNote(`${booking.customerName ?? "A customer"} disputed completion of ${ref} with ${booking.providerName}. Resolve it in Bookings.`, reason) }));
+    tasks.push(toCustomer({ title: "We've received your report", message: `Thanks — Plumber Finder will look into ${ref} and get back to you.` }));
+    tasks.push(cancelReviewRequests(booking._id, "disputed"));
+  }
+
+  if (event === "scheduled" && by === "admin" && booking.history.at(-2)?.status === "disputed") {
+    tasks.push(toProvider({ title: "Dispute resolved: job reopened", message: withNote(`${ref} (${booking.service}) is back to scheduled so you can finish the work.`, note) }));
   }
 
   if (event === "cancelled") {
+    tasks.push(cancelReviewRequests(booking._id, "cancelled"));
     const reason = by === "customer" ? booking.history.at(-1)?.note : note;
     if (by !== "customer") tasks.push(toCustomer({ title: "Booking cancelled", message: withNote(`Your ${booking.service} booking with ${booking.providerName} (${ref}) was cancelled${by === "admin" ? " by Plumber Finder" : ""}.`, reason) }));
     if (by !== "provider") tasks.push(toProvider({ title: "Booking cancelled", message: withNote(`${by === "customer" ? booking.customerName ?? "The customer" : "Plumber Finder"} cancelled ${ref} (${booking.service} on ${when(booking)}).`, reason) }));
@@ -170,4 +210,22 @@ export async function announce(booking, event, by = "customer", { tellCustomer =
   }
 
   await Promise.all(tasks.filter(Boolean));
+}
+
+/** Scheduled job: confirms jobs the customer never answered about within 7 days. Returns how many. */
+export async function autoConfirmCompletions(now = new Date()) {
+  const due = await UserBooking.find({ status: "awaiting_confirmation", completionRequestedAt: { $lte: new Date(now.getTime() - AUTO_CONFIRM_AFTER_MS) } }).limit(50);
+  let confirmed = 0;
+  for (const booking of due) {
+    // Only if it's still waiting, so a customer answering at the same moment wins.
+    const saved = await UserBooking.findOneAndUpdate(
+      { _id: booking._id, status: "awaiting_confirmation" },
+      { $set: { status: "completed", completedAt: now, completionConfirmedBy: "system" }, $push: { history: { status: "completed", by: "system", note: "Confirmed automatically after 7 days", at: now } } },
+      { new: true },
+    );
+    if (!saved) continue;
+    await announce(saved, "completed", "system");
+    confirmed++;
+  }
+  return confirmed;
 }

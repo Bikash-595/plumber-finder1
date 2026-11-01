@@ -47,8 +47,8 @@ async function readAuthPayload(response: Response): Promise<AuthResponse & { mes
 
 export const AUTH_STORAGE_KEY = "plumberfinder_user";
 
-export function getInitials(name: string) {
-  return name
+export function getInitials(name?: string | null) {
+  return (name ?? "")
     .trim()
     .split(/\s+/)
     .slice(0, 2)

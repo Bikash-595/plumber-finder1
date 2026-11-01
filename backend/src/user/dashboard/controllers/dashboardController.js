@@ -1,4 +1,4 @@
-import { CustomerReview } from "../../../reviews/models.js";
+import { CustomerReview } from "../../../reviews/models/index.js";
 import { UserBooking } from "../../bookings/models/UserBooking.js";
 import { bookingsConfig } from "../../bookings/config/bookingsConfig.js";
 import { UserCartItem } from "../../cart/models/UserCartItem.js";
@@ -11,7 +11,7 @@ import { countsByStatus, toObjectId } from "../../shared/paginate.js";
 
 // Every query below starts with { user } and is served by an index on it, so the cost depends on
 // one customer's own records, never on how many customers there are.
-const ACTIVE = ["pending", "scheduled"];
+const ACTIVE = bookingsConfig.active;
 const bookingCard = "reference providerType providerId providerName service quantity price scheduledDate timeSlot status createdAt";
 const statusGroups = (Model, user, extra = {}) => Model.aggregate([{ $match: { user } }, { $group: { _id: "$status", count: { $sum: 1 }, ...extra } }]);
 const sumOf = (rows, field = "total") => rows[0]?.[field] ?? 0;
@@ -39,7 +39,8 @@ export async function getDashboardSummary(req, res, next) {
           cart: sumOf(cart),
           saved: savedCount,
           compare: compareCount,
-          activeBookings: bookings.pending + bookings.scheduled,
+          activeBookings: ACTIVE.reduce((sum, status) => sum + bookings[status], 0),
+          awaitingConfirmation: bookings.awaiting_confirmation,
           pendingBookings: bookings.pending,
           scheduledBookings: bookings.scheduled,
           completedBookings: bookings.completed,

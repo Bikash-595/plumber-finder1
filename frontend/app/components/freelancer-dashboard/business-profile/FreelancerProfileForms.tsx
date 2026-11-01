@@ -1,7 +1,7 @@
 // Freelancer profile sections, saved to /api/freelancers/<section>.
 // They reuse the company business-profile form components; draft keys are prefixed so
 // freelancer drafts never mix with company drafts on the same device.
-import ProviderReviews from "@/components/reviews/ProviderReviews";
+import FreelancerReviews from "@/components/freelancer-dashboard/reviews/FreelancerReviews";
 import ServicesEditor from "@/components/company-dashboard/business-profile/ServicesEditor";
 import SpecialOffersEditor from "@/components/company-dashboard/business-profile/SpecialOffersEditor";
 import CollectionForm from "@/components/company-dashboard/business-profile/CollectionForm";
@@ -64,7 +64,7 @@ export function FreelancerProjectsForm() {
 
 /** Reviews & Ratings: customers' PlumberFinder reviews (reply, report) and the Google Business Profile link. */
 export function FreelancerReviewsForm() {
-  return <ProviderReviews base="/freelancers" />;
+  return <FreelancerReviews />;
 }
 
 export function FreelancerFaqsForm() {

@@ -19,7 +19,7 @@ type Filter = "all" | "unread" | Notification["type"];
 const filters: { value: Filter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "unread", label: "Unread" },
-  ...(["booking", "order", "offer", "comment", "system"] as const).map((type) => ({ value: type, label: notificationTypes[type].label })),
+  ...(["booking", "review", "order", "offer", "comment", "system"] as const).map((type) => ({ value: type, label: notificationTypes[type].label })),
 ];
 
 /** Groups rows (already newest first) under "Today", "Yesterday", … in one pass. */

@@ -34,3 +34,6 @@ export function StarPicker({ value, onChange }: { value: number; onChange: (valu
     </div>
   );
 }
+
+/** The read-only star row under its design-system name. */
+export const StarRating = Stars;

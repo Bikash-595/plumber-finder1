@@ -271,7 +271,7 @@ describe("dashboard summary", () => {
     await api("POST", "/api/users/cart/items", { token, body: cartItem({ quantity: 3 }) });
     await api("POST", "/api/users/bookings", { token, body: { providerType: "company", providerId: "1", providerName: "Demo", service: "Repair" } });
     const { counts, upcomingBookings, recentNotifications } = (await api("GET", "/api/users/dashboard", { token })).body.data;
-    assert.deepEqual(counts, { cart: 3, saved: 1, compare: 1, activeBookings: 1, pendingBookings: 1, scheduledBookings: 0, completedBookings: 0, totalBookings: 1, unreadNotifications: 1, pendingInvoices: 0 });
+    assert.deepEqual(counts, { cart: 3, saved: 1, compare: 1, activeBookings: 1, awaitingConfirmation: 0, pendingBookings: 1, scheduledBookings: 0, completedBookings: 0, totalBookings: 1, unreadNotifications: 1, pendingInvoices: 0 });
     assert.equal(upcomingBookings.length, 1);
     assert.equal(recentNotifications.length, 1);
   });

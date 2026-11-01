@@ -10,7 +10,6 @@ import {
   FaSignOutAlt,
   FaTools,
 } from "react-icons/fa";
-import { TbSquareToggle } from "react-icons/tb";
 import { clearStoredUser } from "@/components/utils/auth";
 
 import {
@@ -21,7 +20,6 @@ import {
 interface CompanySidebarProps {
   sidebarState?: CompanySidebarState;
   onLinkClick?: () => void;
-  onToggle?: () => void;
 }
 
 function isRouteActive(pathname: string, href: string) {
@@ -45,7 +43,6 @@ const focusRing =
 export default function CompanySidebar({
   sidebarState = "open",
   onLinkClick,
-  onToggle,
 }: CompanySidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -87,19 +84,6 @@ export default function CompanySidebar({
     onLinkClick?.();
   };
 
-  if (sidebarState === "closed") {
-    return (
-      <button
-        type="button"
-        onClick={onToggle}
-        className="fixed left-4 top-4 z-50 grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-[#102A43] shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4C9AFF]"
-        aria-label="Open company navigation"
-      >
-        <TbSquareToggle className="h-5 w-5" aria-hidden="true" />
-      </button>
-    );
-  }
-
   if (sidebarState === "icons") {
     const iconItems = companyNavSections.flatMap(
       (section) => section.items,
@@ -107,14 +91,6 @@ export default function CompanySidebar({
 
     return (
       <aside className="flex h-full w-[72px] shrink-0 flex-col items-center border-r border-white/10 bg-[#0B1F33] px-3 py-4 text-white">
-        <button
-          type="button"   
-          onClick={onToggle}
-          className={`mb-5 grid h-11 w-11 place-items-center rounded-xl bg-white/[0.08] text-white transition hover:bg-white/[0.14] ${focusRing}`}
-          aria-label="Expand company navigation"
-        >
-          <TbSquareToggle className="h-5 w-5" aria-hidden="true" />
-        </button>
 
         <nav
           className="flex min-h-0 flex-1 flex-col items-center gap-1.5 overflow-y-auto"
@@ -197,20 +173,6 @@ export default function CompanySidebar({
             </span>
           </span>
         </Link>
-
-        {onToggle && (
-          <button
-            type="button"
-            onClick={onToggle}
-            className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg text-white/55 transition hover:bg-white/[0.08] hover:text-white ${focusRing}`}
-            aria-label="Collapse company navigation"
-          >
-            <TbSquareToggle
-              className="h-5 w-5"
-              aria-hidden="true"
-            />
-          </button>
-        )}
       </header>
 
       <div className="px-4 pb-2 pt-4">

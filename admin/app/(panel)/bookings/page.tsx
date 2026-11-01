@@ -4,17 +4,22 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminSectionPage from "@/components/AdminSectionPage";
 import { DataTable, FilterBar, Pager, Panel, StatusBadge, useAdminQuery } from "@/components/AdminData";
-import { adminApi, formatDate, formatMoney, type AdminBookingDetail, type BookingStatus } from "@/lib/adminApi";
+import { adminApi, formatDate, formatMoney, type AdminBookingDetail, type AdminBookingStatus, type BookingStatus } from "@/lib/adminApi";
 
 const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost:3000";
-const statuses = [{ value: "all", label: "All" }, { value: "pending", label: "Waiting for plumber" }, { value: "scheduled", label: "Confirmed" }, { value: "completed", label: "Completed" }, { value: "declined", label: "Declined" }, { value: "cancelled", label: "Cancelled" }];
-const statusLabels: Record<BookingStatus, string> = { pending: "Waiting for plumber", scheduled: "Confirmed", completed: "Completed", declined: "Declined", cancelled: "Cancelled" };
-const historyLabels: Record<BookingStatus, string> = { pending: "Request sent", scheduled: "Accepted", completed: "Completed", declined: "Declined", cancelled: "Cancelled" };
+const statuses = [{ value: "all", label: "All" }, { value: "pending", label: "Waiting for plumber" }, { value: "scheduled", label: "Confirmed" }, { value: "in_progress", label: "In progress" }, { value: "awaiting_confirmation", label: "Waiting for customer" }, { value: "disputed", label: "Disputed" }, { value: "completed", label: "Completed" }, { value: "declined", label: "Declined" }, { value: "cancelled", label: "Cancelled" }];
+const statusLabels: Record<BookingStatus, string> = { pending: "Waiting for plumber", scheduled: "Confirmed", in_progress: "In progress", awaiting_confirmation: "Waiting for customer", disputed: "Disputed", completed: "Completed", declined: "Declined", cancelled: "Cancelled" };
+const historyLabels: Record<BookingStatus, string> = { pending: "Request sent", scheduled: "Accepted", in_progress: "Job started", awaiting_confirmation: "Marked as done", disputed: "Customer disputed", completed: "Completed", declined: "Declined", cancelled: "Cancelled" };
 const byLabels = { customer: "Customer", provider: "Plumber", admin: "Admin", system: "System" };
-// Mirrors the backend rules: completed, declined, and cancelled are final.
-const actions: Record<BookingStatus, { label: string; status: Exclude<BookingStatus, "pending">; tone: string; needsNote?: boolean }[]> = {
-  pending: [{ label: "Confirm", status: "scheduled", tone: "bg-blue-600 text-white" }, { label: "Decline", status: "declined", tone: "border border-red-200 text-red-600", needsNote: true }, { label: "Cancel", status: "cancelled", tone: "border border-gray-200 text-gray-700", needsNote: true }],
-  scheduled: [{ label: "Complete", status: "completed", tone: "bg-emerald-600 text-white" }, { label: "Cancel", status: "cancelled", tone: "border border-red-200 text-red-600", needsNote: true }],
+// Mirrors the backend rules (shared/bookings/bookingWorkflow.js): completed, declined, and cancelled are final.
+const cancel = { label: "Cancel", status: "cancelled" as AdminBookingStatus, tone: "border border-red-200 text-red-600", needsNote: true };
+const actions: Record<BookingStatus, { label: string; status: AdminBookingStatus; tone: string; needsNote?: boolean }[]> = {
+  pending: [{ label: "Confirm", status: "scheduled", tone: "bg-blue-600 text-white" }, { label: "Decline", status: "declined", tone: "border border-red-200 text-red-600", needsNote: true }, cancel],
+  scheduled: [{ label: "Mark in progress", status: "in_progress", tone: "border border-indigo-200 text-indigo-700" }, { label: "Complete", status: "completed", tone: "bg-emerald-600 text-white" }, cancel],
+  in_progress: [{ label: "Complete", status: "completed", tone: "bg-emerald-600 text-white" }, cancel],
+  awaiting_confirmation: [{ label: "Confirm completion", status: "completed", tone: "bg-emerald-600 text-white" }, cancel],
+  // Resolving a dispute: the work is done (completed → the customer is asked for a review), send it back to the plumber, or cancel.
+  disputed: [{ label: "Work is done — complete", status: "completed", tone: "bg-emerald-600 text-white", needsNote: true }, { label: "Send back to plumber", status: "scheduled", tone: "bg-blue-600 text-white", needsNote: true }, cancel],
   completed: [], declined: [], cancelled: [],
 };
 const fieldClass = "mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#FFD60A]";
@@ -97,6 +102,7 @@ function BookingDrawer({ id, onClose, onChanged }: { id: string; onClose: () => 
                   {booking.price != null && <div><dt className="text-xs font-semibold uppercase text-gray-500">Price</dt><dd className="text-gray-900">{booking.discountAmount ? <span className="mr-1 text-gray-400 line-through">{formatMoney((booking.originalPrice ?? booking.price) * (booking.quantity ?? 1))}</span> : null}{formatMoney(booking.price * (booking.quantity ?? 1))}</dd></div>}
                   {booking.couponCode && <div><dt className="text-xs font-semibold uppercase text-gray-500">Coupon</dt><dd className="text-gray-900"><span className="font-mono font-semibold">{booking.couponCode}</span> · {booking.couponLabel}{booking.discountAmount ? ` · saved ${formatMoney(booking.discountAmount)}` : ""}</dd></div>}
                   {booking.details && <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase text-gray-500">Customer notes</dt><dd className="whitespace-pre-line text-gray-900">{booking.details}</dd></div>}
+                  {booking.disputeReason && <div className="sm:col-span-2 rounded-lg bg-orange-50 p-2"><dt className="text-xs font-semibold uppercase text-orange-800">Customer&apos;s dispute</dt><dd className="text-orange-900">{booking.disputeReason}</dd></div>}
                   {booking.responseNote && <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase text-gray-500">Latest message to the customer</dt><dd className="text-gray-900">{booking.responseNote}</dd></div>}
                 </dl>
               </section>

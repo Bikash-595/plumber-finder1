@@ -33,6 +33,8 @@ function BookingsViewContent({ initialSearch }: { initialSearch: string }) {
   const status = filter === "all" ? undefined : filter;
   const list = usePagedList<Booking, BookingPageExtra>(`bookings?status=${status ?? ""}&q=${search}`, (cursor) => userApi.bookingsPage({ status, q: search, cursor }));
   const [cancelling, setCancelling] = useState<Booking | null>(null);
+  const [disputing, setDisputing] = useState<Booking | null>(null);
+  const [notice, setNotice] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const onSearch = useCallback((value: string) => setSearch(value), []);
 
@@ -56,6 +58,29 @@ function BookingsViewContent({ initialSearch }: { initialSearch: string }) {
     }
   };
 
+  const replace = (data: Booking, from: Booking["status"]) => list.update((items) => items.map((item) => (item._id === data._id ? data : item)), counts && { counts: { ...counts, [from]: counts[from] - 1, [data.status]: counts[data.status] + 1 } });
+  const answer = async (booking: Booking, action: () => Promise<{ data: Booking; message?: string }>) => {
+    setBusyId(booking._id);
+    setNotice("");
+    try {
+      const { data, message } = await action();
+      replace(data, booking.status);
+      setNotice(message ?? "Saved.");
+    } catch (caught) {
+      list.setError(caught instanceof Error ? caught.message : "Could not update the booking.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+  const confirm = (booking: Booking) => answer(booking, () => userApi.confirmBooking(booking._id));
+  const dispute = (reason: string) => {
+    const booking = disputing;
+    setDisputing(null);
+    if (!booking) return;
+    if (reason.length < 5) return list.setError("Tell us what isn't finished, so we can help.");
+    return answer(booking, () => userApi.disputeBooking(booking._id, reason));
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader icon={FaCalendarCheck} title="My Bookings" description="Track requests, confirmed visits and past jobs."
@@ -68,6 +93,7 @@ function BookingsViewContent({ initialSearch }: { initialSearch: string }) {
       </div>
 
       <Notice>{list.error}</Notice>
+      <Notice tone="success">{notice}</Notice>
 
       {list.loading ? <SkeletonRows rows={3} className="h-40" /> : list.items.length === 0 ? (
         <EmptyState icon={FaCalendarCheck} title={search || filter !== "all" ? "No matching bookings" : "No bookings yet"}
@@ -75,7 +101,7 @@ function BookingsViewContent({ initialSearch }: { initialSearch: string }) {
           action={search || filter !== "all" ? undefined : { label: "Find a plumber", href: "/find" }} />
       ) : (
         <div className="space-y-4">
-          {list.items.map((booking) => <BookingCard key={booking._id} booking={booking} busy={busyId === booking._id} onCancel={setCancelling} />)}
+          {list.items.map((booking) => <BookingCard key={booking._id} booking={booking} busy={busyId === booking._id} onCancel={setCancelling} onConfirm={confirm} onDispute={setDisputing} />)}
           <LoadMore hasMore={list.hasMore} loading={list.loadingMore} onClick={list.loadMore} shown={list.items.length} noun="bookings" />
         </div>
       )}
@@ -83,6 +109,9 @@ function BookingsViewContent({ initialSearch }: { initialSearch: string }) {
       <ConfirmDialog open={Boolean(cancelling)} title="Cancel this booking?" confirmLabel="Cancel booking"
         message={cancelling ? `${cancelling.service} with ${cancelling.providerName}. The plumber will be told straight away.` : ""}
         reasonLabel="Reason (optional — the plumber will see it)" onConfirm={cancel} onClose={() => setCancelling(null)} />
+      <ConfirmDialog open={Boolean(disputing)} title="Report a problem with this job" confirmLabel="Send to Plumber Finder" tone="primary"
+        message={disputing ? `${disputing.service} with ${disputing.providerName}. We'll pause the job and look into it with you and the plumber.` : ""}
+        reasonLabel="What isn't finished? (required)" onConfirm={dispute} onClose={() => setDisputing(null)} />
     </div>
   );
 }

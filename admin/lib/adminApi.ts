@@ -50,12 +50,14 @@ export type AdminCompany = { _id: string; companyName: string; email: string; ph
 export type FreelancerStatus = "pending" | "verified" | "rejected";
 export type AdminFreelancer = { _id: string; name: string; email: string; phone?: string; verificationStatus: FreelancerStatus; createdAt: string; listing: { _id: string; displayName: string; headline?: string; city?: string; state?: string; isPublished: boolean } | null };
 // pending = waiting for the plumber; scheduled = confirmed; declined = the plumber (or an admin) said no.
-export type BookingStatus = "pending" | "scheduled" | "completed" | "cancelled" | "declined";
+export type BookingStatus = "pending" | "scheduled" | "in_progress" | "awaiting_confirmation" | "completed" | "disputed" | "cancelled" | "declined";
+/** The statuses an admin can move a booking to. */
+export type AdminBookingStatus = "scheduled" | "in_progress" | "completed" | "declined" | "cancelled";
 export type BookingHistoryEntry = { status: BookingStatus; by: "customer" | "provider" | "admin" | "system"; note?: string; at: string };
 export type AdminBooking = {
   _id: string; reference?: string; customerName?: string; customerEmail?: string; providerType: "company" | "freelancer"; providerId: string; providerAccount?: string | null;
   providerName: string; service: string; quantity?: number; price?: number; status: BookingStatus; scheduledDate?: string; timeSlot?: string; address?: string; phone?: string; details?: string;
-  responseNote?: string; history?: BookingHistoryEntry[]; couponCode?: string; couponLabel?: string; originalPrice?: number; discountAmount?: number; createdAt: string; source: string; user: { _id: string; name: string; email: string; phone?: string } | null;
+  responseNote?: string; disputeReason?: string; history?: BookingHistoryEntry[]; couponCode?: string; couponLabel?: string; originalPrice?: number; discountAmount?: number; createdAt: string; source: string; user: { _id: string; name: string; email: string; phone?: string } | null;
 };
 export type AdminBookingDetail = AdminBooking & { provider: { hasAccount: boolean; phone?: string; email?: string; url: string } };
 export type BlogFaq = { question: string; answer: string };
@@ -76,11 +78,19 @@ export type ProviderActivityDetail = ProviderActivityRow & {
   bookingList: { _id: string; reference?: string; customerName?: string; customerEmail?: string; service: string; status: BookingStatus; scheduledDate?: string; timeSlot?: string; createdAt: string; responseNote?: string }[];
   activity: ActivityItem[];
 };
+export type ReviewStatus = "published" | "pending" | "hidden" | "rejected";
 export type ModerationReview = {
-  _id: string; providerType: "company" | "freelancer"; providerId: string; providerName?: string; rating: number; title: string; body: string; serviceCategory?: string; photos?: string[];
-  status: "published" | "pending" | "hidden"; moderation?: { reason?: string; by?: string; at?: string }; reportCount: number; verified: boolean; createdAt: string;
+  _id: string; providerType: "company" | "freelancer"; providerId: string; providerName?: string; rating: number; title?: string; body: string; serviceCategory?: string; photos?: string[];
+  source: "directory" | "verified_booking"; bookingReference?: string;
+  status: ReviewStatus; moderation?: { reason?: string; by?: string; at?: string }; reportCount: number; verified: boolean; createdAt: string;
   user: { _id: string; name: string; email: string } | null; userName?: string; reply?: { body?: string };
-  reports: { reason: string; details?: string; by: string; at: string }[];
+  reports: { reason: string; details?: string; by: string; at: string; resolved?: boolean }[];
+};
+export type ReviewHistory = {
+  review: ModerationReview | null;
+  audits: { _id: string; action: string; actor: { type: string }; fromStatus?: string; toStatus?: string; reason?: string; snapshot?: { rating?: number; title?: string; body?: string }; createdAt: string }[];
+  reports: { _id: string; reason: string; details?: string; reporter: { type: string }; resolved: boolean; adminAction?: string; createdAt: string }[];
+  requests: { _id: string; kind: string; status: string; scheduledAt: string; sentAt?: string; attemptCount: number; emailed: boolean; cancelReason?: string; lastError?: string }[];
 };
 export type AdminNotice = { _id: string; type: "booking" | "system"; title: string; message?: string; link?: string; read: boolean; createdAt: string };
 export type Registration = { _id: string; accountType: "user" | "company" | "freelancer"; name: string; email: string; status?: string; createdAt: string };
@@ -101,7 +111,7 @@ export const adminApi = {
   bookings: (params: { search?: string; status?: string; page?: number }) => adminRequest<Paginated<AdminBooking> & { counts: Record<BookingStatus, number> }>(`/admin/bookings${query(params)}`),
   booking: (id: string) => adminRequest<{ data: AdminBookingDetail }>(`/admin/bookings/${id}`),
   // note is shown to the customer and the plumber (required to decline or cancel); confirming can set the visit date/time.
-  setBookingStatus: (id: string, status: Exclude<BookingStatus, "pending">, extra: { note?: string; scheduledDate?: string; timeSlot?: string } = {}) => adminRequest<{ data: AdminBooking; message: string }>(`/admin/bookings/${id}/status`, { method: "PATCH", body: { status, ...extra } }),
+  setBookingStatus: (id: string, status: AdminBookingStatus, extra: { note?: string; scheduledDate?: string; timeSlot?: string } = {}) => adminRequest<{ data: AdminBooking; message: string }>(`/admin/bookings/${id}/status`, { method: "PATCH", body: { status, ...extra } }),
   // Plumber Finder's own blog posts (with FAQs), and the comments on them.
   blogs: (params: { search?: string; status?: string; page?: number }) => adminRequest<Paginated<PlatformBlog>>(`/admin/blogs${query(params)}`),
   blog: (id: string) => adminRequest<{ data: PlatformBlog }>(`/admin/blogs/${id}`),
@@ -117,8 +127,9 @@ export const adminApi = {
   activityProvider: (type: string, id: string) => adminRequest<{ data: ProviderActivityDetail }>(`/admin/activity/providers/${type}/${id}`),
   recentActivity: (params: { event?: string; page?: number }) => adminRequest<Paginated<ActivityItem>>(`/admin/activity/recent${query(params)}`),
   // PlumberFinder review moderation.
-  reviews: (params: { status?: string; search?: string; page?: number }) => adminRequest<Paginated<ModerationReview> & { counts: Record<string, number> }>(`/admin/reviews${query(params)}`),
-  moderateReview: (id: string, status: "published" | "hidden", reason?: string) => adminRequest<{ message: string }>(`/admin/reviews/${id}`, { method: "PATCH", body: { status, reason } }),
+  reviews: (params: { status?: string; search?: string; page?: number; source?: string; providerType?: string; rating?: string; from?: string; to?: string }) => adminRequest<Paginated<ModerationReview> & { counts: Record<string, number> }>(`/admin/reviews${query(params)}`),
+  reviewHistory: (id: string) => adminRequest<{ data: ReviewHistory }>(`/admin/reviews/${id}/history`),
+  moderateReview: (id: string, status: "published" | "hidden" | "rejected", reason?: string) => adminRequest<{ message: string }>(`/admin/reviews/${id}`, { method: "PATCH", body: { status, reason } }),
   notifications: () => adminRequest<{ data: AdminNotice[]; unread: number }>("/admin/notifications"),
   unreadNotifications: () => adminRequest<{ data: { unread: number } }>("/admin/notifications/unread-count"),
   markNotificationRead: (id: string) => adminRequest<{ data: AdminNotice }>(`/admin/notifications/${id}/read`, { method: "PATCH" }),
