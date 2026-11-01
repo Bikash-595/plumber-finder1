@@ -25,6 +25,7 @@ import {
   FaCheckCircle,
   FaShoppingCart,
   FaStar,
+  FaComments,
 } from "react-icons/fa";
 import type { IconType } from "react-icons";
 import { clearStoredUser } from "../utils/auth";
@@ -68,6 +69,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
   {
     label: "Support",
     items: [
+      { label: "Messages", href: "/dashboard/messages", icon: FaComments },
       { label: "Notifications", href: "/dashboard/notifications", icon: FaBell, badge: "notifications" },
       { label: "Help & Support", href: "/contact", icon: FaQuestionCircle },
       { label: "Security", href: "/dashboard/security", icon: FaShieldAlt },

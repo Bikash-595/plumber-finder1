@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { loginRateLimit } from "../../shared/middleware/loginRateLimit.js";
 import { createEmailAuthController } from "../controllers/createEmailAuthController.js";
 import { validateEmailLogin, validateEmailSignup } from "../middleware/validateEmailAuth.js";
 
@@ -8,6 +9,6 @@ export function createEmailAuthRouter(account) {
   const router = Router();
   // Account types can add their own signup checks (customers: a real ZIP code).
   router.post("/signup", validateEmailSignup(account), ...(account.signupMiddleware ?? []), controller.signup);
-  router.post("/login", validateEmailLogin, controller.login);
+  router.post("/login", loginRateLimit, validateEmailLogin, controller.login);
   return router;
 }

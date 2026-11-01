@@ -1,5 +1,6 @@
 import { sendMail } from "../../auth/verification/services/mailer.js";
 import { notifyAdmins, notifyProvider } from "../../shared/notifications/AccountNotification.js";
+import { emailProvider } from "../../shared/notifications/providerEmail.js";
 import { UserSettings } from "../../user/settings/models/UserSettings.js";
 import { User } from "../../auth/user/models/User.js";
 import { notify as notifyCustomer } from "../../user/notifications/services/notify.js";
@@ -29,7 +30,12 @@ export async function emailCustomer(userId, subject, lines) {
 export function newReviewForProvider(review) {
   if (!review.providerAccount) return null;
   const verified = review.source === "verified_booking" ? "verified customer " : "";
-  return notifyProvider(review.providerType, review.providerAccount, { type: "review", title: `New ${review.rating}★ ${verified}review`, message: `${review.userName ?? "A customer"} reviewed you${review.title ? `: “${review.title}”` : "."}`, link: providerReviewsPath[review.providerType] });
+  const title = `New ${review.rating}★ ${verified}review`;
+  const message = `${review.userName ?? "A customer"} reviewed you${review.title ? `: “${review.title}”` : "."}`;
+  return Promise.all([
+    notifyProvider(review.providerType, review.providerAccount, { type: "review", title, message, link: providerReviewsPath[review.providerType] }),
+    emailProvider(review.providerType, review.providerAccount, "emailNewReview", title, [message, "", `Read and reply: ${siteUrl()}${providerReviewsPath[review.providerType]}`]),
+  ]);
 }
 
 export const replyForCustomer = (review, body) => notifyCustomer(review.user, { type: "review", title: `${review.providerName ?? "The plumber"} replied to your review`, message: body.length > 140 ? `${body.slice(0, 137)}…` : body, link: profileReviewsPath(review.providerId) });

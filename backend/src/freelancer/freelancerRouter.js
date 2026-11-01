@@ -2,6 +2,7 @@ import { Router } from "express";
 import { blogsRouter } from "./blogs/routers/blogsRouter.js";
 import { bookingRouter } from "./booking/routers/bookingRouter.js";
 import { freelancerBookingsRouter } from "./bookings/routers/bookingsRouter.js";
+import { freelancerMessagesRouter } from "./messages/routers/messagesRouter.js";
 import { freelancerNotificationsRouter } from "./notifications/routers/notificationsRouter.js";
 import { socialLinksRouter } from "./social-links/routers/socialLinksRouter.js";
 import { faqsRouter } from "./faqs/routers/faqsRouter.js";
@@ -36,6 +37,7 @@ export const freelancerSections = [
   // Booking requests from customers (accept / decline) and the freelancer's notifications.
   { path: "/bookings", router: freelancerBookingsRouter },
   { path: "/notifications", router: freelancerNotificationsRouter },
+  { path: "/messages", router: freelancerMessagesRouter },
 ];
 
 export const freelancerRouter = Router();

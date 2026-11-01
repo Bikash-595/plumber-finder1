@@ -1,5 +1,13 @@
 import { Router } from "express";
+import { companyAnalyticsRouter } from "./analytics/routers/analyticsRouter.js";
 import { blogsRouter } from "./blogs/routers/blogsRouter.js";
+import { companyCustomersRouter } from "./customers/routers/customersRouter.js";
+import { companyJobsRouter } from "./jobs/routers/jobsRouter.js";
+import { companyLeadsRouter } from "./leads/routers/leadsRouter.js";
+import { companyMessagesRouter } from "./messages/routers/messagesRouter.js";
+import { companyScheduleRouter } from "./schedule/routers/scheduleRouter.js";
+import { companyDashboardRouter } from "./dashboard/routers/dashboardRouter.js";
+import { companySettingsRouter } from "./settings/routers/settingsRouter.js";
 import { bookingRouter } from "./booking/routers/bookingRouter.js";
 import { companyBookingsRouter } from "./bookings/routers/bookingsRouter.js";
 import { companyNotificationsRouter } from "./notifications/routers/notificationsRouter.js";
@@ -37,6 +45,16 @@ export const companySections = [
   // Booking requests from customers (accept / decline) and the company's notifications.
   { path: "/bookings", router: companyBookingsRouter },
   { path: "/notifications", router: companyNotificationsRouter },
+  // The dashboard home (summary + profile strength), analytics, and account settings.
+  { path: "/dashboard", router: companyDashboardRouter },
+  { path: "/analytics", router: companyAnalyticsRouter },
+  { path: "/settings", router: companySettingsRouter },
+  // Operations: leads, jobs, the calendar, customers, and messages with customers.
+  { path: "/leads", router: companyLeadsRouter },
+  { path: "/jobs", router: companyJobsRouter },
+  { path: "/schedule", router: companyScheduleRouter },
+  { path: "/customers", router: companyCustomersRouter },
+  { path: "/messages", router: companyMessagesRouter },
 ];
 
 export const companySectionsRouter = Router();

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FaCalendarAlt, FaChevronDown, FaClock, FaMapMarkerAlt, FaPhoneAlt, FaTag } from "react-icons/fa";
+import MessageButton from "@/components/messages/MessageButton";
 import { formatDate, formatMoney, type Booking } from "@/components/utils/userApi";
 import StatusPill from "../ui/StatusPill";
 import BookingTimeline from "./BookingTimeline";
@@ -85,6 +86,7 @@ export default function BookingCard({ booking, busy, onCancel, onConfirm, onDisp
         <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-100">
           {open ? "Hide details" : "View details"} <FaChevronDown className={`h-3 w-3 transition ${open ? "rotate-180" : ""}`} />
         </button>
+        {booking.status !== "declined" && <MessageButton base="/users" bookingId={booking._id} label="Message plumber" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold text-[#0b1f3b] hover:bg-gray-100" />}
         {booking.status === "completed" && <Link href={`${providerHref(booking)}?review=${booking._id}#reviews`} className="rounded-full bg-[#FFD60A] px-3 py-1.5 text-sm font-bold text-[#0b1f3b] hover:brightness-95">Write a verified review</Link>}
         {(booking.status === "completed" || booking.status === "cancelled" || booking.status === "declined") && (
           <Link href={`/book-plumber?plumber=${encodeURIComponent(booking.providerId)}`} className="rounded-full px-3 py-1.5 text-sm font-semibold text-[#0b1f3b] hover:bg-[#FFD60A]/20">{booking.status === "declined" ? "Try again" : "Book again"}</Link>

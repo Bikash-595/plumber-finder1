@@ -1,5 +1,5 @@
-import CompanyProfileSection from "@/components/company-dashboard/sections/CompanyProfileSection";
+import CompanyProfileOverview from "@/components/company-dashboard/profile/CompanyProfileOverview";
 
 export default function CompanyProfilePage() {
-  return <CompanyProfileSection />;
+  return <CompanyProfileOverview />;
 }

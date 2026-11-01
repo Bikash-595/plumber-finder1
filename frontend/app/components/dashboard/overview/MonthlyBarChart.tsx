@@ -1,4 +1,5 @@
-type Point = { label: string; value: number; display: string };
+/** `label` names the bar (unique; used in the tooltip); `tick` is the axis text when it should be shorter or blank. */
+type Point = { label: string; value: number; display: string; tick?: string };
 
 /**
  * One measure per month as thin vertical bars (one hue, rounded top, baseline-anchored),
@@ -22,7 +23,7 @@ export default function MonthlyBarChart({ title, points, barClass = "bg-[#0b1f3b
         </div>
       </div>
       <div className="mt-2 flex gap-2 sm:gap-3" aria-hidden>
-        {points.map((point) => <span key={point.label} className="flex-1 text-center text-[11px] text-gray-500">{point.label}</span>)}
+        {points.map((point) => <span key={point.label} className="flex-1 truncate text-center text-[11px] text-gray-500">{point.tick ?? point.label}</span>)}
       </div>
       <table className="sr-only">
         <caption>{title}</caption>

@@ -1,6 +1,6 @@
 "use client";
 
-import { readStoredUser } from "@/components/utils/auth";
+import { clearStoredUser, readStoredUser } from "@/components/utils/auth";
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
 
@@ -33,6 +33,14 @@ export async function apiRequest<T>(path: string, init: { method?: string; body?
     payload = await response.json();
   } catch {
     throw new ApiRequestError(`Request failed (${response.status}).`, response.status);
+  }
+  // The session was ended (signed out everywhere, password changed elsewhere, or expired): sign this browser out
+  // and go to the login page, coming back here afterwards.
+  if (response.status === 401 && typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+    clearStoredUser();
+    // A full page load on purpose: it also wipes every in-memory cache of the old session's data.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.assign(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
   }
   if (!response.ok) {
     // Show the first field-level message, e.g. "rating must be at most 5".

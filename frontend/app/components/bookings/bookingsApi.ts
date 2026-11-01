@@ -50,6 +50,11 @@ export const providerApi = {
   respond: (base: ProviderBase, id: string, action: "accept" | "decline" | "start" | "complete" | "cancel", body: Record<string, string | undefined>) =>
     apiRequest<ProviderBooking>(`${base}/bookings/${id}/${action}`, { method: "PATCH", body, loginMessage }),
   notifications: (base: ProviderBase) => apiRequest<AccountNotice[]>(`${base}/notifications`, { loginMessage }) as Promise<{ data: AccountNotice[]; unread: number }>,
+  /** One page of the inbox (newest first). Pass `nextCursor` back as `cursor`; the first page also has unread counts per type. */
+  notificationsPage: (base: ProviderBase, query: { type?: string; unread?: boolean; cursor?: string | null; limit?: number } = {}) => {
+    const params = new URLSearchParams(Object.entries({ ...query, unread: query.unread ? "true" : undefined }).filter(([, value]) => value !== undefined && value !== null && value !== "" && value !== "all").map(([key, value]) => [key, String(value)]));
+    return apiRequest<AccountNotice[]>(`${base}/notifications?${params}`, { loginMessage }) as Promise<{ data: AccountNotice[]; unread: number; nextCursor: string | null; unreadByType?: Partial<Record<AccountNotice["type"], number>> }>;
+  },
   markRead: (base: ProviderBase, id: string) => apiRequest(`${base}/notifications/${id}/read`, { method: "PATCH", loginMessage }),
   markAllRead: (base: ProviderBase) => apiRequest(`${base}/notifications/read-all`, { method: "PATCH", loginMessage }),
   removeNotification: (base: ProviderBase, id: string) => apiRequest(`${base}/notifications/${id}`, { method: "DELETE", loginMessage }),

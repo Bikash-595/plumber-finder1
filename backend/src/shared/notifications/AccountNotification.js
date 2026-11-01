@@ -16,6 +16,9 @@ const accountNotificationSchema = new mongoose.Schema({
 }, { timestamps: true, collection: "account_notifications" });
 
 accountNotificationSchema.index({ recipientType: 1, recipient: 1, createdAt: -1 });
+// Inbox pages (by _id) and the unread badge.
+accountNotificationSchema.index({ recipientType: 1, recipient: 1, _id: -1 });
+accountNotificationSchema.index({ recipientType: 1, recipient: 1, read: 1 });
 
 export const AccountNotification = mongoose.model("AccountNotification", accountNotificationSchema);
 

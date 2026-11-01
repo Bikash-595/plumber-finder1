@@ -1,5 +1,5 @@
-import JobsSection from "@/components/company-dashboard/sections/JobsSection";
+import CompanyJobs from "@/components/company-dashboard/jobs/CompanyJobs";
 
 export default function CompanyJobsPage() {
-  return <JobsSection />;
+  return <CompanyJobs />;
 }

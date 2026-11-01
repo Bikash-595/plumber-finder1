@@ -1,5 +1,5 @@
-import SettingsSection from "@/components/company-dashboard/sections/SettingsSection";
+import CompanySettingsView from "@/components/company-dashboard/settings/CompanySettings";
 
 export default function CompanySettingsPage() {
-  return <SettingsSection />;
+  return <CompanySettingsView />;
 }

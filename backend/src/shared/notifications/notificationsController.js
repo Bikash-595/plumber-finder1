@@ -1,7 +1,9 @@
 import mongoose from "mongoose";
+import { findPage, pageParams } from "../../user/shared/paginate.js";
 import { AccountNotification } from "./AccountNotification.js";
 
 const LIST_LIMIT = 100;
+const TYPES = ["booking", "review", "comment", "system"];
 
 /**
  * Notification inbox for one kind of account: list (with the unread count), mark read, mark all read,
@@ -12,15 +14,19 @@ export function createNotificationsController(recipientType) {
   const byId = (req) => (mongoose.isValidObjectId(req.params.id) ? { ...mine(req), _id: req.params.id } : null);
 
   return {
-    // GET /?unread=true
+    // GET /?unread=true&type=booking|review|comment|system&limit=&cursor= — newest first, one page at a time,
+    // with the unread count and (first page) how many unread of each type.
     list: async (req, res, next) => {
       try {
-        const filter = { ...mine(req), ...(req.query.unread === "true" ? { read: false } : {}) };
-        const [data, unread] = await Promise.all([
-          AccountNotification.find(filter).sort({ createdAt: -1 }).limit(LIST_LIMIT).lean(),
+        const filter = { ...mine(req), ...(req.query.unread === "true" ? { read: false } : {}), ...(TYPES.includes(req.query.type) ? { type: req.query.type } : {}) };
+        const params = pageParams(req.query, { defaultLimit: 50, maxLimit: LIST_LIMIT });
+        const [page, unread, byType] = await Promise.all([
+          findPage(AccountNotification, filter, params),
           AccountNotification.countDocuments({ ...mine(req), read: false }),
+          // Aggregations don't cast ids, so the recipient is converted here.
+          params.cursor ? null : AccountNotification.aggregate([{ $match: { recipientType, recipient: recipientType === "admin" ? null : new mongoose.Types.ObjectId(String(req.auth.sub)), read: false } }, { $group: { _id: "$type", count: { $sum: 1 } } }]),
         ]);
-        res.json({ data, unread });
+        res.json({ ...page, unread, ...(byType ? { unreadByType: Object.fromEntries(byType.map((row) => [row._id, row.count])) } : {}) });
       } catch (error) { next(error); }
     },
     // GET /unread-count — for the bell in the navbar.

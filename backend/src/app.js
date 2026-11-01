@@ -3,6 +3,7 @@ import { publicReviewsRouter } from "./reviews/routers/publicReviewsRouter.js";
 import { bookingQuoteRouter } from "./shared/bookings/bookingQuote.js";
 import { activityRouter } from "./activity/activityRouter.js";
 import express from "express";
+import { securityHeaders } from "./auth/shared/middleware/securityHeaders.js";
 import mongoose from "mongoose";
 import { companyListingRouter } from "./company/listing/routers/companyListingRouter.js";
 import { companyOnboardingRouter } from "./company/onboarding/routers/companyOnboardingRouter.js";
@@ -15,6 +16,10 @@ import { userRouter, userSections } from "./user/userRouter.js";
 import { adminRouter, adminSections } from "./admin/adminRouter.js";
 
 export const app = express();
+app.disable("x-powered-by");
+// Behind a load balancer / reverse proxy, set TRUST_PROXY (e.g. "1" = one hop) so rate limits see the real client IP.
+if (process.env.TRUST_PROXY) app.set("trust proxy", /^\d+$/.test(process.env.TRUST_PROXY) ? Number(process.env.TRUST_PROXY) : process.env.TRUST_PROXY);
+app.use(securityHeaders);
 
 const frontendUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "http://localhost:3000";
 // The admin panel is a separate app on its own origin.

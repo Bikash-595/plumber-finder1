@@ -76,6 +76,9 @@ userBookingSchema.index({ user: 1, _id: -1 });
 userBookingSchema.index({ user: 1, status: 1, _id: -1 });
 userBookingSchema.index({ user: 1, createdAt: -1 });
 userBookingSchema.index({ providerType: 1, providerAccount: 1, status: 1, createdAt: -1 });
+// Company/freelancer dashboards and analytics: requests by date, completed jobs by completion date.
+userBookingSchema.index({ providerType: 1, providerAccount: 1, createdAt: -1 });
+userBookingSchema.index({ providerType: 1, providerAccount: 1, status: 1, completedAt: -1 });
 // The scheduler's auto-confirm sweep.
 userBookingSchema.index({ status: 1, completionRequestedAt: 1 });
 

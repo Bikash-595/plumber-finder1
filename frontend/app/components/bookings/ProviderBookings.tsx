@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FaCalendarAlt, FaCheck, FaClock, FaEnvelope, FaHistory, FaMapMarkerAlt, FaPhoneAlt, FaRedo, FaSearch, FaTimes, FaUser } from "react-icons/fa";
 import { formatVisitDate, notificationsChanged, providerApi, statusInfo, timeAgo, type BookingList, type BookingStatus, type ProviderBase, type ProviderBooking } from "./bookingsApi";
+import MessageButton from "@/components/messages/MessageButton";
 
 const contactWords = { phone: "a phone call", sms: "text messages", email: "email", anytime: "any time", morning: "mornings", afternoon: "afternoons", evening: "evenings" } as const;
 /** "text messages · evenings · Spanish" from the customer's saved preferences. */
@@ -267,6 +268,7 @@ export default function ProviderBookings({ base }: { base: ProviderBase }) {
                 {booking.status === "awaiting_confirmation" && <p className="text-sm text-violet-800">Waiting for {booking.customerName ?? "the customer"} to confirm the job is complete. It&apos;s confirmed automatically after 7 days.</p>}
                 {booking.status === "disputed" && <p className="text-sm text-orange-800"><span className="font-semibold">The customer says the job isn&apos;t finished{booking.disputeReason ? `: “${booking.disputeReason}”` : "."}</span> Plumber Finder will contact you to resolve it.</p>}
                 {booking.status === "completed" && booking.completionConfirmedBy && <p className="text-sm text-emerald-800">Completion confirmed by {booking.completionConfirmedBy === "customer" ? "the customer" : booking.completionConfirmedBy === "admin" ? "Plumber Finder" : "the system after 7 days"}. The customer has been asked for a review.</p>}
+                {booking.status !== "declined" && <MessageButton base={base} bookingId={booking._id} label="Message customer" />}
                 <button type="button" onClick={() => setHistoryOpen(historyOpen === booking._id ? null : booking._id)} className="ml-auto inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"><FaHistory className="h-3 w-3" /> {historyOpen === booking._id ? "Hide history" : "History"}</button>
               </div>
             </li>

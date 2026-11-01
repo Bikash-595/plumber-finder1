@@ -1,5 +1,5 @@
-import CustomersSection from "@/components/company-dashboard/sections/CustomersSection";
+import CompanyCustomers from "@/components/company-dashboard/customers/CompanyCustomers";
 
 export default function CompanyCustomersPage() {
-  return <CustomersSection />;
+  return <CompanyCustomers />;
 }

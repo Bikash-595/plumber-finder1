@@ -56,7 +56,8 @@ export const companyNavSections: { label: string; items: CompanyNavItem[] }[] = 
     label: "Add Company",
     items: [
       // { label: "Business Profile Editor", href: "/company-dashboard/business-profile", icon: FaBuilding },
-      { label: "Company Profile", href: "/company-dashboard/business-profile/header-profile", icon: FaBuilding },
+      { label: "Company Profile", href: "/company-dashboard/profile", icon: FaBuilding },
+      { label: "Header & Logo", href: "/company-dashboard/business-profile/header-profile", icon: FaUserCog },
       { label: "Social Links", href: "/company-dashboard/business-profile/social-links", icon: FaShareAlt },
       { label: "Company Overview", href: "/company-dashboard/business-profile/company-overview", icon: FaTools },
       { label: " Add Services", href: "/company-dashboard/business-profile/services", icon: FaFileInvoiceDollar },

@@ -1,5 +1,5 @@
-import DashboardSection from "@/components/company-dashboard/sections/DashboardSection";
+import CompanyHome from "@/components/company-dashboard/home/CompanyHome";
 
 export default function CompanyDashboardPage() {
-  return <DashboardSection />;
+  return <CompanyHome />;
 }

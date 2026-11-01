@@ -48,7 +48,7 @@ export async function startTestServer() {
     const res = await fetch(baseUrl + url, { method, headers, redirect, body: raw ?? (body === undefined ? undefined : JSON.stringify(body)) });
     const text = await res.text();
     let json; try { json = JSON.parse(text); } catch { json = text; }
-    return { status: res.status, body: json, location: res.headers.get("location") };
+    return { status: res.status, body: json, location: res.headers.get("location"), headers: res.headers };
   };
 
   const stop = async () => {

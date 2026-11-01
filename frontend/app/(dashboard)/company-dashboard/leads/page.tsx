@@ -1,5 +1,5 @@
-import LeadsSection from "@/components/company-dashboard/sections/LeadsSection";
+import CompanyLeads from "@/components/company-dashboard/leads/CompanyLeads";
 
 export default function CompanyLeadsPage() {
-  return <LeadsSection />;
+  return <CompanyLeads />;
 }

@@ -12,6 +12,9 @@ const companySchema = new mongoose.Schema({
   phone: { type: String, trim: true, maxlength: 40 },
   avatarUrl: { type: String, trim: true },
   status: { type: String, enum: ["pending", "approved", "suspended"], default: "pending" },
+  // Bumped by "Sign out everywhere" and password changes; older tokens stop working (auth/shared/services/sessions.js).
+  tokenVersion: { type: Number, default: 0 },
+  passwordChangedAt: { type: Date },
   role: { type: String, default: "company", immutable: true },
   accountType: { type: String, default: "company", immutable: true },
 }, { timestamps: true });

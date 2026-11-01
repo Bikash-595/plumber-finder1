@@ -1,12 +1,11 @@
 import mongoose from "mongoose";
-import { Company } from "../../auth/company/models/Company.js";
-import { Freelancer } from "../../auth/freelancer/models/Freelancer.js";
 import { User } from "../../auth/user/models/User.js";
 import { sendMail } from "../../auth/verification/services/mailer.js";
 import { CompanyListing } from "../../company/listing/models/CompanyListing.js";
 import { FreelancerListing } from "../../freelancer/listing/models/FreelancerListing.js";
 import { notify as notifyCustomer } from "../../user/notifications/services/notify.js";
 import { AccountNotification, notifyAdmins, notifyProvider } from "../notifications/AccountNotification.js";
+import { emailProvider } from "../notifications/providerEmail.js";
 import { recordActivity } from "../../activity/recordActivity.js";
 import { AUTO_CONFIRM_AFTER_MS } from "../../reviews/config/reviewsConfig.js";
 import { cancelReviewRequests, processDueReviewRequests, scheduleReviewRequests } from "../../reviews/services/requests.js";
@@ -21,7 +20,6 @@ import { UserBooking } from "../../user/bookings/models/UserBooking.js";
 // Every change is added to the booking's history and announced to the other parties and to admins.
 
 const listings = { company: { Model: CompanyListing, owner: "company" }, freelancer: { Model: FreelancerListing, owner: "freelancer" } };
-const accounts = { company: Company, freelancer: Freelancer };
 export const providerBookingsPath = { company: "/company-dashboard/bookings", freelancer: "/freelancer/bookings" };
 const siteUrl = () => (process.env.FRONTEND_URL || "http://localhost:3000").split(",")[0].trim();
 
@@ -112,11 +110,6 @@ function email(to, subject, lines) {
   if (!to) return;
   sendMail({ to, subject, text: [...lines, "", "— Plumber Finder"].join("\n") }).catch(() => undefined);
 }
-async function providerEmail(booking) {
-  if (!booking.providerAccount) return null;
-  const account = await accounts[booking.providerType].findById(booking.providerAccount).select("email").lean();
-  return account?.email ?? null;
-}
 
 /**
  * Tells everyone else about a booking event: the customer (in-app + email for decisions), the plumber
@@ -146,12 +139,11 @@ export async function announce(booking, event, by = "customer", { tellCustomer =
       toProvider({ title: "New booking request", message: `${booking.customerName ?? "A customer"} wants ${booking.service} on ${when(booking)} (${ref})${booking.couponCode ? ` with coupon ${booking.couponCode} (${booking.couponLabel})` : ""}. Accept or decline it.`, actionRequired: true }),
       toAdmins({ title: "New booking", message: `${booking.customerName ?? "A customer"} booked ${booking.providerName} for ${booking.service} on ${when(booking)} (${ref}).${booking.providerAccount ? "" : " This is a sample plumber with no account: handle it here."}` }),
     );
-    const to = await providerEmail(booking);
-    email(to, `New booking request ${ref}: ${booking.service}`, [
+    tasks.push(emailProvider(booking.providerType, booking.providerAccount, "emailNewBooking", `New booking request ${ref}: ${booking.service}`, [
       `${booking.customerName ?? "A customer"} sent you a booking request on Plumber Finder.`, "",
       `Service: ${booking.service}`, `When: ${when(booking)}`, ...(booking.details ? [`Details: ${booking.details}`] : []), "",
       `Accept or decline it in your dashboard: ${siteUrl()}${providerLink}`,
-    ]);
+    ]));
   }
 
   if (event === "scheduled") {
@@ -181,6 +173,7 @@ export async function announce(booking, event, by = "customer", { tellCustomer =
   if (event === "completed") {
     const how = { customer: `${booking.customerName ?? "The customer"} confirmed`, admin: "Plumber Finder confirmed", system: "It was confirmed automatically (no answer in 7 days):" }[by] ?? "Confirmed:";
     tasks.push(toProvider({ title: "Job completion confirmed", message: `${how} ${ref} — ${booking.service} is completed.` }));
+    tasks.push(emailProvider(booking.providerType, booking.providerAccount, "emailBookingUpdates", `Job completed: ${booking.service} (${ref})`, [`${how} ${ref} — ${booking.service} is completed.`, "", "The customer has been asked for a review."]));
     if (by !== "customer") tasks.push(toCustomer({ title: "Job completed", message: `Your ${booking.service} job with ${booking.providerName} (${ref}) is completed.` }));
     tasks.push(toAdmins({ title: "Job completed", message: `${ref} (${booking.service} with ${booking.providerName}) is completed${by === "system" ? " (auto-confirmed)" : by === "admin" ? " (confirmed by an admin)" : ""}.` }));
     // The customer is asked for a verified review (now, then after 24 h and 72 h).
@@ -189,6 +182,7 @@ export async function announce(booking, event, by = "customer", { tellCustomer =
 
   if (event === "disputed") {
     const reason = booking.disputeReason;
+    tasks.push(emailProvider(booking.providerType, booking.providerAccount, "emailBookingUpdates", `Customer reported a problem: ${booking.service} (${ref})`, [`${booking.customerName ?? "The customer"} says the job isn't finished.`, ...(reason ? [`Their message: ${reason}`] : []), "", "Plumber Finder will contact you to resolve it."]));
     tasks.push(toProvider({ title: "Customer disputed completion", message: withNote(`${booking.customerName ?? "The customer"} says ${ref} (${booking.service}) isn't finished. Plumber Finder will look into it.`, reason) }));
     tasks.push(toAdmins({ title: "Booking disputed", message: withNote(`${booking.customerName ?? "A customer"} disputed completion of ${ref} with ${booking.providerName}. Resolve it in Bookings.`, reason) }));
     tasks.push(toCustomer({ title: "We've received your report", message: `Thanks — Plumber Finder will look into ${ref} and get back to you.` }));
@@ -203,6 +197,7 @@ export async function announce(booking, event, by = "customer", { tellCustomer =
     tasks.push(cancelReviewRequests(booking._id, "cancelled"));
     const reason = by === "customer" ? booking.history.at(-1)?.note : note;
     if (by !== "customer") tasks.push(toCustomer({ title: "Booking cancelled", message: withNote(`Your ${booking.service} booking with ${booking.providerName} (${ref}) was cancelled${by === "admin" ? " by Plumber Finder" : ""}.`, reason) }));
+    if (by !== "provider") tasks.push(emailProvider(booking.providerType, booking.providerAccount, "emailBookingUpdates", `Booking cancelled: ${booking.service} (${ref})`, [withNote(`${by === "customer" ? booking.customerName ?? "The customer" : "Plumber Finder"} cancelled ${ref} (${booking.service} on ${when(booking)}).`, reason)]));
     if (by !== "provider") tasks.push(toProvider({ title: "Booking cancelled", message: withNote(`${by === "customer" ? booking.customerName ?? "The customer" : "Plumber Finder"} cancelled ${ref} (${booking.service} on ${when(booking)}).`, reason) }));
     if (by !== "admin") tasks.push(toAdmins({ title: "Booking cancelled", message: withNote(`${ref} (${booking.service} with ${booking.providerName}) was cancelled by the ${by === "customer" ? "customer" : "plumber"}.`, reason) }));
     if (by === "customer") tasks.push(toCustomer({ title: "Booking cancelled", message: `Your ${booking.service} booking with ${booking.providerName} (${ref}) was cancelled.` }));
