@@ -25,7 +25,7 @@ export type CustomerDetail = { id: string; name?: string; bookings: ProviderBook
 
 export const operationsApi = {
   leads: (params: { stage?: LeadStage; q?: string; cursor?: string | null }) => apiRequest<Lead[]>(`/companies/leads${qs(params)}`, { loginMessage }) as unknown as Promise<LeadsPage>,
-  jobs: (params: { stage?: string; q?: string; cursor?: string | null }) => apiRequest<Job[]>(`/companies/jobs${qs(params)}`, { loginMessage }) as unknown as Promise<JobsPage>,
+  jobs: (params: { stage?: string; q?: string; assignee?: string; cursor?: string | null }) => apiRequest<Job[]>(`/companies/jobs${qs(params)}`, { loginMessage }) as unknown as Promise<JobsPage>,
   job: (id: string) => apiRequest<Job & { notes: JobNote[] }>(`/companies/jobs/${id}`, { loginMessage }),
   addNote: (id: string, body: string) => apiRequest<JobNote>(`/companies/jobs/${id}/notes`, { method: "POST", body: { body }, loginMessage }),
   removeNote: (id: string, noteId: string) => apiRequest(`/companies/jobs/${id}/notes/${noteId}`, { method: "DELETE", loginMessage }),

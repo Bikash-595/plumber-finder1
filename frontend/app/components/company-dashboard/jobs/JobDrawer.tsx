@@ -9,6 +9,7 @@ import StatusPill from "@/components/dashboard/ui/StatusPill";
 import MessageButton from "@/components/messages/MessageButton";
 import { formatMoney } from "../companyApi";
 import { operationsApi, visitDate, type Job, type JobNote } from "../operationsApi";
+import { growthApi, type TeamMember } from "../growthApi";
 import JobNotes from "./JobNotes";
 import { jobStages, stageLabel } from "./jobStages";
 
@@ -20,6 +21,12 @@ export default function JobDrawer({ jobId, onClose, onChanged }: { jobId: string
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [cancelReason, setCancelReason] = useState<string | null>(null);
+  const [team, setTeam] = useState<TeamMember[] | null>(null);
+  useEffect(() => { if (jobId && !team) growthApi.team().then(setTeam).catch(() => setTeam([])); }, [jobId, team]);
+  const assign = async (memberId: string) => {
+    if (!job) return;
+    try { const { data } = await growthApi.assign(job._id, memberId || null); setState((s) => s && { ...s, job: data }); onChanged(); } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not assign."); }
+  };
   useEffect(() => {
     if (!jobId) return;
     let cancelled = false;
@@ -72,7 +79,16 @@ export default function JobDrawer({ jobId, onClose, onChanged }: { jobId: string
             {job.disputeReason && <div className="rounded-xl bg-red-50 p-3 sm:col-span-2"><dt className="text-xs font-semibold uppercase text-red-700">Problem reported</dt><dd className="text-red-900">{job.disputeReason}</dd></div>}
           </dl>
           {job.status === "pending" ? <Link href={`/company-dashboard/bookings?booking=${job._id}`} className="inline-block rounded-full bg-[#0b1f3b] px-4 py-2 text-sm font-bold text-white">Accept or decline this request</Link>
-            : <MessageButton base="/companies" bookingId={job._id} label="Message customer" />}
+            : <div className="flex flex-wrap items-center gap-2"><MessageButton base="/companies" bookingId={job._id} label="Message customer" />{!["completed", "cancelled"].includes(job.status) && <Link href={`/company-dashboard/quotes?booking=${job._id}`} className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-[#0b1f3b] hover:bg-gray-50">Create a quote</Link>}</div>}
+          {job.status !== "pending" && (
+            <label className="block text-sm font-medium text-gray-700">Technician
+              <select value={job.assignedTo?.member ?? ""} onChange={(e) => assign(e.target.value)} disabled={!team} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm">
+                <option value="">Not assigned</option>
+                {team?.map((m) => <option key={m._id} value={m._id}>{m.name}{m.role ? ` — ${m.role}` : ""}</option>)}
+              </select>
+              {team && team.length === 0 && <span className="mt-1 block text-xs text-gray-500"><Link href="/company-dashboard/business-profile/team" className="font-semibold underline">Add your team</Link> to assign jobs.</span>}
+            </label>
+          )}
           <JobNotes jobId={job._id} notes={current!.notes} onChange={(notes) => setState((s) => s && { ...s, notes })} />
           <section>
             <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">History</h3>

@@ -8,6 +8,7 @@ import { Plumber } from "@/components/find/types";
 import { FaCalendarAlt, FaClock, FaWrench, FaCommentDots, FaPhoneAlt, FaMapMarkerAlt } from "react-icons/fa";
 import BookingCoupon from "./BookingCoupon";
 import SavedAddressPicker from "@/components/dashboard/profile/SavedAddressPicker";
+import { useProviderAvailability } from "./useProviderAvailability";
 
 export default function BookingWidget({ plumber }: { plumber: Plumber }) {
   const [selectedDate, setSelectedDate] = useState("");
@@ -23,6 +24,9 @@ export default function BookingWidget({ plumber }: { plumber: Plumber }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ tone: "success" | "error" | "login"; text: string } | null>(null);
   const [highlight, setHighlight] = useState(false);
+  const { availability, minDate, dateProblem } = useProviderAvailability(plumber.providerType, plumber.id);
+  const paused = availability?.acceptingBookings === false;
+  const dateWarning = dateProblem(selectedDate);
 
   // "Book" on a service (Services section) picks it here.
   useEffect(() => {
@@ -42,6 +46,8 @@ export default function BookingWidget({ plumber }: { plumber: Plumber }) {
   // Signed-in customers send a real booking request (it appears in their dashboard); guests are asked to log in.
   const handleBooking = async () => {
     if (!isCustomerSignedIn()) return setResult({ tone: "login", text: "Log in with a customer account to send a booking request." });
+    if (paused) return setResult({ tone: "error", text: availability?.pauseMessage || "They aren't taking new bookings right now." });
+    if (dateWarning) return setResult({ tone: "error", text: dateWarning });
     if (!selectedService) return setResult({ tone: "error", text: "Please choose the service you need." });
     if (!/\d{7,}/.test(phone.replace(/\D/g, ""))) return setResult({ tone: "error", text: "Enter a phone number the plumber can reach you on." });
     if (address.trim().length < 5) return setResult({ tone: "error", text: "Enter the address where the work is needed." });
@@ -70,6 +76,11 @@ export default function BookingWidget({ plumber }: { plumber: Plumber }) {
       <h3 className="text-xl font-bold text-gray-900">📋 Book This Plumber</h3>
       <p className="mt-1 text-sm text-gray-500">Fill in your details and we&apos;ll connect you with {plumber.companyName}.</p>
 
+      {paused && (
+        <p role="status" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <span className="font-semibold">Not taking new bookings right now.</span>{availability?.pauseMessage ? ` ${availability.pauseMessage}` : ""}
+        </p>
+      )}
       <div className="mt-5 space-y-4">
         {/* Service selection */}
         <div>
@@ -97,12 +108,15 @@ export default function BookingWidget({ plumber }: { plumber: Plumber }) {
             <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="date"
-              min={new Date().toISOString().slice(0, 10)}
+              min={minDate}
+              aria-invalid={dateWarning ? true : undefined}
+              aria-describedby={dateWarning ? "booking-date-warning" : undefined}
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="w-full rounded-full border border-gray-300 bg-white pl-10 pr-4 py-2 text-gray-900 placeholder-gray-400 focus:border-[#FFD60A] focus:ring-1 focus:ring-[#FFD60A]"
             />
           </div>
+          {dateWarning && <p id="booking-date-warning" className="mt-1 text-xs text-red-600">{dateWarning}</p>}
         </div>
 
         {/* Time */}
@@ -165,7 +179,7 @@ export default function BookingWidget({ plumber }: { plumber: Plumber }) {
         <button
           type="button"
           onClick={handleBooking}
-          disabled={busy}
+          disabled={busy || paused}
           className="w-full rounded-full bg-gradient-to-r from-[#FFD60A] to-[#B1A606] py-3 font-semibold text-[#0b1f3b] shadow-md transition hover:brightness-105 hover:shadow-lg active:scale-[0.98] disabled:opacity-60"
         >
           {busy ? "Sending…" : "Send Request →"}

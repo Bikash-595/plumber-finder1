@@ -9,6 +9,7 @@ import SearchBox from "@/components/dashboard/ui/SearchBox";
 import { SkeletonRows } from "@/components/dashboard/ui/Skeleton";
 import { toneClasses } from "@/components/dashboard/ui/tones";
 import { useCompanyData } from "../companyApi";
+import { growthApi } from "../growthApi";
 import { operationsApi, type JobsPage } from "../operationsApi";
 import JobCard from "./JobCard";
 import JobDrawer from "./JobDrawer";
@@ -19,8 +20,10 @@ export default function CompanyJobs() {
   const [q, setQ] = useState("");
   const [view, setView] = useState<"board" | "cancelled">("board");
   const [open, setOpen] = useState<string | null>(null);
-  const key = `company-jobs-${view}-${q}`;
-  const { data, error, loading, reload } = useCompanyData<JobsPage>(key, () => operationsApi.jobs({ q, stage: view === "cancelled" ? "cancelled" : undefined }));
+  const [assignee, setAssignee] = useState("");
+  const key = `company-jobs-${view}-${q}-${assignee}`;
+  const { data, error, loading, reload } = useCompanyData<JobsPage>(key, () => operationsApi.jobs({ q, assignee, stage: view === "cancelled" ? "cancelled" : undefined }));
+  const team = useCompanyData("company-team", growthApi.team).data;
   const onSearch = useCallback((value: string) => setQ(value), []);
   const jobs = data?.data ?? [];
 
@@ -31,7 +34,17 @@ export default function CompanyJobs() {
           <button type="button" aria-pressed={view === "board"} onClick={() => setView("board")} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 ${view === "board" ? "bg-[#0b1f3b] text-white" : "text-gray-600"}`}><FaColumns className="h-3 w-3" />Board</button>
           <button type="button" aria-pressed={view === "cancelled"} onClick={() => setView("cancelled")} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 ${view === "cancelled" ? "bg-[#0b1f3b] text-white" : "text-gray-600"}`}><FaList className="h-3 w-3" />Cancelled{data?.counts ? ` (${data.counts.cancelled})` : ""}</button>
         </div>} />
-      <SearchBox label="Search jobs" placeholder="Customer, service, address or BK- code" value={q} onChange={onSearch} />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <SearchBox label="Search jobs" placeholder="Customer, service, address or BK- code" value={q} onChange={onSearch} />
+        {!!team?.length && (
+          <label className="flex items-center gap-2 text-sm text-gray-600">Technician
+            <select value={assignee} onChange={(e) => setAssignee(e.target.value)} className="rounded-full border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800">
+              <option value="">Everyone</option><option value="none">Not assigned</option>
+              {team.map((m) => <option key={m._id} value={m._id}>{m.name}</option>)}
+            </select>
+          </label>
+        )}
+      </div>
       <Notice>{error}</Notice>
 
       {loading ? <SkeletonRows rows={2} className="h-40" /> : jobs.length === 0 ? (

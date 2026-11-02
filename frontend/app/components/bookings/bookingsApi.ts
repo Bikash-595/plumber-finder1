@@ -31,6 +31,7 @@ export type ProviderBooking = {
   source: "request" | "checkout";
   responseNote?: string;
   disputeReason?: string;
+  assignedTo?: { member: string; name: string; photo?: string };
   completionConfirmedBy?: "customer" | "admin" | "system";
   history: BookingHistory[];
   createdAt: string;

@@ -1,4 +1,5 @@
 import { announce, applyStatus, newBookingFields } from "../../../shared/bookings/bookingWorkflow.js";
+import { availabilityProblem } from "../../../company/availability/services/checkAvailability.js";
 import { quoteBooking } from "../../../shared/bookings/bookingQuote.js";
 import { countsByStatus, findPage, pageParams, textFilter, toObjectId } from "../../shared/paginate.js";
 import { bookingsConfig } from "../config/bookingsConfig.js";
@@ -31,6 +32,11 @@ export const bookingsController = {
   create: async (req, res, next) => {
     try {
       const fields = await newBookingFields(req.auth.sub, req.validated.providerType, req.validated.providerId);
+      // The company's availability: paused, days off, minimum notice, daily job limit.
+      if (req.validated.providerType === "company") {
+        const unavailable = await availabilityProblem(fields.providerAccount, req.validated.scheduledDate);
+        if (unavailable) return res.status(409).json({ message: unavailable, errors: { scheduledDate: unavailable } });
+      }
       // The price and any coupon are worked out here, never taken from the browser.
       const { couponCode, ...request } = req.validated;
       const quote = await quoteBooking({ providerType: request.providerType, providerId: request.providerId, service: request.service, couponCode });

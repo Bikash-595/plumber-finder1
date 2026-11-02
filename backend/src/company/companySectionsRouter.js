@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { companyAnalyticsRouter } from "./analytics/routers/analyticsRouter.js";
 import { blogsRouter } from "./blogs/routers/blogsRouter.js";
+import { companyAvailabilityRouter } from "./availability/routers/availabilityRouter.js";
+import { companyQuotesRouter } from "./quotes/routers/quotesRouter.js";
+import { companySavedRepliesRouter } from "./saved-replies/routers/savedRepliesRouter.js";
 import { companyCustomersRouter } from "./customers/routers/customersRouter.js";
 import { companyJobsRouter } from "./jobs/routers/jobsRouter.js";
 import { companyLeadsRouter } from "./leads/routers/leadsRouter.js";
@@ -55,6 +58,10 @@ export const companySections = [
   { path: "/schedule", router: companyScheduleRouter },
   { path: "/customers", router: companyCustomersRouter },
   { path: "/messages", router: companyMessagesRouter },
+  // Growth tools: quotes, availability, saved replies.
+  { path: "/quotes", router: companyQuotesRouter },
+  { path: "/availability", router: companyAvailabilityRouter },
+  { path: "/saved-replies", router: companySavedRepliesRouter },
 ];
 
 export const companySectionsRouter = Router();

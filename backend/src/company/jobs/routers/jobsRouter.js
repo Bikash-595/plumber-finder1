@@ -7,6 +7,8 @@ import { validateNote } from "../middleware/validateNote.js";
 export const companyJobsRouter = Router();
 companyJobsRouter.use(requireJobsAccess);
 companyJobsRouter.get("/", jobsController.list);
+companyJobsRouter.get("/team", jobsController.team);
 companyJobsRouter.get("/:id", jobsController.getOne);
+companyJobsRouter.patch("/:id/assign", jobsController.assign);
 companyJobsRouter.post("/:id/notes", validateNote, jobsController.addNote);
 companyJobsRouter.delete("/:id/notes/:noteId", jobsController.removeNote);

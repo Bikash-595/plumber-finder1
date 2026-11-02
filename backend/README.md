@@ -168,6 +168,14 @@ Everything people do with a company or freelancer is stored in `profile_activity
 - `GET /api/companies/customers?q=&sort=recent|bookings|spent|name&page=` — one row per customer with bookings, spend and dates; phone and email only once the company accepted one of their bookings. `GET /:id` — their bookings and reviews.
 - **Messages** (`shared/messages`, collections `conversations` and `messages`): one conversation per booking between the customer and the plumber — `/api/users/messages`, `/api/companies/messages`, `/api/freelancers/messages`: `GET /` (inbox + unread), `POST / { bookingId }` (open), `GET /:id?before=` (thread), `POST /:id { body }` (≤ 2000 chars, 30 a minute), `PATCH /:id/read`. Only the two participants can read or write; not available for declined bookings; one notification per burst of messages.
 
+## Company growth tools: quotes, availability, saved replies, technicians
+
+- **Quotes** (`src/company/quotes`, collection `quotes`): `GET /api/companies/quotes?status=draft|sent|accepted|declined|withdrawn&q=&cursor=` (with counts, open/won value and acceptance rate), `GET /:id`, `POST / { bookingId, title?, items[{ description, quantity, unitPrice }], discount?, taxRate? (≤ 25), notes?, validUntil?, send? }`, `PATCH /:id` (drafts only), `POST /:id/send`, `POST /:id/withdraw`, `DELETE /:id` (drafts only). Totals are always computed on the server; a quote past `validUntil` reads as `expired`.
+- Customers: `GET /api/users/quotes?bookingId=` (sent and answered quotes only), `POST /:id/accept` (the total becomes the booking price, other open quotes for the booking are withdrawn), `POST /:id/decline { reason? }`. Both sides are notified.
+- **Availability** (`src/company/availability`, collection `company_availability`): `GET`/`PUT /api/companies/availability { acceptingBookings, pauseMessage, maxJobsPerDay, minNoticeDays, timeOff[{ start, end, reason }] }`; public `GET /api/companies/availability/public/:listingId` (no reasons, blocked days for the next 90 days). New booking requests to a company are refused with 409 when paused, on a day off, inside the notice period, or when the day is full.
+- **Saved replies** (`src/company/saved-replies`): `GET`/`POST /api/companies/saved-replies`, `PATCH`/`DELETE /:id` — up to 50 message templates per company, inserted from the message box.
+- **Technicians**: `GET /api/companies/jobs/team`, `PATCH /api/companies/jobs/:id/assign { memberId | null }` (must be the company's own team member); `GET /api/companies/jobs?assignee=<id>|none`. The customer sees the assigned plumber's name on their booking.
+
 ## Reviews (`src/reviews` + a `reviews/` folder in each area)
 
 Three sources, never mixed into one score:

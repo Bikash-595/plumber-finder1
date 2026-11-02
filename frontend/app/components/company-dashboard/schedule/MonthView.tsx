@@ -5,7 +5,7 @@ import EventChip from "./EventChip";
 const names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 /** A month grid: up to 3 jobs per day, then "+N more" (which opens the week). */
-export default function MonthView({ days, month, byDay, onOpen, onDay }: { days: Date[]; month: number; byDay: Map<string, ScheduleItem[]>; onOpen: (item: ScheduleItem) => void; onDay: (day: Date) => void }) {
+export default function MonthView({ days, month, byDay, blocked, onOpen, onDay }: { days: Date[]; month: number; byDay: Map<string, ScheduleItem[]>; blocked: Set<string>; onOpen: (item: ScheduleItem) => void; onDay: (day: Date) => void }) {
   const today = iso(todayUtc());
   return (
     <div className="overflow-x-auto">
@@ -16,7 +16,7 @@ export default function MonthView({ days, month, byDay, onOpen, onDay }: { days:
           const items = byDay.get(key) ?? [];
           const outside = day.getUTCMonth() !== month;
           return (
-            <div key={key} className={`min-h-28 p-1.5 ${outside ? "bg-gray-50" : "bg-white"}`}>
+            <div key={key} className={`min-h-28 p-1.5 ${blocked.has(key) ? "bg-[repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6_6px,#fff_6px,#fff_12px)]" : outside ? "bg-gray-50" : "bg-white"}`} title={blocked.has(key) ? "Day off" : undefined}>
               <button type="button" onClick={() => onDay(day)} className={`mb-1 grid h-6 w-6 place-items-center rounded-full text-xs font-semibold ${key === today ? "bg-[#0b1f3b] text-white" : outside ? "text-gray-400" : "text-gray-700 hover:bg-gray-100"}`} aria-label={`Open week of ${key}`}>{day.getUTCDate()}</button>
               <div className="space-y-1">
                 {items.slice(0, 3).map((item) => <EventChip key={item._id} item={item} compact onOpen={() => onOpen(item)} />)}

@@ -101,7 +101,7 @@ function BookingsViewContent({ initialSearch }: { initialSearch: string }) {
           action={search || filter !== "all" ? undefined : { label: "Find a plumber", href: "/find" }} />
       ) : (
         <div className="space-y-4">
-          {list.items.map((booking) => <BookingCard key={booking._id} booking={booking} busy={busyId === booking._id} onCancel={setCancelling} onConfirm={confirm} onDispute={setDisputing} />)}
+          {list.items.map((booking) => <BookingCard key={booking._id} booking={booking} busy={busyId === booking._id} onCancel={setCancelling} onConfirm={confirm} onDispute={setDisputing} onRefresh={list.reload} />)}
           <LoadMore hasMore={list.hasMore} loading={list.loadingMore} onClick={list.loadMore} shown={list.items.length} noun="bookings" />
         </div>
       )}

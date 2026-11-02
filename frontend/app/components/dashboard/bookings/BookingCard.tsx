@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { FaCalendarAlt, FaChevronDown, FaClock, FaMapMarkerAlt, FaPhoneAlt, FaTag } from "react-icons/fa";
 import MessageButton from "@/components/messages/MessageButton";
+import BookingQuotes from "./BookingQuotes";
 import { formatDate, formatMoney, type Booking } from "@/components/utils/userApi";
 import StatusPill from "../ui/StatusPill";
 import BookingTimeline from "./BookingTimeline";
@@ -12,9 +13,9 @@ import { bookingStatus, bookingTotal, canCancel } from "./bookingStatus";
 const providerHref = (booking: Booking) => `/plumber/${encodeURIComponent(booking.providerId)}`;
 
 /** One booking: who, what, when, price and status, with details and the timeline on demand. */
-type Props = { booking: Booking; busy: boolean; onCancel: (booking: Booking) => void; onConfirm: (booking: Booking) => void; onDispute: (booking: Booking) => void };
+type Props = { booking: Booking; busy: boolean; onCancel: (booking: Booking) => void; onConfirm: (booking: Booking) => void; onDispute: (booking: Booking) => void; onRefresh?: () => void };
 
-export default function BookingCard({ booking, busy, onCancel, onConfirm, onDispute }: Props) {
+export default function BookingCard({ booking, busy, onCancel, onConfirm, onDispute, onRefresh }: Props) {
   const [open, setOpen] = useState(false);
   const status = bookingStatus[booking.status];
   const total = bookingTotal(booking);
@@ -29,6 +30,7 @@ export default function BookingCard({ booking, busy, onCancel, onConfirm, onDisp
           </div>
           <h3 className="mt-2 text-lg font-bold text-gray-900">{booking.service}{booking.quantity > 1 ? ` × ${booking.quantity}` : ""}</h3>
           <Link href={providerHref(booking)} className="text-sm font-semibold text-[#0b1f3b] hover:underline">{booking.providerName}</Link>
+          {booking.assignedTo?.name && <p className="text-xs text-gray-600">Your plumber: <span className="font-semibold text-gray-900">{booking.assignedTo.name}</span></p>}
           <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-gray-600">
             <li className="flex items-center gap-1.5"><FaCalendarAlt className="h-3.5 w-3.5 text-[#b39200]" />{booking.scheduledDate ? formatDate(booking.scheduledDate) : "Date to be confirmed"}</li>
             {booking.timeSlot && <li className="flex items-center gap-1.5"><FaClock className="h-3.5 w-3.5 text-[#b39200]" />{booking.timeSlot}</li>}
@@ -47,6 +49,7 @@ export default function BookingCard({ booking, busy, onCancel, onConfirm, onDisp
         </div>
       </div>
 
+      {!["declined", "cancelled"].includes(booking.status) && <BookingQuotes bookingId={booking._id} onAccepted={() => onRefresh?.()} />}
       {booking.status === "awaiting_confirmation" && (
         <div className="mx-5 mb-4 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 sm:mx-6">
           <p className="text-sm font-semibold text-violet-900">{booking.providerName} says the job is done. Is everything finished?</p>

@@ -56,6 +56,8 @@ const userBookingSchema = new mongoose.Schema({
   invoice: { type: mongoose.Schema.Types.ObjectId, ref: "UserInvoice" },
   // The plumber's (or admin's) latest message to the customer: confirmation note, decline or cancel reason.
   responseNote: { type: String, trim: true, maxlength: 500 },
+  // The company's team member doing the job (the customer sees the name: "Your plumber: Chris").
+  assignedTo: { member: { type: mongoose.Schema.Types.ObjectId }, name: { type: String, maxlength: 120 }, photo: { type: String, maxlength: 2048 } },
   acceptedAt: { type: Date },
   declinedAt: { type: Date },
   completedAt: { type: Date },
@@ -78,6 +80,8 @@ userBookingSchema.index({ user: 1, createdAt: -1 });
 userBookingSchema.index({ providerType: 1, providerAccount: 1, status: 1, createdAt: -1 });
 // Company/freelancer dashboards and analytics: requests by date, completed jobs by completion date.
 userBookingSchema.index({ providerType: 1, providerAccount: 1, createdAt: -1 });
+// Daily job limits (availability) and the calendar.
+userBookingSchema.index({ providerType: 1, providerAccount: 1, scheduledDate: 1 });
 userBookingSchema.index({ providerType: 1, providerAccount: 1, status: 1, completedAt: -1 });
 // The scheduler's auto-confirm sweep.
 userBookingSchema.index({ status: 1, completionRequestedAt: 1 });

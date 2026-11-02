@@ -30,7 +30,7 @@ export type CartItem = ProviderRef & { _id: string; providerName: string; name: 
 export type CartSummary = { itemCount: number; subtotal: number; promoCode: string | null; discountPercent: number; discount: number; taxRate: number; tax: number; total: number };
 export type Cart = { items: CartItem[]; summary: CartSummary };
 export type BookingHistoryEntry = { status: Booking["status"]; by: "customer" | "provider" | "admin" | "system"; note?: string; at: string };
-export type Booking = ProviderRef & { _id: string; reference?: string; couponCode?: string; couponLabel?: string; originalPrice?: number; discountAmount?: number; responseNote?: string; history?: BookingHistoryEntry[]; acceptedAt?: string; providerName: string; service: string; quantity: number; price?: number; scheduledDate?: string; timeSlot?: string; address?: string; phone?: string; details?: string; status: "pending" | "scheduled" | "in_progress" | "awaiting_confirmation" | "completed" | "disputed" | "cancelled" | "declined"; source: "request" | "checkout"; disputeReason?: string; completionRequestedAt?: string; completedAt?: string; createdAt: string };
+export type Booking = ProviderRef & { _id: string; reference?: string; couponCode?: string; couponLabel?: string; originalPrice?: number; discountAmount?: number; responseNote?: string; history?: BookingHistoryEntry[]; acceptedAt?: string; providerName: string; service: string; quantity: number; price?: number; scheduledDate?: string; timeSlot?: string; address?: string; phone?: string; details?: string; status: "pending" | "scheduled" | "in_progress" | "awaiting_confirmation" | "completed" | "disputed" | "cancelled" | "declined"; source: "request" | "checkout"; disputeReason?: string; assignedTo?: { name: string; photo?: string }; completionRequestedAt?: string; completedAt?: string; createdAt: string };
 export type Notification = { _id: string; type: "booking" | "order" | "offer" | "comment" | "review" | "system"; title: string; message?: string; link?: string; read: boolean; createdAt: string };
 export type Invoice = { _id: string; number: string; items: { name: string; providerName?: string; quantity: number; price: number }[]; subtotal: number; discount: number; tax: number; total: number; promoCode?: string; status: "pending" | "paid" | "cancelled" | "refunded"; dueDate?: string; createdAt: string };
 export type PaymentMethod = { _id: string; brand: "visa" | "mastercard" | "amex" | "discover" | "other"; last4: string; expMonth: number; expYear: number; holderName?: string; label?: string; isDefault: boolean };
@@ -70,6 +70,8 @@ export type AddressInput = Omit<Address, "_id" | "isDefault"> & { isDefault?: bo
 export const formatAddress = (a: Pick<Address, "line1" | "line2" | "city" | "state" | "zipCode">) => [a.line1, a.line2, a.city, [a.state, a.zipCode].filter(Boolean).join(" ")].filter(Boolean).join(", ");
 export type MyReview = { _id: string; source: "directory" | "verified_booking"; rating: number; title: string; body: string; serviceCategory?: string; photos: string[]; verified?: boolean; createdAt: string; edited?: boolean; reply: { body: string; createdAt: string } | null; status: "published" | "pending" | "hidden" | "rejected"; moderation?: { reason?: string } | null; bookingReference?: string | null; providerType: ProviderRef["providerType"]; providerId: string; providerName: string };
 /** A completed booking the customer hasn't reviewed yet (and, for /requests, when we asked). */
+/** A quote a plumber sent for one of the customer's bookings. */
+export type CustomerQuote = { _id: string; number: string; booking: string; bookingReference?: string; providerName?: string; title?: string; items: { description: string; quantity: number; unitPrice: number; amount: number }[]; subtotal: number; discount: number; taxRate: number; tax: number; total: number; notes?: string; validUntil?: string; status: "sent" | "accepted" | "declined" | "withdrawn" | "expired"; createdAt: string };
 export type EligibleBooking = ProviderRef & { _id: string; reference: string; providerName: string; service: string; completedAt?: string; requestedAt?: string; reminders?: number };
 
 /** One page of a long list (newest first). Pass `nextCursor` back as `cursor` for the next page; null means no more. */
@@ -141,6 +143,9 @@ export const userApi = {
   bookingsPage: (params: { status?: Booking["status"]; q?: string; providerType?: string; providerId?: string; cursor?: string | null; limit?: number } = {}) => page<Booking, BookingPageExtra>("/bookings", params),
   requestBooking: (body: ProviderRef & { providerName: string; service: string; scheduledDate?: string; timeSlot?: string; address?: string; phone?: string; details?: string; offer?: string; couponCode?: string }) => mutate<Booking>("/bookings", { method: "POST", body }),
   cancelBooking: (id: string, reason?: string) => mutate<Booking>(`/bookings/${id}/cancel`, { method: "PATCH", body: { reason } }),
+  quotes: (bookingId?: string) => call<CustomerQuote[]>(`/quotes${query({ bookingId })}`),
+  acceptQuote: (id: string) => mutate<CustomerQuote>(`/quotes/${id}/accept`, { method: "POST" }),
+  declineQuote: (id: string, reason?: string) => mutate<CustomerQuote>(`/quotes/${id}/decline`, { method: "POST", body: { reason } }),
   confirmBooking: (id: string) => mutate<Booking>(`/bookings/${id}/confirm`, { method: "PATCH" }),
   disputeBooking: (id: string, reason: string) => mutate<Booking>(`/bookings/${id}/dispute`, { method: "PATCH", body: { reason } }),
 

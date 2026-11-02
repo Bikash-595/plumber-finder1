@@ -50,6 +50,9 @@ export const companyNavSections: { label: string; items: CompanyNavItem[] }[] = 
       { label: "Schedule", href: "/company-dashboard/schedule", icon: FaCalendarAlt },
       { label: "Messages", href: "/company-dashboard/messages", icon: FaCommentDots },
       { label: "Customers", href: "/company-dashboard/customers", icon: FaUsers },
+      { label: "Quotes", href: "/company-dashboard/quotes", icon: FaFileInvoiceDollar },
+      { label: "Availability", href: "/company-dashboard/availability", icon: FaClock },
+      { label: "Saved Replies", href: "/company-dashboard/saved-replies", icon: FaCommentDots },
     ],
   },
   {

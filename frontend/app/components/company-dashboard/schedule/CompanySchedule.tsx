@@ -7,12 +7,13 @@ import PageHeader from "@/components/dashboard/ui/PageHeader";
 import { Skeleton } from "@/components/dashboard/ui/Skeleton";
 import { useCompanyData } from "../companyApi";
 import JobDrawer from "../jobs/JobDrawer";
+import { growthApi } from "../growthApi";
 import { operationsApi, type ScheduleItem } from "../operationsApi";
 import { addDays, iso, label, rangeFor, todayUtc } from "./dates";
 import MonthView from "./MonthView";
 import WeekView from "./WeekView";
 
-const legend = [["bg-blue-400", "Scheduled"], ["bg-violet-400", "In progress"], ["bg-amber-400", "Waiting for customer"], ["bg-emerald-500", "Completed"], ["border-2 border-dashed border-amber-400", "Request (not accepted)"]];
+const legend = [["bg-[repeating-linear-gradient(45deg,#e5e7eb,#e5e7eb_2px,#fff_2px,#fff_5px)] border border-gray-300", "Day off"], ["bg-blue-400", "Scheduled"], ["bg-violet-400", "In progress"], ["bg-amber-400", "Waiting for customer"], ["bg-emerald-500", "Completed"], ["border-2 border-dashed border-amber-400", "Request (not accepted)"]];
 
 /** /company-dashboard/schedule — your jobs on a week or month calendar. */
 export default function CompanySchedule() {
@@ -22,6 +23,9 @@ export default function CompanySchedule() {
   const { from, days } = rangeFor(view, anchor);
   const to = days.at(-1)!;
   const { data, error, loading, reload } = useCompanyData(`company-schedule-${iso(from)}-${iso(to)}`, () => operationsApi.schedule(iso(from), iso(to)).then((r) => r.data));
+  const availability = useCompanyData("company-availability", growthApi.availability).data;
+  const blocked = new Set<string>();
+  for (const period of availability?.timeOff ?? []) for (let t = new Date(period.start.slice(0, 10)).getTime(); t <= new Date(period.end.slice(0, 10)).getTime(); t += 864e5) blocked.add(new Date(t).toISOString().slice(0, 10));
   const byDay = new Map<string, ScheduleItem[]>();
   for (const item of data?.items ?? []) { const key = item.scheduledDate.slice(0, 10); byDay.set(key, [...(byDay.get(key) ?? []), item]); }
   const step = (direction: number) => setAnchor(view === "week" ? addDays(anchor, 7 * direction) : new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + direction, 1)));
@@ -48,8 +52,8 @@ export default function CompanySchedule() {
       </div>
       <Notice>{error}</Notice>
       {loading && !data ? <Skeleton className="h-80 rounded-2xl" /> : view === "week"
-        ? <WeekView days={days} byDay={byDay} hours={data?.hours ?? null} onOpen={(item) => setOpen(item._id)} />
-        : <MonthView days={days} month={anchor.getUTCMonth()} byDay={byDay} onOpen={(item) => setOpen(item._id)} onDay={(day) => { setAnchor(day); setView("week"); }} />}
+        ? <WeekView days={days} byDay={byDay} hours={data?.hours ?? null} blocked={blocked} onOpen={(item) => setOpen(item._id)} />
+        : <MonthView days={days} month={anchor.getUTCMonth()} byDay={byDay} blocked={blocked} onOpen={(item) => setOpen(item._id)} onDay={(day) => { setAnchor(day); setView("week"); }} />}
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600" aria-label="Legend">{legend.map(([dot, text]) => <li key={text} className="flex items-center gap-1.5"><span className={`h-2.5 w-2.5 rounded-full ${dot}`} />{text}</li>)}</ul>
       <JobDrawer jobId={open} onClose={() => setOpen(null)} onChanged={reload} />
     </div>

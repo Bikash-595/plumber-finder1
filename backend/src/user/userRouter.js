@@ -7,6 +7,7 @@ import { compareRouter } from "./compare/routers/compareRouter.js";
 import { dashboardRouter } from "./dashboard/routers/dashboardRouter.js";
 import { invoicesRouter } from "./invoices/routers/invoicesRouter.js";
 import { messagesRouter } from "./messages/routers/messagesRouter.js";
+import { quotesRouter } from "./quotes/routers/quotesRouter.js";
 import { notificationsRouter } from "./notifications/routers/notificationsRouter.js";
 import { paymentMethodsRouter } from "./payment-methods/routers/paymentMethodsRouter.js";
 import { profileRouter } from "./profile/routers/profileRouter.js";
@@ -30,6 +31,7 @@ export const userSections = [
   { path: "/notifications", router: notificationsRouter },
   { path: "/reviews", router: reviewsRouter },
   { path: "/messages", router: messagesRouter },
+  { path: "/quotes", router: quotesRouter },
   { path: "/invoices", router: invoicesRouter },
   { path: "/payment-methods", router: paymentMethodsRouter },
 ];

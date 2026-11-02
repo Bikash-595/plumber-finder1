@@ -10,6 +10,7 @@ export default function JobCard({ job, onOpen }: { job: Job; onOpen: () => void 
       <p className="truncate text-xs text-gray-600">{job.customerName ?? "Customer"}<span className="font-mono text-gray-400"> · {job.reference}</span></p>
       <p className="mt-2 flex items-center gap-1.5 text-xs text-gray-500"><FaCalendarAlt className="h-3 w-3 shrink-0" />{visitDate(job.scheduledDate)}{job.timeSlot ? ` · ${job.timeSlot}` : ""}</p>
       {job.address && <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-gray-500"><FaMapMarkerAlt className="h-3 w-3 shrink-0" /><span className="truncate">{job.address}</span></p>}
+      {job.assignedTo?.name && <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700"><span className="grid h-4 w-4 place-items-center rounded-full bg-[#0b1f3b] text-[9px] text-white">{job.assignedTo.name.slice(0, 1)}</span>{job.assignedTo.name}</p>}
       {job.price ? <p className="mt-2 text-sm font-bold tabular-nums text-gray-900">{formatMoney(job.price * (job.quantity ?? 1))}</p> : null}
     </button>
   );
