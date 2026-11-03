@@ -2,7 +2,7 @@ import { serviceSectionIds as ids } from "./sectionIds";
 
 /** Jump links to the sections this service has (scrolls sideways on phones). */
 export default function ServiceSectionNav({ sections }: { sections: (keyof typeof ids)[] }) {
-  const labels: Record<keyof typeof ids, string> = { facts: "At a glance", overview: "About", process: "How it works", pricing: "Pricing", why: "Why us", areas: "Areas covered", booking: "Booking", faqs: "FAQs" };
+  const labels: Record<keyof typeof ids, string> = { facts: "At a glance", overview: "About", problems: "Signs you need it", process: "How it works", pricing: "Pricing", why: "Why us", prepare: "Before your visit", areas: "Areas covered", faqs: "FAQs" };
   return (
     <nav aria-label="On this page" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {sections.map((key) => (

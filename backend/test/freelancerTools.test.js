@@ -121,3 +121,20 @@ describe("freelancer profile: contact, map, documents, service pages", () => {
     assert.deepEqual([page.overview, page.videos.length, page.price], ["Quick, tidy leak fixes.", 1, "From $99"]);
   });
 });
+
+describe("booking time windows", () => {
+  test("providers set their own windows; requests must use one of them", async () => {
+    const fl = await newFreelancer();
+    const customer = await newCustomer();
+    const ask = (timeSlot) => api("POST", "/api/users/bookings", { token: customer.token, body: { providerType: "freelancer", providerId: fl.id, providerName: fl.name, service: "Leak repair", scheduledDate: day(7), timeSlot } });
+    assert.equal((await ask("8:00 AM – 10:00 AM")).status, 201, "standard windows until the provider sets its own");
+    assert.equal((await ask("Midnight")).status, 400);
+    assert.equal((await api("PUT", "/api/freelancers/booking", { token: fl.token, body: { slots: ["Early morning"] } })).status, 400, "windows must look like a time range");
+    assert.equal((await api("PUT", "/api/freelancers/booking", { token: fl.token, body: { slots: ["7:00 AM – 9:00 AM", "6:00 PM – 8:00 PM"] } })).status, 200);
+    assert.equal((await ask("8:00 AM – 10:00 AM")).status, 400, "not one of theirs any more");
+    assert.equal((await ask("6:00 PM – 8:00 PM")).status, 201);
+    assert.equal((await ask(undefined)).status, 201, "no time chosen is fine");
+    const profile = (await api("GET", `/api/freelancers/public/${fl.id}/profile`)).body.data;
+    assert.deepEqual(profile.booking.slots, ["7:00 AM – 9:00 AM", "6:00 PM – 8:00 PM"]);
+  });
+});

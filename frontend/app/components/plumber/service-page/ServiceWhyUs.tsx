@@ -15,10 +15,15 @@ export default function ServiceWhyUs({ plumber, service }: { plumber: Plumber; s
     service.warranty && { icon: FaTools, title: "Work guaranteed", text: service.warranty },
     reply && { icon: FaReply, title: "Quick to reply", text: `Usually replies ${reply.toLowerCase().startsWith("within") ? reply.toLowerCase() : `in ${reply}`}.` },
   ].filter(Boolean) as { icon: typeof FaAward; title: string; text: string }[];
-  if (!reasons.length) return null;
+  if (!reasons.length && !service.highlights.length) return null;
   return (
     <section id={serviceSectionIds.why} aria-labelledby="why-heading" className="scroll-mt-24 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7">
       <h2 id="why-heading" className="text-xl font-extrabold text-[#0b1f3b] sm:text-2xl">Why choose {plumber.companyName}</h2>
+      {service.highlights.length > 0 && (
+        <ul className="mt-4 space-y-2">
+          {service.highlights.map((item) => <li key={item} className="flex items-start gap-2.5 rounded-2xl bg-[#FFD60A]/10 px-4 py-3 text-sm font-semibold text-gray-900"><FaStar className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#a68600]" aria-hidden />{item}</li>)}
+        </ul>
+      )}
       <ul className="mt-4 grid gap-3 sm:grid-cols-2">
         {reasons.map(({ icon: Icon, title, text }) => (
           <li key={title} className="flex items-start gap-3 rounded-2xl border border-gray-100 p-4">

@@ -13,7 +13,7 @@ export const bookingConfig = {
     { name: "approvalRequired", label: "Approval Required", type: "checkbox" },
     { name: "emergencyBooking", label: "Emergency Booking", type: "checkbox" },
     { name: "workingDays", label: "Working Days" },
-    { name: "timeSlots", label: "Time Slots" },
+    { name: "timeSlots", label: "Timing notes (optional)", placeholder: "e.g. Evening visits on request" },
     { name: "cancellationPolicy", label: "Cancellation Policy", type: "textarea" },
   ] satisfies ProfileField[],
 };

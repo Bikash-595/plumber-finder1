@@ -1,4 +1,5 @@
 import type { Plumber } from "./types";
+import { premiumFirst } from "@/components/premium/directoryRank";
 
 export type Point = { lat: number; lng: number };
 
@@ -65,13 +66,14 @@ export function distanceLabel(plumber: Plumber, from: Point | null): string | nu
 }
 
 /** Nearest first when the visitor's location is known (plumbers with no known location go last); otherwise unchanged. */
+/** Directory order: premium plans first (Premium Plus, then Premium), then nearest first within each group. */
 export function sortByDistance<T extends Plumber>(plumbers: T[], from: Point | null): T[] {
-  if (!from) return plumbers;
-  return plumbers
+  if (!from) return premiumFirst(plumbers);
+  return premiumFirst(plumbers
     .map((plumber, index) => {
       const where = plumberPoint(plumber);
       return { plumber, index, miles: where ? milesBetween(from, where.point) : Number.POSITIVE_INFINITY };
     })
     .sort((a, b) => a.miles - b.miles || a.index - b.index)
-    .map(({ plumber }) => plumber);
+    .map(({ plumber }) => plumber));
 }

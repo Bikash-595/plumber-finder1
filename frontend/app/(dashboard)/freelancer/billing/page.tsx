@@ -1,5 +1,6 @@
-import BillingSection from "@/components/company-dashboard/sections/BillingSection";
+import { redirect } from "next/navigation";
 
-export default function FreelancerBillingPage() {
-  return <BillingSection />;
+/** Billing lives on the Premium & Billing page. */
+export default function BillingPage() {
+  redirect("/freelancer/premium");
 }

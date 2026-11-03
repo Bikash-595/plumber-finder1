@@ -238,6 +238,7 @@ import { plumberHref } from "@/components/find/companyListing";
 import { distanceLabel } from "./distance";
 import { useUserLocation } from "./useUserLocation";
 import CardExtras from "./CardExtras";
+import PremiumBadge, { premiumCardClass } from "@/components/premium/PremiumBadge";
 
 interface Props {
   plumbers: Plumber[];
@@ -253,7 +254,7 @@ export default function PlumberCardList({ plumbers }: Props) {
         <Link
           key={plumber.id}
           href={plumberHref(plumber)}
-          className="block rounded-2xl border border-gray-200 bg-white p-5 transition hover:shadow-md"
+          className={`block rounded-2xl border bg-white p-5 transition hover:shadow-md ${premiumCardClass(plumber.premiumTier)}`}
         >
           <div className="flex flex-col sm:flex-row gap-5">
             {/* Company Logo */}
@@ -274,6 +275,7 @@ export default function PlumberCardList({ plumbers }: Props) {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-lg font-bold text-gray-900">{plumber.companyName}</h3>
                     {plumber.isVerified && <FaCheckCircle className="h-4 w-4 text-[#FFD60A]" />}
+                    <PremiumBadge tier={plumber.premiumTier} />
                     {plumber.discount && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
                         <FaTag className="h-2 w-2" /> {plumber.discount}

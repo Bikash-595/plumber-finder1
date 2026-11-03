@@ -190,6 +190,18 @@ Freelancers get the company dashboard's tools under `/api/freelancers/…`, each
 
 The controllers are shared with companies: they take the account type from the signed-in token, and `src/shared/business/sides.js` says where each type keeps its records (account, listing, opening hours, settings, availability). Freelancer-only models: `freelancer_settings`, `freelancer_availability`, `freelancer_saved_replies`, `freelancer_contact`, `freelancer_location`, `freelancer_verification`.
 
+## Premium plans (`src/premium`)
+
+Companies and freelancers can pay monthly or yearly for **Premium** or **Premium Plus**: a badge on their card and profile, and a higher directory position (Premium Plus first, then Premium, then free). Plans and prices are in `premium/config/plans.js` (cents, USD; companies $49 / $99, freelancers $29 / $59 a month; yearly = 10 months).
+
+- Account: `GET /api/companies|freelancers/premium` (plans, current plan, billing history), `POST /checkout { plan, interval }` (Stripe Checkout URL), `POST /request { plan, interval, note? }` (manual mode), `POST /cancel` (stop renewing / withdraw request), `POST /resume`, `POST /portal` (Stripe billing portal). Only a plan id and interval are accepted; actions are rate-limited.
+- Stripe webhook: `POST /api/premium/webhook/stripe` — raw body, `Stripe-Signature` checked (HMAC-SHA256, 5-minute tolerance), each event applied once (`premium_stripe_events`). Handles `checkout.session.completed`, `customer.subscription.created|updated|deleted`, `invoice.paid`, `invoice.payment_failed`. Premium turns on only here or by an admin — never from the browser.
+- Admin: `GET /api/admin/premium?status=&type=&page=` (with counts, active plans, monthly recurring, last 30 days), `POST /:id/activate { plan?, months, amount, note? }` (after an offline payment; extends an active plan), `POST /:id/cancel { note? }`, `GET /payments`.
+- The premium state is copied to the listing (`premium.tier|rank|until`, indexed with `isPublished`), so the directory stays one indexed query. A background job (every 5 minutes) expires plans whose paid period is over; card plans get a 3-day renewal grace.
+- Collections: `premium_subscriptions` (one per account), `premium_payments`, `premium_stripe_events`.
+
+Environment: set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` to take card payments (point a Stripe webhook at `/api/premium/webhook/stripe` with the events above). Without them, premium runs in **manual mode**: businesses send requests and admins activate them on the admin **Premium Plans** page. `FRONTEND_URL` is used for Stripe's return links.
+
 ## Reviews (`src/reviews` + a `reviews/` folder in each area)
 
 Three sources, never mixed into one score:

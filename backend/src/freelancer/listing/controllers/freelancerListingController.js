@@ -4,7 +4,7 @@ import { cardSummaries, fullProfile } from "../services/publicProfile.js";
 // Public directory of published freelancers.
 export async function getPublishedFreelancers(_req, res, next) {
   try {
-    const listings = await FreelancerListing.find({ isPublished: true }).sort({ createdAt: -1 }).lean();
+    const listings = await FreelancerListing.find({ isPublished: true }).sort({ "premium.rank": -1, createdAt: -1 }).lean();
     const summaries = await cardSummaries(listings);
     res.json({ data: listings.map(({ freelancer, __v, ...listing }) => ({ ...listing, ...summaries.get(String(freelancer)) })) });
   } catch (error) { next(error); }

@@ -6,6 +6,7 @@ import { isCustomerSignedIn, userApi } from "@/components/utils/userApi";
 import type { Plumber } from "@/components/find/types";
 import SavedAddressPicker from "@/components/dashboard/profile/SavedAddressPicker";
 import { useProviderAvailability } from "@/components/plumber/useProviderAvailability";
+import { useProviderSlots } from "./timeSlots";
 
 type Props = { plumbers: Plumber[]; initialPlumberId?: string; initialOffer?: string };
 
@@ -17,7 +18,10 @@ export default function BookPlumberForm({ plumbers, initialPlumberId = "", initi
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ text: string; login?: boolean } | null>(null);
-  const { availability, minDate, dateProblem } = useProviderAvailability(selectedPlumber ? "company" : undefined, selectedPlumber?.id ?? "");
+  const providerType = selectedPlumber?.providerType ?? "company";
+  const { availability, minDate, dateProblem } = useProviderAvailability(providerType, selectedPlumber?.id ?? "");
+  // Only the times this company or freelancer offers.
+  const slots = useProviderSlots(providerType, selectedPlumber?.id ?? "", selectedPlumber?.timeSlots);
   const paused = availability?.acceptingBookings === false;
   const dateWarning = dateProblem(form.date);
 
@@ -32,8 +36,8 @@ export default function BookPlumberForm({ plumbers, initialPlumberId = "", initi
     setError(null);
     try {
       await userApi.requestBooking({
-        providerType: "company", providerId: selectedPlumber.id, providerName: selectedPlumber.companyName,
-        service: form.service, scheduledDate: form.date || undefined, timeSlot: form.time || undefined,
+        providerType, providerId: selectedPlumber.id, providerName: selectedPlumber.companyName,
+        service: form.service, scheduledDate: form.date || undefined, timeSlot: slots.includes(form.time) ? form.time : undefined,
         address: form.address, phone: form.phone, details: form.details, offer: form.offer || undefined,
       });
       setSubmitted(true);
@@ -53,9 +57,9 @@ export default function BookPlumberForm({ plumbers, initialPlumberId = "", initi
         <label className="text-sm font-semibold text-slate-700">Full name<input required value={form.name} onChange={(e) => update("name", e.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-emerald-600" placeholder="Your name" /></label>
         <label className="text-sm font-semibold text-slate-700">Phone number<input required type="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-emerald-600" placeholder="(555) 000-0000" /></label>
         <label className="text-sm font-semibold text-slate-700">Email address<input required type="email" value={form.email} onChange={(e) => update("email", e.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-emerald-600" placeholder="you@example.com" /></label>
-        <label className="text-sm font-semibold text-slate-700">Service needed<select required value={form.service} onChange={(e) => update("service", e.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-emerald-600"><option value="">Select a service</option>{(selectedPlumber?.services ?? ["Leak repair", "Drain cleaning", "Water heater", "Emergency plumbing", "Other"]).map((service) => <option key={service}>{service}</option>)}</select></label>
+        <label className="text-sm font-semibold text-slate-700">Service needed<select required value={form.service} onChange={(e) => update("service", e.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-emerald-600"><option value="">Select a service</option>{(selectedPlumber?.services.length ? selectedPlumber.services : ["Leak repair", "Drain cleaning", "Water heater", "Emergency plumbing", "Other"]).map((service) => <option key={service}>{service}</option>)}</select></label>
         <label className="text-sm font-semibold text-slate-700">Preferred date<input required type="date" min={minDate} aria-invalid={dateWarning ? true : undefined} value={form.date} onChange={(e) => update("date", e.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-emerald-600" />{dateWarning && <span className="mt-1 block text-xs font-normal text-red-600">{dateWarning}</span>}</label>
-        <label className="text-sm font-semibold text-slate-700">Preferred time<select required value={form.time} onChange={(e) => update("time", e.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-emerald-600"><option value="">Select a time</option><option>8:00 AM – 10:00 AM</option><option>10:00 AM – 12:00 PM</option><option>1:00 PM – 3:00 PM</option><option>3:00 PM – 5:00 PM</option></select></label>
+        <label className="text-sm font-semibold text-slate-700">Preferred time<select required value={slots.includes(form.time) ? form.time : ""} onChange={(e) => update("time", e.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-emerald-600"><option value="">Select a time</option>{slots.map((slot) => <option key={slot}>{slot}</option>)}</select></label>
         <label className="sm:col-span-2 text-sm font-semibold text-slate-700">Service address<input required value={form.address} onChange={(e) => update("address", e.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-emerald-600" placeholder="Street address, city, ZIP code" /><SavedAddressPicker currentAddress={form.address} currentPhone={form.phone} onPhone={(phone) => update("phone", phone)} onAddress={(address, saved) => setForm((current) => ({ ...current, address, details: current.details.trim() || !saved.accessNotes ? current.details : `Access notes: ${saved.accessNotes}` }))} /></label>
         <label className="sm:col-span-2 text-sm font-semibold text-slate-700">Offer code <span className="font-normal text-slate-400">(optional)</span><input value={form.offer} onChange={(e) => update("offer", e.target.value.toUpperCase())} className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-emerald-600" placeholder="Enter your discount code" /></label>
         <label className="sm:col-span-2 text-sm font-semibold text-slate-700">Describe the issue<textarea required rows={4} value={form.details} onChange={(e) => update("details", e.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-emerald-600" placeholder="Tell the plumber what is happening and any access details." /></label>

@@ -2,11 +2,12 @@
 export const serviceSectionIds = {
   facts: "at-a-glance",
   overview: "about-this-service",
+  problems: "signs-you-need-it",
   process: "how-it-works",
   pricing: "pricing",
   why: "why-choose-us",
   areas: "areas-covered",
-  booking: "how-booking-works",
+  prepare: "before-your-visit",
   faqs: "faqs",
 } as const;
 

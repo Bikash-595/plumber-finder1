@@ -1,3 +1,4 @@
+import { bookingSlotsSchema } from "../../../shared/profileSections/bookingSlots.js";
 import mongoose from "mongoose";
 
 const freelancerBookingSettingsSchema = new mongoose.Schema({
@@ -7,6 +8,7 @@ const freelancerBookingSettingsSchema = new mongoose.Schema({
   emergencyBooking: { type: Boolean, default: false },
   workingDays: { type: String, trim: true, maxlength: 200 },
   timeSlots: { type: String, trim: true, maxlength: 300 },
+  slots: bookingSlotsSchema,
   cancellationPolicy: { type: String, trim: true, maxlength: 2000 },
 }, { timestamps: true, collection: "freelancer_booking_settings" });
 

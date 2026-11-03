@@ -9,6 +9,7 @@ import { FaCalendarAlt, FaClock, FaWrench, FaCommentDots, FaPhoneAlt, FaMapMarke
 import BookingCoupon from "./BookingCoupon";
 import SavedAddressPicker from "@/components/dashboard/profile/SavedAddressPicker";
 import { useProviderAvailability } from "./useProviderAvailability";
+import { useProviderSlots } from "@/components/booking/timeSlots";
 
 /** `initialService` pre-selects a service (e.g. on that service's own page). */
 export default function BookingWidget({ plumber, initialService = "" }: { plumber: Plumber; initialService?: string }) {
@@ -28,6 +29,8 @@ export default function BookingWidget({ plumber, initialService = "" }: { plumbe
   const { availability, minDate, dateProblem } = useProviderAvailability(plumber.providerType, plumber.id);
   const paused = availability?.acceptingBookings === false;
   const dateWarning = dateProblem(selectedDate);
+  // Only the times this company or freelancer offers.
+  const slots = useProviderSlots(plumber.providerType, plumber.id, plumber.timeSlots);
 
   // "Book" on a service (Services section) picks it here.
   useEffect(() => {
@@ -59,7 +62,7 @@ export default function BookingWidget({ plumber, initialService = "" }: { plumbe
       const { data } = await userApi.requestBooking({
         providerType: plumber.providerType ?? "company", providerId: plumber.id, providerName: plumber.companyName,
         service: selectedService === "other" ? "Other plumbing service" : selectedService,
-        scheduledDate: selectedDate || undefined, timeSlot: selectedTime || undefined, details: message || undefined,
+        scheduledDate: selectedDate || undefined, timeSlot: slots.includes(selectedTime) ? selectedTime : undefined, details: message || undefined,
         phone: phone.trim(), address: address.trim(), couponCode: couponCode ?? undefined,
       });
       const saving = data.couponCode ? ` Coupon ${data.couponCode} (${data.couponLabel ?? "discount"})${data.discountAmount ? `: you save $${data.discountAmount.toFixed(2)}, total $${data.price?.toFixed(2)}` : " is included"}.` : "";
@@ -126,16 +129,12 @@ export default function BookingWidget({ plumber, initialService = "" }: { plumbe
           <div className="relative mt-1">
             <FaClock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <select
-              value={selectedTime}
+              value={slots.includes(selectedTime) ? selectedTime : ""}
               onChange={(e) => setSelectedTime(e.target.value)}
               className="w-full rounded-full border border-gray-300 bg-white pl-10 pr-4 py-2 text-gray-900 placeholder-gray-400 focus:border-[#FFD60A] focus:ring-1 focus:ring-[#FFD60A]"
             >
               <option value="">Select time</option>
-              <option>8:00 AM – 10:00 AM</option>
-              <option>10:00 AM – 12:00 PM</option>
-              <option>1:00 PM – 3:00 PM</option>
-              <option>3:00 PM – 5:00 PM</option>
-              <option>5:00 PM – 7:00 PM</option>
+              {slots.map((slot) => <option key={slot}>{slot}</option>)}
             </select>
           </div>
         </div>

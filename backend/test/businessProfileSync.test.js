@@ -97,4 +97,14 @@ describe("service pages", () => {
     const big = `data:image/png;base64,${"A".repeat(1_250_000)}`;
     assert.equal((await api("PATCH", `/api/companies/services/${created._id}`, { token: company.token, body: { images: Array(8).fill(big), videos: [`data:video/mp4;base64,${"A".repeat(5_000_000)}`] } })).status, 400, "total size is capped");
   });
+
+  test("page content lists: signs you need it, highlights, before-your-visit tips; tagline on the card", async () => {
+    const company = await newCompany();
+    const created = (await api("POST", "/api/companies/services", { token: company.token, body: { name: "Water Heater Repair", tagline: "Hot water back the same day", problems: ["No hot water", "Leaking tank"], highlights: ["Same-day parts"], prepare: ["Clear space around the heater"] } })).body.data;
+    assert.equal((await api("POST", "/api/companies/services", { token: company.token, body: { name: "Too many", problems: Array.from({ length: 13 }, (_, i) => `Problem ${i}`) } })).status, 400);
+    const list = (await api("GET", "/api/companies/services", { token: company.token })).body.data[0];
+    assert.deepEqual([list.tagline, list.problems], ["Hot water back the same day", undefined], "lists keep the tagline, not the page content");
+    const page = (await api("GET", `/api/companies/services/public/${company.id}/${created._id}`)).body.data;
+    assert.deepEqual([page.problems, page.highlights, page.prepare], [["No hot water", "Leaking tank"], ["Same-day parts"], ["Clear space around the heater"]]);
+  });
 });

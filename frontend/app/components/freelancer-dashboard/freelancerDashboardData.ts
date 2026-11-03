@@ -1,5 +1,5 @@
 import {
-  FaAddressBook, FaBell, FaBolt, FaBriefcase, FaCalendarAlt, FaCalendarCheck, FaChartLine, FaClock, FaCog, FaCommentDots, FaCreditCard,
+  FaAddressBook, FaBell, FaBolt, FaCrown, FaBriefcase, FaCalendarAlt, FaCalendarCheck, FaChartLine, FaClock, FaCog, FaCommentDots,
   FaFileInvoiceDollar, FaHome, FaIdCard, FaImages, FaInfoCircle, FaMapMarkedAlt, FaMapMarkerAlt, FaNewspaper, FaPhoneAlt, FaQuestionCircle,
   FaRegUser, FaShareAlt, FaShieldAlt, FaStar, FaTag, FaThLarge, FaTools, FaUsers,
 } from "react-icons/fa";
@@ -56,7 +56,7 @@ export const freelancerNavSections = [
   {
     label: "Account",
     items: [
-      { label: "Billing", href: "/freelancer/billing", icon: FaCreditCard },
+      { label: "Premium & Billing", href: "/freelancer/premium", icon: FaCrown },
       { label: "Settings", href: "/freelancer/settings", icon: FaCog },
     ],
   },

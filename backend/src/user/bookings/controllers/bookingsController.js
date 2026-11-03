@@ -1,5 +1,7 @@
 import { announce, applyStatus, newBookingFields } from "../../../shared/bookings/bookingWorkflow.js";
 import { availabilityProblem } from "../../../company/availability/services/checkAvailability.js";
+import { sides } from "../../../shared/business/sides.js";
+import { slotProblem } from "../../../shared/profileSections/bookingSlots.js";
 import { quoteBooking } from "../../../shared/bookings/bookingQuote.js";
 import { countsByStatus, findPage, pageParams, textFilter, toObjectId } from "../../shared/paginate.js";
 import { bookingsConfig } from "../config/bookingsConfig.js";
@@ -35,6 +37,13 @@ export const bookingsController = {
       // The company's or freelancer's availability: paused, days off, minimum notice, daily job limit.
       const unavailable = await availabilityProblem(fields.providerAccount, req.validated.scheduledDate, req.validated.providerType);
       if (unavailable) return res.status(409).json({ message: unavailable, errors: { scheduledDate: unavailable } });
+      // The time window must be one the company or freelancer offers (Booking Settings).
+      if (fields.providerAccount && req.validated.timeSlot) {
+        const side = sides[req.validated.providerType];
+        const settings = await side.BookingSettings.findOne({ [side.ownerField]: fields.providerAccount }).select("slots").lean();
+        const badSlot = slotProblem(settings?.slots, req.validated.timeSlot);
+        if (badSlot) return res.status(400).json({ message: badSlot, errors: { timeSlot: badSlot } });
+      }
       // The price and any coupon are worked out here, never taken from the browser.
       const { couponCode, ...request } = req.validated;
       const quote = await quoteBooking({ providerType: request.providerType, providerId: request.providerId, service: request.service, couponCode });

@@ -59,6 +59,10 @@ export interface Plumber {
   averageCost: number;
   availability: string;
   isVerified: boolean;
+  /** Paid premium plan: "premium" (Premium) or "elite" (Premium Plus / Top Pro). */
+  premiumTier?: "premium" | "elite";
+  /** Visit time windows the provider offers (Booking Settings). */
+  timeSlots?: string[];
   isEmergency: boolean;
   location: string;
   city?: string;
@@ -168,6 +172,8 @@ export interface PlumberOffer {
 export interface ServiceDetail {
   id: string;
   name: string;
+  /** One-line subheading under the name. */
+  tagline?: string;
   category?: string;
   description?: string;
   price?: string; // e.g. "From $89", "$95/hr", "Free quote"

@@ -19,6 +19,7 @@ import ServiceKeyFacts from "@/components/plumber/service-page/ServiceKeyFacts";
 import ServicePricing from "@/components/plumber/service-page/ServicePricing";
 import ServiceSectionNav from "@/components/plumber/service-page/ServiceSectionNav";
 import ServiceWhyUs from "@/components/plumber/service-page/ServiceWhyUs";
+import ServiceProblems from "@/components/plumber/service-page/ServiceProblems";
 import { replyTime } from "@/components/plumber/service-page/sectionIds";
 
 export const dynamic = "force-dynamic";
@@ -62,12 +63,18 @@ export default async function ServiceDetailPage({ params }: Props) {
   const url = `${profileHref}/services/${serviceSegment(service.name, service.id)}`;
   const hasReasons = Boolean(plumber.isVerified || plumber.licenseNumber || plumber.insurance || plumber.yearsInBusiness > 0 || plumber.reviewCount > 0 || service.warranty || replyTime(plumber.responseTime));
   const hasAreas = Boolean(plumber.serviceAreaDetails?.length || plumber.serviceAreas?.length || plumber.location);
+  // Only sections with something real in them (the provider's own content, or facts from their details).
   const sections = [
     "facts",
     (service.overview || service.includes.length > 0) && "overview",
+    service.problems.length > 0 && "problems",
     service.process.length > 0 && "process",
-    "pricing", hasReasons && "why", hasAreas && "areas", "booking", "faqs",
-  ].filter(Boolean) as ("facts" | "overview" | "process" | "pricing" | "why" | "areas" | "booking" | "faqs")[];
+    "pricing",
+    (hasReasons || service.highlights.length > 0) && "why",
+    service.prepare.length > 0 && "prepare",
+    hasAreas && "areas",
+    "faqs",
+  ].filter(Boolean) as ("facts" | "overview" | "problems" | "process" | "pricing" | "why" | "prepare" | "areas" | "faqs")[];
 
   return (
     <main className="min-h-screen bg-[#f6f8fb] text-gray-900">
@@ -76,16 +83,18 @@ export default async function ServiceDetailPage({ params }: Props) {
         <Link href={`${profileHref}#services`} className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 transition hover:text-[#f7672c]"><FaArrowLeft className="h-3.5 w-3.5" aria-hidden /> All services from {plumber.companyName}</Link>
         <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
           <div className="min-w-0 space-y-8">
-            <ServiceGallery images={service.images} videos={service.videos} name={service.name} />
+            {/* The name, subheading and price first; then the photos and videos. */}
             <ServiceHero plumber={plumber} service={service} profileHref={profileHref} />
+            <ServiceGallery images={service.images} videos={service.videos} name={service.name} />
             <ServiceSectionNav sections={sections} />
             <ServiceKeyFacts plumber={plumber} service={service} />
             <ServiceOverview service={service} />
+            <ServiceProblems service={service} />
             <ServiceProcess service={service} />
             <ServicePricing plumber={plumber} service={service} />
             <ServiceWhyUs plumber={plumber} service={service} />
-            <ServiceAreasCovered plumber={plumber} service={service} />
             <ServiceBookingSteps plumber={plumber} service={service} />
+            <ServiceAreasCovered plumber={plumber} service={service} />
             <ServiceFaqs plumber={plumber} service={service} />
             <RelatedServices services={plumber.serviceDetails ?? []} current={service.id} category={service.category} profileHref={profileHref} />
           </div>

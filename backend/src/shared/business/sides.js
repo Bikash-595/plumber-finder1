@@ -1,6 +1,8 @@
 import { Company } from "../../auth/company/models/Company.js";
 import { Freelancer } from "../../auth/freelancer/models/Freelancer.js";
 import { CompanyAvailability } from "../../company/availability/models/CompanyAvailability.js";
+import { CompanyBookingSettings } from "../../company/booking/models/CompanyBookingSettings.js";
+import { FreelancerBookingSettings } from "../../freelancer/booking/models/FreelancerBookingSettings.js";
 import { CompanyListing } from "../../company/listing/models/CompanyListing.js";
 import { CompanyOpeningHours } from "../../company/opening-hours/models/CompanyOpeningHours.js";
 import { CompanySettings } from "../../company/settings/models/CompanySettings.js";
@@ -29,6 +31,7 @@ export const sides = {
     OpeningHours: CompanyOpeningHours,
     Settings: CompanySettings,
     Availability: CompanyAvailability,
+    BookingSettings: CompanyBookingSettings,
     dashboard: "/company-dashboard",
   },
   freelancer: {
@@ -43,6 +46,7 @@ export const sides = {
     OpeningHours: FreelancerOpeningHours,
     Settings: FreelancerSettings,
     Availability: FreelancerAvailability,
+    BookingSettings: FreelancerBookingSettings,
     dashboard: "/freelancer",
   },
 };

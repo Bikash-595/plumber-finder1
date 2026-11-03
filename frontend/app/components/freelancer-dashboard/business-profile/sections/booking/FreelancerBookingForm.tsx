@@ -1,9 +1,15 @@
 "use client";
 
 import SectionForm from "@/components/company-dashboard/business-profile/SectionForm";
+import TimeSlotsEditor from "@/components/company-dashboard/business-profile/booking/TimeSlotsEditor";
 import { bookingConfig as config } from "./config";
 
-/** Booking Settings: how customers can book you: instant booking, approval, emergencies, working days and cancellation policy. */
+/** Booking Settings: the visit times customers can choose, plus instant booking, approval, emergencies and cancellation policy. */
 export default function FreelancerBookingForm() {
-  return <SectionForm {...config} />;
+  return (
+    <div className="space-y-6">
+      <TimeSlotsEditor apiEndpoint="/freelancers/booking" />
+      <SectionForm {...config} />
+    </div>
+  );
 }

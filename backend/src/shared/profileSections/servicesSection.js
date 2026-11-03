@@ -28,11 +28,16 @@ export const servicesConfig = {
     emergency: { type: "boolean", default: false },
     featured: { type: "boolean", default: false },
     image: { type: "image" },
+    // A one-line subheading under the name (cards and the service's page).
+    tagline: { type: "string", max: 160 },
     // The service's own page.
     images: { type: "images", maxItems: 8 },
     videos: { type: "videos", maxItems: 4, maxUploads: 1 },
     overview: { type: "text", max: 5000 },
     process: { type: "list", maxItems: 8, max: 200 },
+    problems: { type: "list", maxItems: 12, max: 160 },   // "Signs you need this": problems this service fixes
+    highlights: { type: "list", maxItems: 8, max: 160 },  // why this service stands out
+    prepare: { type: "list", maxItems: 8, max: 200 },     // "Before your visit" tips
     faqs: { ...blogFaqsField, maxItems: 10 },
   },
   validate: ({ priceType, priceAmount, images, videos }) => {
@@ -55,7 +60,7 @@ export function priceLabel({ priceType, priceAmount }) {
 }
 
 /** Heavy fields left out of lists (dashboard list, public profile); a service's own page loads them. */
-export const SERVICE_LIST_SELECT = "-images -videos -overview -process -faqs";
+export const SERVICE_LIST_SELECT = "-images -videos -overview -process -problems -highlights -prepare -faqs";
 
 /**
  * beforeWrite hook: keeps the shown `price` in step with the structured price, and the card photo
@@ -93,8 +98,12 @@ export const serviceSchemaFields = {
   photoCount: { type: Number, default: 0 },
   videoCount: { type: Number, default: 0 },
   videoPoster: { type: String },
+  tagline: { type: String, trim: true, maxlength: 160 },
   overview: { type: String, trim: true, maxlength: 5000 },
   process: { type: [String], default: undefined },
+  problems: { type: [String], default: undefined },
+  highlights: { type: [String], default: undefined },
+  prepare: { type: [String], default: undefined },
   faqs: blogFaqsSchema,
   position: { type: Number, default: 0 },
 };

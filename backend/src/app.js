@@ -5,6 +5,7 @@ import { activityRouter } from "./activity/activityRouter.js";
 import express from "express";
 import { securityHeaders } from "./auth/shared/middleware/securityHeaders.js";
 import mongoose from "mongoose";
+import { isDatabaseUnavailable, requireDatabase, sendDatabaseUnavailable } from "./config/databaseAvailability.js";
 import { companyListingRouter } from "./company/listing/routers/companyListingRouter.js";
 import { companyOnboardingRouter } from "./company/onboarding/routers/companyOnboardingRouter.js";
 import { companySections, companySectionsRouter } from "./company/companySectionsRouter.js";
@@ -14,6 +15,7 @@ import { publicBlogsRouter } from "./blogs/routers/publicBlogsRouter.js";
 import { locationRouter } from "./location/routers/locationRouter.js";
 import { userRouter, userSections } from "./user/userRouter.js";
 import { adminRouter, adminSections } from "./admin/adminRouter.js";
+import { premiumWebhookRouter } from "./premium/routers/webhookRouter.js";
 
 export const app = express();
 app.disable("x-powered-by");
@@ -33,6 +35,10 @@ const mediaBodyPaths = ["/api/companies/services", "/api/freelancers/services"];
 const jsonDefault = express.json({ limit: "3mb" });
 const jsonLarge = express.json({ limit: "8mb" });
 const jsonMedia = express.json({ limit: "15mb" });
+// The Stripe webhook is checked against its exact bytes, so it gets the raw body (and is mounted before JSON parsing).
+// While the database is down or the server is restarting, API calls answer 503 (health checks still answer).
+app.use("/api", requireDatabase);
+app.use("/api/premium/webhook", express.raw({ type: "application/json", limit: "1mb" }), premiumWebhookRouter);
 app.use((req, res, next) => (mediaBodyPaths.some((path) => req.path.startsWith(path)) ? jsonMedia : largeBodyPaths.some((path) => req.path.startsWith(path)) ? jsonLarge : jsonDefault)(req, res, next));
 
 app.get("/health", (_req, res) => {
@@ -81,6 +87,8 @@ app.use((error, _req, res, _next) => {
   // Our own service errors (e.g. "Apple sign-in is not configured") opt in with `expose: true`.
   if (error?.expose && error.status >= 500 && error.status < 600) return res.status(error.status).json({ message: error.message });
 
+  // The database went away mid-request (a restart or a lost connection): "try again", not a 500 and a stack trace.
+  if (isDatabaseUnavailable(error)) return sendDatabaseUnavailable(res, error);
   console.error(error);
   res.status(500).json({ message: "Internal server error." });
 });

@@ -8,6 +8,8 @@ type PublicOffer = { _id: string; title: string; description?: string; image?: s
 
 // Shape returned by the backend's GET /companies/public (one card per company).
 export type CompanyListing = {
+  /** Set by the premium system: tier and when it ends. */
+  premium?: { tier?: "premium" | "elite"; rank?: number; until?: string };
   _id: string;
   slug?: string;
   companyName: string;
@@ -52,7 +54,7 @@ type Media = { _id: string; type?: string; media: string; mediaKind?: "image" | 
 
 // GET /companies/public/:id/profile — the card fields plus every public section.
 export type CompanyProfile = Omit<CompanyListing, "services"> & {
-  services?: { _id?: string; name: string; category?: string; description?: string; price?: string; duration?: string; includes?: string[]; warranty?: string; emergency?: boolean; featured?: boolean; image?: string; photoCount?: number; videoCount?: number; videoPoster?: string }[];
+  services?: { _id?: string; name: string; category?: string; description?: string; price?: string; duration?: string; includes?: string[]; warranty?: string; emergency?: boolean; featured?: boolean; image?: string; photoCount?: number; videoCount?: number; videoPoster?: string; tagline?: string }[];
   header?: { companyName?: string; ownerName?: string; logo?: string; coverImage?: string; coverImages?: string[] } | null;
   about?: Record<string, string>;
   contact?: Record<string, string>;
@@ -65,7 +67,7 @@ export type CompanyProfile = Omit<CompanyListing, "services"> & {
   faqs?: { question: string; answer: string }[];
   blogs?: { _id: string; slug: string; title: string; category?: string; excerpt: string; content: string; coverImage?: string; author?: string; publishDate?: string; tags?: string[]; faqs?: { question: string; answer: string }[]; views?: number }[];
   offers?: PublicOffer[];
-  booking?: { emergencyBooking?: boolean } | null;
+  booking?: { emergencyBooking?: boolean; slots?: string[] } | null;
   serviceArea?: { areaDetails?: { name: string; services?: string[]; address?: string; radius?: number; latitude?: number; longitude?: number }[]; branchLocation?: string; latitude?: number; longitude?: number; radius?: number } | null;
   socialLinks?: Partial<Record<"facebook" | "instagram" | "twitter" | "linkedin" | "youtube" | "tiktok", string>>;
 };
@@ -118,6 +120,9 @@ export function textToArticleHtml(text: string): string {
 const hoursNotes: [string, string][] = [["dailyHours", "Daily hours"], ["emergencyHours", "Emergency hours"], ["availability24x7", "24/7 availability"], ["holidayHours", "Holiday hours"], ["seasonalHours", "Seasonal hours"], ["specialClosures", "Special closures"]];
 
 /** A directory card for a live company (from GET /companies/public). */
+/** The listing's premium tier while it's paid for (the server also removes it when it ends). */
+export const activePremiumTier = (premium?: { tier?: "premium" | "elite"; until?: string }) => (premium?.tier && (!premium.until || new Date(premium.until).getTime() > Date.now()) ? premium.tier : undefined);
+
 export function companyListingToPlumber(company: CompanyListing): Plumber {
   const established = company.established || (company.createdAt ? yearOf(company.createdAt) : new Date().getFullYear());
   return {
@@ -136,6 +141,7 @@ export function companyListingToPlumber(company: CompanyListing): Plumber {
     averageCost: company.averageCost || 0,
     availability: openNowLabel(company.weeklyHours) ?? "Available",
     isVerified: Boolean(company.verified),
+    premiumTier: activePremiumTier(company.premium),
     isEmergency: Boolean(company.isEmergency),
     // "Austin, TX" like the demo plumbers; a street address is only used when there is no city.
     location: [company.city, company.state].filter(Boolean).join(", ") || company.location || "",
@@ -238,8 +244,9 @@ export function companyProfileToPlumber(profile: CompanyProfile): Plumber {
     description: profile.description || about.longDescription || card.description,
     priceRange: prices.length ? [...new Set([prices[0], prices[prices.length - 1]])].join(" – ") : card.priceRange,
     isEmergency: card.isEmergency || Boolean(profile.booking?.emergencyBooking),
+    timeSlots: profile.booking?.slots?.length ? profile.booking.slots : undefined,
     // Every service with its details, for the profile's Services section (featured first).
-    serviceDetails: offerings.map((service, index) => ({ id: service._id ?? `${index}`, name: service.name, category: service.category, description: service.description, price: service.price, duration: service.duration, includes: service.includes ?? [], warranty: service.warranty, emergency: Boolean(service.emergency), featured: Boolean(service.featured), image: displayableImage(service.image) || undefined, photoCount: service.photoCount ?? (service.image ? 1 : 0), videoCount: service.videoCount ?? 0, poster: youtubePoster(service.videoPoster) })),
+    serviceDetails: offerings.map((service, index) => ({ id: service._id ?? `${index}`, name: service.name, tagline: service.tagline, category: service.category, description: service.description, price: service.price, duration: service.duration, includes: service.includes ?? [], warranty: service.warranty, emergency: Boolean(service.emergency), featured: Boolean(service.featured), image: displayableImage(service.image) || undefined, photoCount: service.photoCount ?? (service.image ? 1 : 0), videoCount: service.videoCount ?? 0, poster: youtubePoster(service.videoPoster) })),
     specializations: offerings.filter((service) => service.featured).map((service) => service.name).concat(serviceNames).filter((name, index, all) => all.indexOf(name) === index),
     teamSize: card.teamSize || teamMembers.length,
     teamMembers,
@@ -287,6 +294,8 @@ export function companyProfileToPlumber(profile: CompanyProfile): Plumber {
 // ---- Freelancers (GET /freelancers/public and /freelancers/public/:id/profile) ----
 
 export type FreelancerListing = {
+  /** Set by the premium system: tier and when it ends. */
+  premium?: { tier?: "premium" | "elite"; rank?: number; until?: string };
   _id: string;
   displayName: string;
   headline?: string;
@@ -334,6 +343,7 @@ function freelancerAsCompany(freelancer: Omit<FreelancerListing, "services">) {
     _id: freelancer._id,
     companyName: freelancer.displayName,
     ownerName: freelancer.displayName,
+    premium: freelancer.premium,
     tagline: freelancer.headline,
     logo: freelancer.photo,
     coverImage: freelancer.coverImage,
@@ -430,8 +440,8 @@ export async function fetchLiveProfile(id: string): Promise<Plumber | null> {
 // ---- One service's own page (GET /companies|freelancers/services/public/:listingId/:serviceId) ----
 
 /** A service with everything its page shows: photos, overview, steps and FAQs. */
-export type ServicePage = ServiceDetail & { images: string[]; videos: string[]; overview?: string; process: string[]; faqs: { question: string; answer: string }[]; priceType?: "fixed" | "from" | "hourly" | "quote" | "free"; priceAmount?: number };
-type ServiceRecord = { _id: string; name: string; priceType?: ServicePage["priceType"]; priceAmount?: number; category?: string; description?: string; price?: string; duration?: string; includes?: string[]; warranty?: string; emergency?: boolean; featured?: boolean; image?: string; images?: string[]; videos?: string[]; videoPoster?: string; overview?: string; process?: string[]; faqs?: { question: string; answer: string }[] };
+export type ServicePage = ServiceDetail & { images: string[]; videos: string[]; overview?: string; process: string[]; problems: string[]; highlights: string[]; prepare: string[]; faqs: { question: string; answer: string }[]; priceType?: "fixed" | "from" | "hourly" | "quote" | "free"; priceAmount?: number };
+type ServiceRecord = { _id: string; name: string; tagline?: string; problems?: string[]; highlights?: string[]; prepare?: string[]; priceType?: ServicePage["priceType"]; priceAmount?: number; category?: string; description?: string; price?: string; duration?: string; includes?: string[]; warranty?: string; emergency?: boolean; featured?: boolean; image?: string; images?: string[]; videos?: string[]; videoPoster?: string; overview?: string; process?: string[]; faqs?: { question: string; answer: string }[] };
 
 export async function fetchServicePage(plumber: Pick<Plumber, "id" | "providerType">, serviceId: string): Promise<ServicePage | null> {
   const side = plumber.providerType === "freelancer" ? "freelancers" : "companies";
@@ -439,11 +449,11 @@ export async function fetchServicePage(plumber: Pick<Plumber, "id" | "providerTy
   if (!record) return null;
   const images = (record.images?.length ? record.images : record.image ? [record.image] : []).map(displayableImage).filter(Boolean);
   return {
-    id: record._id, name: record.name, category: record.category, description: record.description, price: record.price, duration: record.duration,
+    id: record._id, name: record.name, tagline: record.tagline, category: record.category, description: record.description, price: record.price, duration: record.duration,
     includes: record.includes ?? [], warranty: record.warranty, emergency: Boolean(record.emergency), featured: Boolean(record.featured), image: images[0],
     photoCount: images.length, videoCount: record.videos?.length ?? 0, poster: youtubePoster(record.videoPoster),
     priceType: record.priceType, priceAmount: record.priceAmount ?? undefined,
-    images, videos: record.videos ?? [], overview: record.overview, process: record.process ?? [], faqs: record.faqs ?? [],
+    images, videos: record.videos ?? [], overview: record.overview, process: record.process ?? [], problems: record.problems ?? [], highlights: record.highlights ?? [], prepare: record.prepare ?? [], faqs: record.faqs ?? [],
   };
 }
 

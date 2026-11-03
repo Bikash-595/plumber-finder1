@@ -9,14 +9,15 @@ import ServiceCard from "@/components/plumber/services/ServiceCard";
 import { companyApi } from "./companyApi";
 import FaqListEditor, { cleanFaqs, type FaqItem } from "./FaqListEditor";
 import MultiImageUpload from "./MultiImageUpload";
+import ServiceListEditor from "./ServiceListEditor";
 import ServiceVideosEditor from "./ServiceVideosEditor";
 import { ExampleCard, NoticeMessage, useSavedItems } from "./SavedItems";
 import { useOwnListing } from "./useOwnListing";
 
 type PriceType = "fixed" | "from" | "hourly" | "quote" | "free" | "custom";
-type Draft = { name: string; category: string; description: string; priceType: PriceType; priceAmount: string; price: string; duration: string; includes: string[]; warranty: string; emergency: boolean; featured: boolean; images: string[]; videos: string[]; overview: string; process: string[]; faqs: FaqItem[] };
+type Draft = { name: string; category: string; description: string; priceType: PriceType; priceAmount: string; price: string; duration: string; includes: string[]; warranty: string; emergency: boolean; featured: boolean; images: string[]; videos: string[]; tagline: string; overview: string; process: string[]; problems: string[]; highlights: string[]; prepare: string[]; faqs: FaqItem[] };
 // Lists leave out images/overview/process/faqs; opening a service for editing loads them.
-type SavedService = { _id: string; name: string; category?: string; description?: string; priceType?: Exclude<PriceType, "custom">; priceAmount?: number; price?: string; duration?: string; includes?: string[]; warranty?: string; emergency?: boolean; featured?: boolean; image?: string; images?: string[]; videos?: string[]; photoCount?: number; videoCount?: number; videoPoster?: string; overview?: string; process?: string[]; faqs?: FaqItem[] };
+type SavedService = { _id: string; name: string; category?: string; description?: string; priceType?: Exclude<PriceType, "custom">; priceAmount?: number; price?: string; duration?: string; includes?: string[]; warranty?: string; emergency?: boolean; featured?: boolean; image?: string; images?: string[]; videos?: string[]; photoCount?: number; videoCount?: number; videoPoster?: string; tagline?: string; overview?: string; process?: string[]; problems?: string[]; highlights?: string[]; prepare?: string[]; faqs?: FaqItem[] };
 
 // Same lists as the backend (shared/profileSections/servicesSection.js).
 const categories = ["Repairs", "Installation", "Drains & Sewer", "Water Heaters", "Leak Detection", "Emergency", "Inspection & Maintenance", "Remodeling", "Commercial", "Other"];
@@ -32,7 +33,7 @@ const durations = ["30 min", "1 hour", "1–2 hours", "2–3 hours", "Half day",
 const suggestions = ["Leak Repair", "Drain Cleaning", "Water Heater Installation", "Water Heater Repair", "Tankless Water Heater", "Toilet Repair", "Faucet Installation", "Sewer Line Repair", "Hydro Jetting", "Video Camera Inspection", "Gas Line Repair", "Garbage Disposal", "Sump Pump Installation", "Repiping", "Slab Leak Detection", "Backflow Testing", "Bathroom Remodel", "Emergency Plumbing", "Water Softener Installation", "Frozen Pipe Repair"];
 const needsAmount = (type: PriceType) => type === "fixed" || type === "from" || type === "hourly";
 const input = "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#FFD60A] focus:ring-2 focus:ring-[#FFD60A]/30";
-const blank = (): Draft => ({ name: "", category: "", description: "", priceType: "from", priceAmount: "", price: "", duration: "", includes: [], warranty: "", emergency: false, featured: false, images: [], videos: [], overview: "", process: [], faqs: [] });
+const blank = (): Draft => ({ name: "", category: "", description: "", priceType: "from", priceAmount: "", price: "", duration: "", includes: [], warranty: "", emergency: false, featured: false, images: [], videos: [], tagline: "", overview: "", process: [], problems: [], highlights: [], prepare: [], faqs: [] });
 
 /** "From $89" — the same wording customers see. */
 function shownPrice(draft: Pick<Draft, "priceType" | "priceAmount" | "price">) {
@@ -53,7 +54,7 @@ const toDraft = (service: SavedService): Draft => ({
   // Services saved before photo galleries start from their single photo.
   images: service.images?.length ? service.images : service.image ? [service.image] : [],
   videos: service.videos ?? [],
-  overview: service.overview ?? "", process: service.process ?? [], faqs: service.faqs ?? [],
+  tagline: service.tagline ?? "", overview: service.overview ?? "", process: service.process ?? [], problems: service.problems ?? [], highlights: service.highlights ?? [], prepare: service.prepare ?? [], faqs: service.faqs ?? [],
 });
 
 const payload = (draft: Draft) => ({
@@ -63,7 +64,7 @@ const payload = (draft: Draft) => ({
   ...(draft.priceType === "custom" ? { price: draft.price } : {}),
   duration: draft.duration, includes: draft.includes, warranty: draft.warranty, emergency: draft.emergency, featured: draft.featured,
   // The first photo becomes the card photo (the server keeps `image` in step).
-  images: draft.images, videos: draft.videos, overview: draft.overview, process: draft.process, faqs: cleanFaqs(draft.faqs).faqs,
+  images: draft.images, videos: draft.videos, tagline: draft.tagline.trim(), overview: draft.overview, process: draft.process, problems: draft.problems, highlights: draft.highlights, prepare: draft.prepare, faqs: cleanFaqs(draft.faqs).faqs,
 });
 
 /** How the service will look on the public profile: the same card customers see. */
@@ -91,14 +92,13 @@ export default function ServicesEditor({ apiEndpoint }: { apiEndpoint: "/compani
   const services = items as unknown as SavedService[];
   const [draft, setDraft] = useState<Draft>(blank);
   const [include, setInclude] = useState("");
-  const [step, setStep] = useState("");
   const [opening, setOpening] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const listing = useOwnListing();
   const pageBase = apiEndpoint === "/companies/services" && listing?.slug ? `/company/${listing.slug}/services` : null;
   const set = (changes: Partial<Draft>) => setDraft((current) => ({ ...current, ...changes }));
 
-  const startNew = () => { setEditingId(null); setDraft(blank()); setInclude(""); setStep(""); };
+  const startNew = () => { setEditingId(null); setDraft(blank()); setInclude(""); };
   // The list leaves out photos and page content, so the full service is loaded before editing.
   const edit = async (service: SavedService) => {
     setOpening(true);
@@ -111,11 +111,6 @@ export default function ServicesEditor({ apiEndpoint }: { apiEndpoint: "/compani
     } catch (error) {
       setNotice({ tone: "error", text: error instanceof Error ? error.message : "Could not open this service." });
     } finally { setOpening(false); }
-  };
-  const addStep = () => {
-    const item = step.trim();
-    if (item && draft.process.length < 8) set({ process: [...draft.process, item] });
-    setStep("");
   };
   const addInclude = () => {
     const item = include.trim();
@@ -169,6 +164,10 @@ export default function ServicesEditor({ apiEndpoint }: { apiEndpoint: "/compani
                     <option value="">Choose a category</option>
                     {categories.map((name) => <option key={name}>{name}</option>)}
                   </select>
+                </label>
+                <label className="sm:col-span-2"><span className="flex justify-between text-sm font-semibold text-gray-700">Subheading <span className="font-normal text-gray-400">{draft.tagline.length}/160</span></span>
+                  <input maxLength={160} value={draft.tagline} onChange={(e) => set({ tagline: e.target.value })} placeholder="e.g. Hot water back the same day — upfront price" className={input} />
+                  <span className="mt-1 block text-xs text-gray-500">One line under the name on the card and at the top of the service page.</span>
                 </label>
                 <label className="sm:col-span-2"><span className="flex justify-between text-sm font-semibold text-gray-700">Description <span className="font-normal text-gray-400">{draft.description.length}/2000</span></span>
                   <textarea rows={3} maxLength={2000} value={draft.description} onChange={(e) => set({ description: e.target.value })} placeholder="What the job involves and why customers choose you for it." className={input} />
@@ -247,23 +246,11 @@ export default function ServicesEditor({ apiEndpoint }: { apiEndpoint: "/compani
               <label className="mt-3 block"><span className="flex justify-between text-sm font-semibold text-gray-700">Full overview <span className="font-normal text-gray-400">{draft.overview.length}/5000</span></span>
                 <textarea rows={6} maxLength={5000} value={draft.overview} onChange={(e) => set({ overview: e.target.value })} placeholder={"Explain the job in detail: common problems you fix, the equipment you use, what customers should expect, and why they should choose you.\n\nUse blank lines to start new paragraphs."} className={input} />
               </label>
-              <div className="mt-4">
-                <p className="text-sm font-semibold text-gray-700">How it works <span className="font-normal text-gray-400">({draft.process.length}/8 steps)</span></p>
-                <div className="mt-1 flex gap-2">
-                  <input value={step} onChange={(e) => setStep(e.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addStep(); } }} maxLength={200} placeholder="e.g. We inspect the line with a camera — press Enter to add" aria-label="Process step" className={`${input} mt-0`} />
-                  <button type="button" onClick={addStep} disabled={!step.trim() || draft.process.length >= 8} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#0b1f3b] px-3 text-sm font-bold text-white disabled:opacity-40"><FaPlus className="h-3 w-3" /> Add</button>
-                </div>
-                {draft.process.length > 0 && (
-                  <ol className="mt-3 space-y-2">
-                    {draft.process.map((item, index) => (
-                      <li key={`${index}-${item}`} className="flex items-center gap-3 rounded-xl bg-gray-50 px-3 py-2 text-sm text-gray-800">
-                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#FFD60A] text-xs font-bold text-[#0b1f3b]">{index + 1}</span>
-                        <span className="min-w-0 flex-1">{item}</span>
-                        <button type="button" onClick={() => set({ process: draft.process.filter((_, i) => i !== index) })} aria-label={`Remove step ${index + 1}`} className="grid h-6 w-6 place-items-center rounded-full text-gray-400 hover:bg-white hover:text-red-600"><FaTimes className="h-2.5 w-2.5" /></button>
-                      </li>
-                    ))}
-                  </ol>
-                )}
+              <div className="mt-5 space-y-5">
+                <ServiceListEditor label="Signs you need this service" hint="Problems customers notice — they help people recognise their issue." placeholder="e.g. Water drains slowly — press Enter to add" value={draft.problems} onChange={(problems) => set({ problems })} max={12} maxLength={160} />
+                <ServiceListEditor label="How it works" hint="The steps of the job, in order." placeholder="e.g. We inspect the line with a camera — press Enter to add" value={draft.process} onChange={(process) => set({ process })} max={8} numbered />
+                <ServiceListEditor label="Why choose this service" hint="What makes your service stand out (shown under “Why choose you”)." placeholder="e.g. Same-day parts on our vans — press Enter to add" value={draft.highlights} onChange={(highlights) => set({ highlights })} max={8} maxLength={160} />
+                <ServiceListEditor label="Before your visit" hint="Tips for the customer, so the job goes quickly." placeholder="e.g. Clear the area under the sink — press Enter to add" value={draft.prepare} onChange={(prepare) => set({ prepare })} max={8} />
               </div>
               <div className="mt-4"><FaqListEditor value={draft.faqs} onChange={(faqs) => set({ faqs })} max={10} title="Service FAQs" description="Questions customers ask about this service. Shown on its page and in Google results." /></div>
             </div>

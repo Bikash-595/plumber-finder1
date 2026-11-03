@@ -1,4 +1,5 @@
 import {
+  FaCrown,
   FaBell,
   FaBuilding,
   FaBullhorn,
@@ -170,6 +171,16 @@ export const adminNavSections = [
           { label: "Pending Withdrawals", href: "/payments?tab=withdrawals" },
           { label: "Commission Settings", href: "/payments?tab=commission" },
           { label: "Subscription Revenue", href: "/payments?tab=subscriptions" },
+        ],
+      },
+      {
+        label: "Premium Plans",
+        href: "/premium",
+        icon: FaCrown,
+        subItems: [
+          { label: "Requests", href: "/premium?status=pending" },
+          { label: "Active plans", href: "/premium?status=active" },
+          { label: "All plans", href: "/premium" },
         ],
       },
     ],

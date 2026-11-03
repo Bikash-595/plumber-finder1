@@ -9,6 +9,7 @@ import { freelancersRouter } from "./freelancers/routers/freelancersRouter.js";
 import { overviewRouter } from "./overview/routers/overviewRouter.js";
 import { registrationsRouter } from "./registrations/routers/registrationsRouter.js";
 import { usersRouter } from "./users/routers/usersRouter.js";
+import { premiumAdminRouter } from "./premium/routers/premiumAdminRouter.js";
 
 // Admin app APIs, each in its own folder. Mounted at /api/admin; active admin accounts only.
 export const adminSections = [
@@ -22,6 +23,7 @@ export const adminSections = [
   { path: "/blogs", router: blogsRouter },
   { path: "/activity", router: activityRouter },
   { path: "/reviews", router: adminReviewsRouter },
+  { path: "/premium", router: premiumAdminRouter },
 ];
 
 export const adminRouter = Router();

@@ -4,7 +4,7 @@ import { cardSummaries, fullProfile } from "../services/publicProfile.js";
 // Public directory of published companies (home page cards, /plumber/:id profiles).
 export async function getPublishedCompanies(_req, res, next) {
   try {
-    const listings = await CompanyListing.find({ isPublished: true }).sort({ createdAt: -1 }).lean();
+    const listings = await CompanyListing.find({ isPublished: true }).sort({ "premium.rank": -1, createdAt: -1 }).lean();
     const summaries = await cardSummaries(listings);
     res.json({ data: listings.map(({ company, __v, ...listing }) => ({ ...listing, ...summaries.get(String(company)) })) });
   } catch (error) { next(error); }

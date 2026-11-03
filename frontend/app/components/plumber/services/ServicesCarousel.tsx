@@ -8,7 +8,7 @@ import ServiceCard from "./ServiceCard";
 const AUTOPLAY_MS = 5000;
 
 /**
- * Two service cards at a time on every screen (like the gallery) that move on by themselves every few seconds.
+ * Service cards that move on by themselves every few seconds: two at a time on phones, three where there's room.
  * Swipe or use the arrows and dots; it pauses on hover, while focused, when the tab is hidden, and for
  * people who prefer reduced motion. Native scroll-snap does the sliding, so touch swiping just works.
  */
@@ -67,9 +67,9 @@ export default function ServicesCarousel({ services, hrefFor }: { services: Serv
   const arrow = "grid h-10 w-10 place-items-center rounded-full bg-white text-[#0b1f3b] shadow ring-1 ring-gray-200 hover:bg-[#0b1f3b] hover:text-white disabled:opacity-30";
   return (
     <div role="region" aria-roledescription="carousel" aria-label="Services" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onFocus={() => setFocused(true)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setFocused(false); }}>
-      <ul ref={track} className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-1 pb-2 pt-1 [scrollbar-width:none] @2xl:gap-5 [&::-webkit-scrollbar]:hidden">
+      <ul ref={track} className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-1 pb-2 pt-1 [scrollbar-width:none] @2xl:gap-4 [&::-webkit-scrollbar]:hidden">
         {services.map((service, index) => (
-          <li key={service.id} aria-roledescription="slide" aria-label={`${index + 1} of ${services.length}`} className="w-[calc(50%-0.375rem)] shrink-0 snap-start @2xl:w-[calc(50%-0.625rem)]">
+          <li key={service.id} aria-roledescription="slide" aria-label={`${index + 1} of ${services.length}`} className="w-[calc(50%-0.375rem)] shrink-0 snap-start @2xl:w-[calc(33.333%-0.667rem)]">
             <ServiceCard service={service} href={hrefFor(service)} />
           </li>
         ))}

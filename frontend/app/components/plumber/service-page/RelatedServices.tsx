@@ -13,7 +13,7 @@ export default function RelatedServices({ services, current, category, profileHr
         <h2 id="related-services" className="text-xl font-extrabold text-[#0b1f3b] sm:text-2xl">More services</h2>
         <Link href={`${profileHref}/services`} className="text-sm font-bold text-[#0b1f3b] hover:underline">See all</Link>
       </div>
-      <ul className="mt-4 grid grid-cols-2 gap-3 sm:gap-5">
+      <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         {others.map((service) => <li key={service.id}><ServiceCard service={service} href={`${profileHref}/services/${serviceSegment(service.name, service.id)}`} bookOnPage={false} /></li>)}
       </ul>
     </section>

@@ -20,6 +20,7 @@ export default function ServiceHero({ plumber, service, profileHref }: { plumber
         {service.emergency && <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-[11px] font-bold text-white"><FaBolt className="h-2.5 w-2.5" aria-hidden /> 24/7 emergency</span>}
       </div>
       <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-[#0b1f3b] sm:text-4xl lg:text-5xl">{service.name}</h1>
+      {service.tagline && <p className="mt-2 text-lg font-semibold text-[#a68600] sm:text-xl">{service.tagline}</p>}
       <p className="mt-2 text-sm font-semibold text-gray-500">by <Link href={profileHref} className="text-[#0b1f3b] underline-offset-2 hover:underline">{plumber.companyName}</Link>{plumber.location ? ` · ${plumber.location}` : ""}</p>
       {service.description && <p className="mt-5 max-w-3xl text-base leading-8 text-gray-600 sm:text-lg">{service.description}</p>}
       <p className="mt-5 flex flex-wrap items-baseline gap-x-2 text-[#0b1f3b]"><span className="text-3xl font-black tracking-tight">{service.price || "Free quote"}</span>{service.duration && <span className="text-sm font-semibold text-gray-500">· typically {service.duration}</span>}</p>

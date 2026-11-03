@@ -381,6 +381,7 @@ import { distanceLabel } from "./distance";
 import { useUserLocation } from "./useUserLocation";
 import CardExtras from "./CardExtras";
 import CardMediaCarousel from "./CardMediaCarousel";
+import PremiumBadge, { premiumCardClass } from "@/components/premium/PremiumBadge";
 
 interface Props {
   plumbers: Plumber[];
@@ -405,7 +406,7 @@ export default function PlumberCardGrid({ plumbers }: Props) {
           <Link
             key={plumber.id}
             href={plumberHref(plumber)}
-            className="group block min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg sm:rounded-2xl"
+            className={`group block min-w-0 overflow-hidden rounded-xl border bg-white transition hover:-translate-y-1 hover:shadow-lg sm:rounded-2xl ${premiumCardClass(plumber.premiumTier)}`}
           >
             {/* Image section */}
             <div className="relative h-32 w-full bg-gray-100 sm:h-44 lg:h-48">
@@ -434,6 +435,7 @@ export default function PlumberCardGrid({ plumbers }: Props) {
                     <h3 className="line-clamp-1 text-sm font-bold text-gray-900 sm:text-base">{plumber.companyName || "Unknown"}</h3>
                     {plumber.isVerified && <FaCheckCircle className="h-3.5 w-3.5 shrink-0 text-[#FFD60A] sm:h-4 sm:w-4" />}
                   </div>
+                  {plumber.premiumTier && <div className="mt-1"><PremiumBadge tier={plumber.premiumTier} /></div>}
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <div className="flex items-center gap-1">
                       <StarRating rating={plumber.rating ?? 0} size={12} />

@@ -25,7 +25,7 @@ export default function ServicesDirectory({ services, hrefs }: { services: Servi
     <div className="@container">
       <ServicesToolbar categories={categories} total={services.length} category={category} onCategory={setCategory} query={query} onQuery={setQuery} showSearch />
       {shown.length ? (
-        <ul className="mt-6 grid grid-cols-2 gap-3 @2xl:gap-5 @4xl:grid-cols-3 @6xl:grid-cols-4">
+        <ul className="mt-6 grid grid-cols-2 gap-3 @2xl:grid-cols-3 @2xl:gap-4 @5xl:grid-cols-4 @7xl:grid-cols-5">
           {shown.map((service) => <li key={service.id}><ServiceCard service={service} href={hrefs[service.id]} bookOnPage={false} /></li>)}
         </ul>
       ) : (

@@ -19,8 +19,18 @@ const companyListingSchema = new mongoose.Schema({
   services: [{ type: String, trim: true }],
   serviceAreas: [{ type: String, trim: true }],
   isPublished: { type: Boolean, default: true },
+  // Set by the premium system only (src/premium): tier and rank order the directory; `until` is when it ends.
+  premium: {
+    tier: { type: String, enum: ["premium", "elite"] },
+    rank: { type: Number, default: 0 },
+    until: Date,
+  },
+
   rating: { type: Number, default: 0, min: 0, max: 5 },
   reviewCount: { type: Number, default: 0, min: 0 },
 }, { timestamps: true });
+
+// The directory: premium first, then newest.
+companyListingSchema.index({ isPublished: 1, "premium.rank": -1, createdAt: -1 });
 
 export const CompanyListing = mongoose.model("CompanyListing", companyListingSchema);

@@ -500,6 +500,7 @@ import type { Plumber } from "@/components/find/types";
 import { openNowLabel } from "@/components/find/companyListing";
 import CoverSlideshow from "./CoverSlideshow";
 import { trackActivity, type ActivityEvent } from "@/components/activity/track";
+import PremiumBadge from "@/components/premium/PremiumBadge";
 
 const socialIcons: { key: keyof NonNullable<Plumber["socialLinks"]>; label: string; Icon: IconType }[] = [
   { key: "facebook", label: "Facebook", Icon: FaFacebook },
@@ -550,6 +551,7 @@ export default function ProfileHeader({ plumber }: { plumber: Plumber }) {
         <CoverSlideshow images={covers} name={plumber.companyName} />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-black/20" aria-hidden />
         <div className="absolute left-3 top-3 flex flex-wrap gap-1.5 sm:left-5 sm:top-4">
+          <PremiumBadge tier={plumber.premiumTier} size="md" />
           {plumber.isVerified && <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-[#0b1f3b] shadow sm:text-xs"><FaCheckCircle className="text-emerald-600" aria-hidden /> Verified</span>}
           {plumber.isEmergency && <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-bold text-white shadow sm:text-xs">24/7 Emergency</span>}
         </div>

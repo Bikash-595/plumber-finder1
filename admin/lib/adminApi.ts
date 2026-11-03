@@ -111,6 +111,9 @@ export const adminApi = {
   setCompanyStatus: (id: string, status: CompanyStatus) => adminRequest<{ data: AdminCompany }>(`/admin/companies/${id}/status`, { method: "PATCH", body: { status } }),
   freelancers: (params: { search?: string; status?: string; page?: number }) => adminRequest<Paginated<AdminFreelancer>>(`/admin/freelancers${query(params)}`),
   freelancerDocuments: (id: string) => adminRequest<{ data: CompanyVerification | null }>(`/admin/freelancers/${id}/documents`),
+  premium: (params: { status?: string; type?: string; page?: number }) => adminRequest<PremiumList>(`/admin/premium${query(params)}`),
+  activatePremium: (id: string, body: { plan?: "premium" | "elite"; months: number; amount: number; note?: string }) => adminRequest<{ data: AdminSubscription; message: string }>(`/admin/premium/${id}/activate`, { method: "POST", body }),
+  cancelPremium: (id: string, note?: string) => adminRequest<{ data: AdminSubscription; message: string }>(`/admin/premium/${id}/cancel`, { method: "POST", body: { note } }),
   setFreelancerStatus: (id: string, verificationStatus: FreelancerStatus) => adminRequest<{ data: AdminFreelancer }>(`/admin/freelancers/${id}/verification`, { method: "PATCH", body: { verificationStatus } }),
   bookings: (params: { search?: string; status?: string; page?: number }) => adminRequest<Paginated<AdminBooking> & { counts: Record<BookingStatus, number> }>(`/admin/bookings${query(params)}`),
   booking: (id: string) => adminRequest<{ data: AdminBookingDetail }>(`/admin/bookings/${id}`),
@@ -144,3 +147,13 @@ export const adminApi = {
 
 export const formatDate = (value?: string) => (value ? new Date(value).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }) : "—");
 export const formatMoney = (value = 0) => `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+// Premium plans (see backend src/premium and src/admin/premium).
+export type PremiumStatus = "pending" | "active" | "past_due" | "canceled" | "expired";
+export type AdminSubscription = {
+  id: string; providerType: "company" | "freelancer"; account: string; plan: "premium" | "elite"; planName: string; interval: "month" | "year";
+  status: PremiumStatus; source: "stripe" | "manual"; active: boolean; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean;
+  requestNote: string | null; name?: string; url?: string; accountName?: string; email?: string; createdAt: string;
+  history: { at: string; event: string; by: string; note?: string }[];
+};
+export type PremiumList = Paginated<AdminSubscription> & { counts: Record<PremiumStatus, number>; summary: { activePlans: number; monthlyRecurring: number; last30Days: number }; stripe: boolean };
