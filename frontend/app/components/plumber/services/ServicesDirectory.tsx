@@ -1,36 +1,39 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { FaSearch } from "react-icons/fa";
 import type { ServiceDetail } from "@/components/find/types";
 import ServiceCard from "./ServiceCard";
 import ServicesToolbar from "./ServicesToolbar";
+import ServicesFilterPanel from "./directory/ServicesFilterPanel";
+import { applyFilters, categoryCounts, emptyFilters, type ServiceFilters } from "./directory/servicesFilter";
 
-/** Every service, with category tabs and search: the all-services page. */
+/**
+ * The all-services page's body: filters (sidebar on desktop, chips on phones), search and sort, and the cards —
+ * 2 per row on phones, 3 on tablets and laptops, 4 on wide screens.
+ */
 export default function ServicesDirectory({ services, hrefs }: { services: ServiceDetail[]; hrefs: Record<string, string | undefined> }) {
-  const [category, setCategory] = useState("All");
-  const [query, setQuery] = useState("");
-  const categories = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const service of services) if (service.category) counts.set(service.category, (counts.get(service.category) ?? 0) + 1);
-    return [...counts.entries()];
-  }, [services]);
-  const shown = useMemo(() => {
-    const words = query.trim().toLowerCase();
-    return services
-      .filter((service) => category === "All" || service.category === category)
-      .filter((service) => !words || `${service.name} ${service.category ?? ""} ${service.description ?? ""} ${service.includes.join(" ")}`.toLowerCase().includes(words))
-      .sort((a, b) => Number(b.featured) - Number(a.featured));
-  }, [services, category, query]);
+  const [filters, setFilters] = useState<ServiceFilters>(emptyFilters);
+  const categories = useMemo(() => categoryCounts(services), [services]);
+  const shown = useMemo(() => applyFilters(services, filters), [services, filters]);
   return (
-    <div className="@container">
-      <ServicesToolbar categories={categories} total={services.length} category={category} onCategory={setCategory} query={query} onQuery={setQuery} showSearch />
-      {shown.length ? (
-        <ul className="mt-6 grid grid-cols-2 gap-3 @2xl:grid-cols-3 @2xl:gap-4 @5xl:grid-cols-4 @7xl:grid-cols-5">
-          {shown.map((service) => <li key={service.id}><ServiceCard service={service} href={hrefs[service.id]} bookOnPage={false} /></li>)}
-        </ul>
-      ) : (
-        <p className="mt-6 rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">No services match{query ? ` “${query}”` : " this category"}. <button type="button" onClick={() => { setQuery(""); setCategory("All"); }} className="font-bold text-[#0b1f3b] underline">Show all</button></p>
-      )}
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)]">
+      <ServicesFilterPanel filters={filters} onChange={setFilters} categories={categories} total={services.length} />
+      <div className="min-w-0 space-y-5">
+        <ServicesToolbar query={filters.query} onQuery={(query) => setFilters({ ...filters, query })} sort={filters.sort} onSort={(sort) => setFilters({ ...filters, sort })} shown={shown.length} total={services.length} />
+        {shown.length ? (
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 2xl:grid-cols-4">
+            {shown.map((service) => <li key={service.id}><ServiceCard service={service} href={hrefs[service.id]} bookOnPage={false} /></li>)}
+          </ul>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
+            <FaSearch className="mx-auto h-6 w-6 text-gray-300" aria-hidden />
+            <p className="mt-3 font-bold text-gray-900">No services match</p>
+            <p className="mt-1 text-sm text-gray-500">Try another category or search, or clear the filters.</p>
+            <button type="button" onClick={() => setFilters(emptyFilters)} className="mt-4 rounded-full bg-[#0b1f3b] px-5 py-2 text-sm font-bold text-white">Clear filters</button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
