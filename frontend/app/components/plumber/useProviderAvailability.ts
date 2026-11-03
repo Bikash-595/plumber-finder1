@@ -7,13 +7,14 @@ export type ProviderAvailability = { acceptingBookings: boolean; pauseMessage?: 
 
 const isoDay = (offsetDays: number) => new Date(Date.now() + offsetDays * 864e5).toISOString().slice(0, 10);
 
-/** A company's public booking rules (paused, minimum notice, days off). Freelancers have none, so this stays null. */
+/** A company's or freelancer's public booking rules (paused, minimum notice, days off). */
 export function useProviderAvailability(providerType: string | undefined, listingId: string) {
   const [availability, setAvailability] = useState<ProviderAvailability | null>(null);
   useEffect(() => {
-    if ((providerType ?? "company") !== "company" || !listingId) return;
+    if (!listingId) return;
+    const side = providerType === "freelancer" ? "freelancers" : "companies";
     const controller = new AbortController();
-    fetch(`${API_BASE_URL}/companies/availability/public/${encodeURIComponent(listingId)}`, { signal: controller.signal })
+    fetch(`${API_BASE_URL}/${side}/availability/public/${encodeURIComponent(listingId)}`, { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((body) => { if (body?.data) setAvailability(body.data); })
       .catch(() => {});

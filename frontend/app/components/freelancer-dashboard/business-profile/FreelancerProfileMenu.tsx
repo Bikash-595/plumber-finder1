@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { freelancerProfileSections } from "./FreelancerProfileForms";
+import { freelancerProfileSections } from "./freelancerProfileSections";
 
 export default function FreelancerProfileMenu() {
   const pathname = usePathname();

@@ -177,6 +177,10 @@ export interface ServiceDetail {
   emergency: boolean;
   featured: boolean;
   image?: string;
+  photoCount?: number;
+  videoCount?: number;
+  /** A YouTube still, used on cards when the service has a video but no photo. */
+  poster?: string;
 }
 
 export interface TeamMember {

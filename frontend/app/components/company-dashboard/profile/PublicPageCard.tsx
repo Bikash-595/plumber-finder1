@@ -5,6 +5,7 @@ import { useState } from "react";
 import { FaCheck, FaCopy, FaExternalLinkAlt, FaEyeSlash, FaGlobe } from "react-icons/fa";
 import UserAvatar from "@/components/UserAvatar";
 import type { ListingSummary } from "../companyApi";
+import { editorHref } from "@/components/utils/providerSide";
 
 /** The public listing: logo, name, live/hidden status, and the link to share. */
 export default function PublicPageCard({ listing }: { listing: ListingSummary | null }) {
@@ -14,12 +15,12 @@ export default function PublicPageCard({ listing }: { listing: ListingSummary | 
       <section className="rounded-2xl border border-dashed border-gray-300 bg-white p-6 text-center">
         <FaGlobe className="mx-auto h-6 w-6 text-gray-400" />
         <p className="mt-2 font-semibold text-gray-900">No public listing yet</p>
-        <p className="text-sm text-gray-500">Fill in your company profile to appear in the PlumberFinder directory.</p>
-        <Link href="/company-dashboard/business-profile/header-profile" className="mt-4 inline-block rounded-full bg-[#FFD60A] px-5 py-2 text-sm font-bold text-[#0b1f3b]">Start your profile</Link>
+        <p className="text-sm text-gray-500">Fill in your profile to appear in the PlumberFinder directory.</p>
+        <Link href={editorHref("header-profile")} className="mt-4 inline-block rounded-full bg-[#FFD60A] px-5 py-2 text-sm font-bold text-[#0b1f3b]">Start your profile</Link>
       </section>
     );
   }
-  const path = `/company/${listing.slug}`;
+  const path = listing.url ?? `/company/${listing.slug}`;
   const copy = async () => {
     try { await navigator.clipboard.writeText(`${window.location.origin}${path}`); setCopied(true); window.setTimeout(() => setCopied(false), 2000); } catch { /* clipboard blocked */ }
   };

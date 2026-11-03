@@ -46,6 +46,8 @@ export type Overview = {
 };
 export type AdminCustomer = { _id: string; name: string; email: string; phone?: string; createdAt: string; signInMethods: string[]; bookingCount: number };
 export type CompanyStatus = "pending" | "approved" | "suspended";
+/** Document links a company saved under Business Profile → Documents & Verification. */
+export type CompanyVerification = { license?: string; insurance?: string; panVat?: string; registrationCertificate?: string; notes?: string; updatedAt?: string };
 export type AdminCompany = { _id: string; companyName: string; email: string; phone?: string; status: CompanyStatus; createdAt: string; listing: { _id: string; isPublished: boolean; city?: string; state?: string; services?: string[] } | null };
 export type FreelancerStatus = "pending" | "verified" | "rejected";
 export type AdminFreelancer = { _id: string; name: string; email: string; phone?: string; verificationStatus: FreelancerStatus; createdAt: string; listing: { _id: string; displayName: string; headline?: string; city?: string; state?: string; isPublished: boolean } | null };
@@ -105,8 +107,10 @@ export const adminApi = {
   overview: () => adminRequest<{ data: Overview }>("/admin/overview"),
   users: (params: { search?: string; page?: number }) => adminRequest<Paginated<AdminCustomer>>(`/admin/users${query(params)}`),
   companies: (params: { search?: string; status?: string; page?: number }) => adminRequest<Paginated<AdminCompany>>(`/admin/companies${query(params)}`),
+  companyVerification: (id: string) => adminRequest<{ data: CompanyVerification | null }>(`/admin/companies/${id}/verification`),
   setCompanyStatus: (id: string, status: CompanyStatus) => adminRequest<{ data: AdminCompany }>(`/admin/companies/${id}/status`, { method: "PATCH", body: { status } }),
   freelancers: (params: { search?: string; status?: string; page?: number }) => adminRequest<Paginated<AdminFreelancer>>(`/admin/freelancers${query(params)}`),
+  freelancerDocuments: (id: string) => adminRequest<{ data: CompanyVerification | null }>(`/admin/freelancers/${id}/documents`),
   setFreelancerStatus: (id: string, verificationStatus: FreelancerStatus) => adminRequest<{ data: AdminFreelancer }>(`/admin/freelancers/${id}/verification`, { method: "PATCH", body: { verificationStatus } }),
   bookings: (params: { search?: string; status?: string; page?: number }) => adminRequest<Paginated<AdminBooking> & { counts: Record<BookingStatus, number> }>(`/admin/bookings${query(params)}`),
   booking: (id: string) => adminRequest<{ data: AdminBookingDetail }>(`/admin/bookings/${id}`),

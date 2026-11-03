@@ -6,7 +6,9 @@ export type FaqItem = { question: string; answer: string };
 const input = "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[#FFD60A] focus:ring-2 focus:ring-[#FFD60A]/30";
 
 /** Questions and answers for one article: add, edit, reorder, remove (up to `max`). */
-export default function FaqListEditor({ value, onChange, max = 15 }: { value: FaqItem[]; onChange: (faqs: FaqItem[]) => void; max?: number }) {
+type Props = { value: FaqItem[]; onChange: (faqs: FaqItem[]) => void; max?: number; title?: string; description?: string };
+
+export default function FaqListEditor({ value, onChange, max = 15, title = "Article FAQs", description = "Questions readers often ask about this topic. Shown under the article and in Google results." }: Props) {
   const set = (index: number, change: Partial<FaqItem>) => onChange(value.map((faq, i) => (i === index ? { ...faq, ...change } : faq)));
   const move = (index: number, delta: number) => {
     const next = [...value];
@@ -18,8 +20,8 @@ export default function FaqListEditor({ value, onChange, max = 15 }: { value: Fa
     <div className="rounded-2xl border border-gray-200 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-sm font-bold text-gray-900">Article FAQs <span className="font-normal text-gray-400">({value.length}/{max})</span></p>
-          <p className="text-xs text-gray-500">Questions readers often ask about this topic. Shown under the article and in Google results.</p>
+          <p className="text-sm font-bold text-gray-900">{title} <span className="font-normal text-gray-400">({value.length}/{max})</span></p>
+          <p className="text-xs text-gray-500">{description}</p>
         </div>
         <button type="button" disabled={value.length >= max} onClick={() => onChange([...value, { question: "", answer: "" }])} className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-[#0b1f3b] px-3 py-1.5 text-xs font-bold text-[#0b1f3b] hover:bg-gray-50 disabled:opacity-40"><FaPlus className="h-2.5 w-2.5" /> Add question</button>
       </div>

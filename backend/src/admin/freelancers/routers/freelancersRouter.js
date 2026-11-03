@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { listFreelancers, setFreelancerVerification } from "../controllers/freelancersController.js";
+import { getFreelancerDocuments, listFreelancers, setFreelancerVerification } from "../controllers/freelancersController.js";
 import { requireFreelancersAccess } from "../middleware/freelancersAuth.js";
 import { validateFreelancersStatus } from "../middleware/validateFreelancersStatus.js";
 
@@ -7,4 +7,5 @@ import { validateFreelancersStatus } from "../middleware/validateFreelancersStat
 export const freelancersRouter = Router();
 freelancersRouter.use(requireFreelancersAccess);
 freelancersRouter.get("/", listFreelancers);
+freelancersRouter.get("/:id/documents", getFreelancerDocuments);
 freelancersRouter.patch("/:id/verification", validateFreelancersStatus, setFreelancerVerification);

@@ -1,5 +1,6 @@
 import { Freelancer } from "../../../auth/freelancer/models/Freelancer.js";
 import { FreelancerListing } from "../../../freelancer/listing/models/FreelancerListing.js";
+import { FreelancerVerification } from "../../../freelancer/verification/models/FreelancerVerification.js";
 import { paginatedList, searchFilter } from "../../shared/listQuery.js";
 import { freelancersConfig } from "../config/freelancersConfig.js";
 
@@ -20,5 +21,13 @@ export async function setFreelancerVerification(req, res, next) {
     const freelancer = await Freelancer.findByIdAndUpdate(req.params.id, { $set: { verificationStatus: req.validated.verificationStatus } }, { new: true, runValidators: true }).select(freelancersConfig.fields);
     if (!freelancer) return res.status(404).json({ message: "Freelancer not found." });
     res.json({ message: `Freelancer marked ${freelancer.verificationStatus}.`, data: freelancer });
+  } catch (error) { next(error); }
+}
+
+/** GET /api/admin/freelancers/:id/documents — the licence/insurance links the freelancer saved (or null). */
+export async function getFreelancerDocuments(req, res, next) {
+  try {
+    if (!(await Freelancer.exists({ _id: req.params.id }))) return res.status(404).json({ message: "Freelancer not found." });
+    res.json({ data: await FreelancerVerification.findOne({ freelancer: req.params.id }).select("-freelancer -__v").lean() });
   } catch (error) { next(error); }
 }

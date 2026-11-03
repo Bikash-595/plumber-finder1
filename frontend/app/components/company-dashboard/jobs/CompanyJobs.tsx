@@ -14,6 +14,10 @@ import { operationsApi, type JobsPage } from "../operationsApi";
 import JobCard from "./JobCard";
 import JobDrawer from "./JobDrawer";
 import { jobStages } from "./jobStages";
+import { dashBase } from "@/components/utils/providerSide";
+import { isFreelancer } from "@/components/utils/providerSide";
+
+const noTeam = () => Promise.resolve([] as never[]);
 
 /** /company-dashboard/jobs — accepted jobs on a board by stage (or as a list), with a drawer for each job. */
 export default function CompanyJobs() {
@@ -23,7 +27,8 @@ export default function CompanyJobs() {
   const [assignee, setAssignee] = useState("");
   const key = `company-jobs-${view}-${q}-${assignee}`;
   const { data, error, loading, reload } = useCompanyData<JobsPage>(key, () => operationsApi.jobs({ q, assignee, stage: view === "cancelled" ? "cancelled" : undefined }));
-  const team = useCompanyData("company-team", growthApi.team).data;
+  // Freelancers work alone: no technician filter.
+  const team = useCompanyData("company-team", isFreelancer() ? noTeam : growthApi.team).data;
   const onSearch = useCallback((value: string) => setQ(value), []);
   const jobs = data?.data ?? [];
 
@@ -48,7 +53,7 @@ export default function CompanyJobs() {
       <Notice>{error}</Notice>
 
       {loading ? <SkeletonRows rows={2} className="h-40" /> : jobs.length === 0 ? (
-        <EmptyState icon={FaBriefcase} title={q ? "No matching jobs" : view === "cancelled" ? "No cancelled jobs" : "No jobs yet"} text={view === "board" && !q ? "Accept a booking request and it becomes a job here." : undefined} action={view === "board" && !q ? { label: "See booking requests", href: "/company-dashboard/leads" } : undefined} />
+        <EmptyState icon={FaBriefcase} title={q ? "No matching jobs" : view === "cancelled" ? "No cancelled jobs" : "No jobs yet"} text={view === "board" && !q ? "Accept a booking request and it becomes a job here." : undefined} action={view === "board" && !q ? { label: "See booking requests", href: `${dashBase()}/leads` } : undefined} />
       ) : view === "cancelled" ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{jobs.map((job) => <JobCard key={job._id} job={job} onOpen={() => setOpen(job._id)} />)}</div>
       ) : (

@@ -141,10 +141,10 @@ export default function CollectionForm({ section, title, description, itemName, 
           const error = errors[field.name];
           return <label key={field.name} className={field.type === "textarea" || isUploadField(field) ? "md:col-span-2" : field.type === "checkbox" ? "flex items-center gap-3 self-end pb-2" : ""}>
             <span className="text-sm font-semibold text-gray-700">{field.label}{field.required && <span className="text-red-500"> *</span>}</span>
-            {field.type === "textarea" ? <textarea rows={4} value={String(value ?? "")} placeholder={placeholder} onChange={(e) => update(field.name, e.target.value)} aria-invalid={Boolean(error)} className={inputClass} />
-              : field.type === "checkbox" ? <input type="checkbox" checked={Boolean(value)} onChange={(e) => update(field.name, e.target.checked)} className="h-4 w-4 accent-[#0b1f3b]" />
+            {field.type === "textarea" ? <textarea rows={4} name={field.name} value={String(value ?? "")} placeholder={placeholder} onChange={(e) => update(field.name, e.target.value)} aria-invalid={Boolean(error)} className={inputClass} />
+              : field.type === "checkbox" ? <input type="checkbox" name={field.name} checked={Boolean(value)} onChange={(e) => update(field.name, e.target.checked)} className="h-4 w-4 accent-[#0b1f3b]" />
               : isUploadField(field) ? <LocalMediaUpload label="" kind={field.type as "image" | "video" | "media"} value={String(value ?? "")} onChange={(next) => update(field.name, next)} />
-              : <input type={field.type ?? "text"} value={String(value ?? "")} placeholder={placeholder} onChange={(e) => update(field.name, e.target.value)} aria-invalid={Boolean(error)} className={inputClass} />}
+              : <input type={field.type ?? "text"} name={field.name} value={String(value ?? "")} placeholder={placeholder} onChange={(e) => update(field.name, e.target.value)} aria-invalid={Boolean(error)} className={inputClass} />}
             {error && <span className="mt-1 block text-xs font-medium text-red-600">{error}</span>}
           </label>;
         })}

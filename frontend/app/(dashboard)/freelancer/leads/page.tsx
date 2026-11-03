@@ -1,5 +1,5 @@
-import LeadsSection from "@/components/company-dashboard/sections/LeadsSection";
+import CompanyLeads from "@/components/company-dashboard/leads/CompanyLeads";
 
 export default function FreelancerLeadsPage() {
-  return <LeadsSection />;
+  return <CompanyLeads />;
 }

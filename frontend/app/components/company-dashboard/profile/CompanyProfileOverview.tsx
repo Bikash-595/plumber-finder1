@@ -10,6 +10,7 @@ import { companyApi, useCompanyData } from "../companyApi";
 import StrengthChecklist from "../ui/StrengthChecklist";
 import StrengthRing from "../ui/StrengthRing";
 import PublicPageCard from "./PublicPageCard";
+import { editorHref, isFreelancer } from "@/components/utils/providerSide";
 
 const editors = [
   { label: "Header & logo", href: "header-profile", icon: FaPen },
@@ -20,6 +21,21 @@ const editors = [
   { label: "Team", href: "team", icon: FaUsers },
   { label: "Service areas", href: "service-areas", icon: FaMapMarkedAlt },
   { label: "Business hours", href: "business-hours", icon: FaClock },
+  { label: "FAQs", href: "faqs", icon: FaQuestionCircle },
+  { label: "Social links", href: "social-links", icon: FaShareAlt },
+  { label: "Special offers", href: "offers", icon: FaTag },
+  { label: "Reviews & ratings", href: "reviews", icon: FaStar },
+];
+// Freelancers have no team or overview-at-a-glance; they have Overview and Contact instead.
+const freelancerEditors = [
+  { label: "Your profile & photo", href: "header-profile", icon: FaPen },
+  { label: "Overview", href: "overview", icon: FaBuilding },
+  { label: "Services", href: "services", icon: FaTools },
+  { label: "Work gallery", href: "gallery", icon: FaImages },
+  { label: "Previous projects", href: "projects", icon: FaBriefcase },
+  { label: "Service areas", href: "service-areas", icon: FaMapMarkedAlt },
+  { label: "Opening hours", href: "opening-hours", icon: FaClock },
+  { label: "Contact", href: "contact", icon: FaShareAlt },
   { label: "FAQs", href: "faqs", icon: FaQuestionCircle },
   { label: "Social links", href: "social-links", icon: FaShareAlt },
   { label: "Special offers", href: "offers", icon: FaTag },
@@ -36,9 +52,10 @@ const levelText: Record<string, string> = {
 /** /company-dashboard/profile — the public profile at a glance: strength %, the checklist, and every editor. */
 export default function CompanyProfileOverview() {
   const { data, error, loading } = useCompanyData("company-strength", companyApi.strength);
+  const freelancer = isFreelancer();
   return (
     <div className="space-y-6">
-      <PageHeader icon={FaBuilding} title="Company Profile" description="What customers see in the directory, how complete it is, and where to improve it." />
+      <PageHeader icon={FaBuilding} title={freelancer ? "My Profile" : "Company Profile"} description="What customers see in the directory, how complete it is, and where to improve it." />
       <Notice>{error}</Notice>
       {loading || !data ? <div className="space-y-4"><Skeleton className="h-24 rounded-2xl" /><Skeleton className="h-80 rounded-2xl" /></div> : (
         <>
@@ -59,8 +76,8 @@ export default function CompanyProfileOverview() {
           </Panel>
           <Panel title="Edit your profile">
             <nav aria-label="Profile editors" className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-              {editors.map(({ label, href, icon: Icon }) => (
-                <Link key={href} href={`/company-dashboard/business-profile/${href}`} className="flex items-center gap-2.5 rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-semibold text-gray-800 transition hover:border-[#FFD60A] hover:bg-[#FFD60A]/10">
+              {(freelancer ? freelancerEditors : editors).map(({ label, href, icon: Icon }) => (
+                <Link key={`${label}-${href}`} href={freelancer ? `/freelancer/business-profile/${href}` : editorHref(href)} className="flex items-center gap-2.5 rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-semibold text-gray-800 transition hover:border-[#FFD60A] hover:bg-[#FFD60A]/10">
                   <Icon className="h-3.5 w-3.5 shrink-0 text-[#b39200]" />{label}
                 </Link>
               ))}

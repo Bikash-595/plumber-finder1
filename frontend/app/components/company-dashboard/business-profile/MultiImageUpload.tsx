@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useRef, useState } from "react";
 import { FaArrowLeft, FaArrowRight, FaPlus, FaTrash } from "react-icons/fa";
 import { compressImage } from "./LocalMediaUpload";
 
@@ -17,7 +17,7 @@ const MAX_TOTAL = 7_500_000;
 
 /** Several photos (e.g. cover photos): add many at once, reorder with the arrows, remove. The first one leads. */
 export default function MultiImageUpload({ label, value, onChange, max = 8, hint }: Props) {
-  const id = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const room = max - value.length;
@@ -53,7 +53,9 @@ export default function MultiImageUpload({ label, value, onChange, max = 8, hint
     <div>
       <span className="text-sm font-semibold text-gray-700">{label} <span className="font-normal text-gray-400">({value.length}/{max})</span></span>
       {hint && <p className="mt-0.5 text-xs text-gray-500">{hint}</p>}
-      <input id={id} type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={(event) => { add(event.target.files); event.target.value = ""; }} className="sr-only" disabled={busy || room <= 0} />
+      {/* Fully hidden (display: none) and opened by the button below: a hidden input can't take focus, so the
+          browser never scrolls the page to it when the picker opens. */}
+      <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={(event) => { add(event.target.files); event.target.value = ""; }} className="hidden" disabled={busy || room <= 0} tabIndex={-1} aria-hidden />
       <ul className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {value.map((image, index) => (
           <li key={`${index}-${image.slice(-24)}`} className="group relative aspect-[16/9] overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
@@ -71,11 +73,11 @@ export default function MultiImageUpload({ label, value, onChange, max = 8, hint
         ))}
         {room > 0 && (
           <li>
-            <label htmlFor={id} className={`flex aspect-[16/9] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 text-center text-xs text-gray-500 transition hover:border-[#FFD60A] hover:bg-[#FFD60A]/5 ${busy ? "opacity-60" : ""}`}>
+            <button type="button" disabled={busy} onClick={() => inputRef.current?.click()} className={`flex aspect-[16/9] w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 text-center text-xs text-gray-500 transition hover:border-[#FFD60A] hover:bg-[#FFD60A]/5 ${busy ? "opacity-60" : ""}`}>
               <FaPlus className="h-4 w-4 text-[#0b1f3b]" />
               <span className="font-semibold text-[#0b1f3b]">{busy ? "Adding…" : value.length ? "Add more photos" : "Add photos"}</span>
               <span>Choose several at once</span>
-            </label>
+            </button>
           </li>
         )}
       </ul>

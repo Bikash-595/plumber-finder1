@@ -2,7 +2,8 @@ import { ProfileActivity } from "../../../activity/ProfileActivity.js";
 import { CustomerReview } from "../../../reviews/models/index.js";
 import { UserBooking } from "../../../user/bookings/models/UserBooking.js";
 import { analyticsConfig as config } from "../config/analyticsConfig.js";
-import { activityTotals, bookingTotals, DAY_MS, listingOf, money, pctChange, toId } from "../../dashboard/services/metrics.js";
+import { listingFor, sideOf } from "../../../shared/business/sides.js";
+import { activityTotals, bookingTotals, DAY_MS, money, pctChange, toId } from "../../dashboard/services/metrics.js";
 
 const startOfDay = (date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 
@@ -25,19 +26,20 @@ export async function getAnalytics(req, res, next) {
   try {
     const days = config.ranges.includes(Number(req.query.days)) ? Number(req.query.days) : config.defaultDays;
     const now = new Date();
+    const { type } = sideOf(req);
     const company = toId(req.auth.sub);
-    const scope = { providerType: "company", providerAccount: company };
+    const scope = { providerType: type, providerAccount: company };
     const { format, from, keys } = buckets(days, now);
     const prevFrom = new Date(from.getTime() - (now.getTime() - from.getTime()));
-    const listing = await listingOf(company);
-    const activityScope = listing ? { providerType: "company", providerId: String(listing._id) } : null;
+    const listing = await listingFor(type, company);
+    const activityScope = listing ? { providerType: type, providerId: String(listing._id) } : null;
     const dateKey = (field) => ({ $dateToString: { format, date: field } });
 
     const [current, previous, bookingsNow, bookingsPrev, viewsByDay, requestsByDay, completedByDay, topServices, weekdays, reviewRows, statuses] = await Promise.all([
-      activityTotals(listing?._id, from, now),
-      activityTotals(listing?._id, prevFrom, from),
-      bookingTotals(company, from, now),
-      bookingTotals(company, prevFrom, from),
+      activityTotals(listing?._id, from, now, type),
+      activityTotals(listing?._id, prevFrom, from, type),
+      bookingTotals(company, from, now, type),
+      bookingTotals(company, prevFrom, from, type),
       activityScope ? ProfileActivity.aggregate([{ $match: { ...activityScope, event: "profile_view", createdAt: { $gte: from } } }, { $group: { _id: dateKey("$createdAt"), count: { $sum: 1 } } }]) : [],
       UserBooking.aggregate([{ $match: { ...scope, createdAt: { $gte: from } } }, { $group: { _id: dateKey("$createdAt"), count: { $sum: 1 } } }]),
       UserBooking.aggregate([{ $match: { ...scope, status: "completed", completedAt: { $gte: from } } }, { $group: { _id: dateKey("$completedAt"), count: { $sum: 1 }, revenue: { $sum: { $multiply: [{ $ifNull: ["$price", 0] }, { $ifNull: ["$quantity", 1] }] } } } }]),

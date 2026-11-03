@@ -14,6 +14,9 @@ const freelancerSchema = new mongoose.Schema({
   verificationStatus: { type: String, enum: ["pending", "verified", "rejected"], default: "pending" },
   role: { type: String, default: "freelancer", immutable: true },
   accountType: { type: String, default: "freelancer", immutable: true },
+  // Bumped by "Sign out everywhere" and password changes, which ends every older session (see sessions.js).
+  tokenVersion: { type: Number, default: 0 },
+  passwordChangedAt: { type: Date },
 }, { timestamps: true });
 
 freelancerSchema.pre("save", async function hashPassword() {

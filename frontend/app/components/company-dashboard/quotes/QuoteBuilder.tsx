@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { providerApi, type ProviderBooking } from "@/components/bookings/bookingsApi";
+import { providerApi, type ProviderBase, type ProviderBooking } from "@/components/bookings/bookingsApi";
 import Drawer from "@/components/dashboard/ui/Drawer";
 import { formatMoney } from "../companyApi";
 import { growthApi, previewTotals, type Quote, type QuoteLine } from "../growthApi";
 import LineItemsEditor from "./LineItemsEditor";
+import { apiBase } from "@/components/utils/providerSide";
 
 const field = "mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#FFD60A] focus:ring-2 focus:ring-[#FFD60A]/30";
 const inDays = (days: number) => new Date(Date.now() + days * 864e5).toISOString().slice(0, 10);
@@ -23,7 +24,7 @@ export default function QuoteBuilder({ open, draft, bookingId, onClose, onSaved 
   const [error, setError] = useState("");
   useEffect(() => {
     if (!open || draft) return;
-    providerApi.list("/companies", { page: 1 }).then((res) => setBookings(res.data.filter(quotable))).catch(() => setBookings([]));
+    providerApi.list(apiBase() as ProviderBase, { page: 1 }).then((res) => setBookings(res.data.filter(quotable))).catch(() => setBookings([]));
   }, [open, draft]);
   const totals = previewTotals(form.items, form.discount, form.taxRate);
 

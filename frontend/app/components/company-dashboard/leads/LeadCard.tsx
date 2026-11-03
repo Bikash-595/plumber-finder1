@@ -4,6 +4,7 @@ import UserAvatar from "@/components/UserAvatar";
 import StatusPill from "@/components/dashboard/ui/StatusPill";
 import { formatMoney } from "../companyApi";
 import { visitDate, waiting, type Lead } from "../operationsApi";
+import { dashBase } from "@/components/utils/providerSide";
 
 const stageMeta = { new: { label: "New", tone: "warning" }, won: { label: "Won", tone: "success" }, lost: { label: "Lost", tone: "neutral" } } as const;
 
@@ -31,7 +32,7 @@ export default function LeadCard({ lead }: { lead: Lead }) {
       </div>
       <div className="flex items-center gap-3 sm:flex-col sm:items-end">
         {lead.price ? <p className="text-lg font-bold tabular-nums text-gray-900">{formatMoney(lead.price * (lead.quantity ?? 1))}</p> : <p className="text-xs text-gray-400">Quote needed</p>}
-        <Link href={`/company-dashboard/bookings?booking=${lead._id}`} className={`rounded-full px-4 py-2 text-sm font-bold ${lead.stage === "new" ? "bg-[#0b1f3b] text-white hover:bg-[#17345a]" : "border border-gray-200 text-gray-700 hover:bg-gray-50"}`}>{lead.stage === "new" ? "Accept or decline" : "View booking"}</Link>
+        <Link href={`${dashBase()}/bookings?booking=${lead._id}`} className={`rounded-full px-4 py-2 text-sm font-bold ${lead.stage === "new" ? "bg-[#0b1f3b] text-white hover:bg-[#17345a]" : "border border-gray-200 text-gray-700 hover:bg-gray-50"}`}>{lead.stage === "new" ? "Accept or decline" : "View booking"}</Link>
       </div>
     </article>
   );

@@ -1,3 +1,4 @@
+import { sides } from "../../../shared/business/sides.js";
 import mongoose from "mongoose";
 import { Quote } from "../../../company/quotes/models/Quote.js";
 import { effectiveStatus } from "../../../company/quotes/services/quoteMath.js";
@@ -34,7 +35,7 @@ export const userQuotesController = {
       Object.assign(booking, { price: quote.total, quantity: 1, originalPrice: quote.subtotal, discountAmount: quote.discount || undefined });
       booking.history.push({ status: booking.status, by: "customer", note: `Accepted quote ${quote.number} (${quote.total.toFixed(2)})`, at: new Date() });
       await booking.save();
-      await notifyProvider(quote.providerType, quote.providerAccount, { type: "booking", title: `Quote ${quote.number} accepted`, message: `${quote.customerName ?? "The customer"} accepted your quote for ${quote.bookingReference}: $${quote.total.toFixed(2)}.`, link: `/company-dashboard/quotes?quote=${quote._id}`, booking: booking._id });
+      await notifyProvider(quote.providerType, quote.providerAccount, { type: "booking", title: `Quote ${quote.number} accepted`, message: `${quote.customerName ?? "The customer"} accepted your quote for ${quote.bookingReference}: $${quote.total.toFixed(2)}.`, link: `${sides[quote.providerType]?.dashboard ?? "/company-dashboard"}/quotes?quote=${quote._id}`, booking: booking._id });
       res.json({ message: "Quote accepted. The plumber has been told.", data: present(quote.toObject()) });
     } catch (error) { next(error); }
   },
@@ -48,7 +49,7 @@ export const userQuotesController = {
       const reason = typeof req.body?.reason === "string" ? req.body.reason.trim().slice(0, 500) : "";
       Object.assign(quote, { status: "declined", respondedAt: new Date(), declineReason: reason || undefined });
       await quote.save();
-      await notifyProvider(quote.providerType, quote.providerAccount, { type: "booking", title: `Quote ${quote.number} declined`, message: `${quote.customerName ?? "The customer"} declined your quote for ${quote.bookingReference}${reason ? `: "${reason}"` : "."}`, link: `/company-dashboard/quotes?quote=${quote._id}` });
+      await notifyProvider(quote.providerType, quote.providerAccount, { type: "booking", title: `Quote ${quote.number} declined`, message: `${quote.customerName ?? "The customer"} declined your quote for ${quote.bookingReference}${reason ? `: "${reason}"` : "."}`, link: `${sides[quote.providerType]?.dashboard ?? "/company-dashboard"}/quotes?quote=${quote._id}` });
       res.json({ message: "Quote declined.", data: present(quote.toObject()) });
     } catch (error) { next(error); }
   },

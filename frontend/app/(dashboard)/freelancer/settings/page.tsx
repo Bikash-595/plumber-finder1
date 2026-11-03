@@ -1,5 +1,6 @@
-import SettingsSection from "@/components/company-dashboard/sections/SettingsSection";
+import CompanySettingsView from "@/components/company-dashboard/settings/CompanySettings";
 
+/** Account, email notifications, password and sign-in security. */
 export default function FreelancerSettingsPage() {
-  return <SettingsSection />;
+  return <CompanySettingsView />;
 }

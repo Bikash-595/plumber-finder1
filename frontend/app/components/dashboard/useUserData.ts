@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useEffectEvent, useState, useSyncExternalStore } from "react";
+import { readStoredUser } from "@/components/utils/auth";
 import { isCustomerSignedIn, USER_DATA_EVENT, type Page } from "@/components/utils/userApi";
 import { fetchShared, isFresh, readCache, writeCache } from "./dataCache";
 
@@ -18,6 +19,21 @@ function subscribe(onChange: () => void) {
 /** Whether a customer is signed in. False during server rendering, so hydration stays consistent. */
 export function useCustomerSignedIn() {
   return useSyncExternalStore(subscribe, isCustomerSignedIn, () => false);
+}
+
+export type ViewerType = "guest" | "customer" | "business";
+const viewerType = (): ViewerType => {
+  if (isCustomerSignedIn()) return "customer";
+  const user = readStoredUser();
+  return user?.accessToken && (user.accountType === "company" || user.accountType === "freelancer") ? "business" : "guest";
+};
+
+/**
+ * Who is looking at a public page: a guest, a signed-in customer, or a company/freelancer account.
+ * "guest" during server rendering, so hydration stays consistent.
+ */
+export function useViewerType() {
+  return useSyncExternalStore(subscribe, viewerType, () => "guest" as ViewerType);
 }
 
 const message = (caught: unknown) => (caught instanceof Error ? caught.message : "Something went wrong.");

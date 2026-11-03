@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { FaImage, FaTrash, FaUpload, FaVideo } from "react-icons/fa";
 
 export type MediaKind = "image" | "video" | "media";
@@ -43,8 +43,12 @@ export function compressImage(file: File, maxDimension = 1200): Promise<{ dataUr
   });
 }
 
+function PreviewBox({ onClick, className, children }: { onClick?: () => void; className: string; children: ReactNode }) {
+  return onClick ? <button type="button" onClick={onClick} className={className}>{children}</button> : <div className={className}>{children}</div>;
+}
+
 export default function LocalMediaUpload({ label, value = "", kind = "image", onChange }: Props) {
-  const id = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
   const preview = value;
   const isVideo = kind === "video" || preview.startsWith("data:video/");
@@ -71,13 +75,17 @@ export default function LocalMediaUpload({ label, value = "", kind = "image", on
   };
 
   const Icon = kind === "video" ? FaVideo : FaImage;
+  const choose = () => inputRef.current?.click();
   return <div>
     <span className="text-sm font-semibold text-gray-700">{label}</span>
-    <input id={id} type="file" accept={accepts[kind]} onChange={(event) => selectFile(event.target.files?.[0])} className="sr-only" />
-    <label htmlFor={id} className="mt-2 flex min-h-32 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 p-3 text-center transition hover:border-[#FFD60A] hover:bg-[#FFD60A]/5">
+    {/* Fully hidden (display: none) and opened by the buttons below: a hidden input can't take focus, so the
+        browser never scrolls the page to it when the picker opens. */}
+    <input ref={inputRef} type="file" accept={accepts[kind]} onChange={(event) => { selectFile(event.target.files?.[0]); event.target.value = ""; }} className="hidden" tabIndex={-1} aria-hidden />
+    {/* A video preview has its own controls, so then the box isn't a button ("Choose local file" below still is). */}
+    <PreviewBox onClick={preview && isVideo ? undefined : choose} className="mt-2 flex min-h-32 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 p-3 text-center transition hover:border-[#FFD60A] hover:bg-[#FFD60A]/5">
       {preview ? (isVideo ? <video src={preview} controls className="max-h-48 max-w-full rounded-lg" /> : <img src={preview} alt="Selected upload preview" className="max-h-48 max-w-full rounded-lg object-cover" />) : <span className="flex flex-col items-center gap-2 text-sm text-gray-500"><Icon className="text-xl text-[#0b1f3b]" /><span>Click to choose {kind === "media" ? "an image or video" : `a ${kind}`} from your device</span><span className="text-xs text-gray-400">PNG, JPG, WEBP, MP4, or WEBM · max 4 MB</span></span>}
-    </label>
-    <div className="mt-2 flex items-center gap-3"><label htmlFor={id} className="inline-flex cursor-pointer items-center gap-2 text-xs font-bold text-[#0b1f3b]"><FaUpload /> Choose local file</label>{preview && <button type="button" onClick={() => onChange("")} className="inline-flex items-center gap-1 text-xs font-bold text-red-600"><FaTrash /> Remove</button>}</div>
+    </PreviewBox>
+    <div className="mt-2 flex items-center gap-3"><button type="button" onClick={choose} className="inline-flex cursor-pointer items-center gap-2 text-xs font-bold text-[#0b1f3b]"><FaUpload /> Choose local file</button>{preview && <button type="button" onClick={() => onChange("")} className="inline-flex items-center gap-1 text-xs font-bold text-red-600"><FaTrash /> Remove</button>}</div>
     {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
   </div>;
 }

@@ -10,6 +10,8 @@ import { Stars } from "@/components/reviews/Stars";
 import { formatMoney } from "../companyApi";
 import { stageLabel } from "../jobs/jobStages";
 import { operationsApi, visitDate, type CustomerDetail, type CustomerRow } from "../operationsApi";
+import { apiBase, dashBase, editorHref } from "@/components/utils/providerSide";
+import type { ProviderBase } from "@/components/bookings/bookingsApi";
 
 const tones: Record<string, "info" | "success" | "warning" | "danger" | "neutral" | "violet"> = { pending: "warning", scheduled: "info", in_progress: "violet", awaiting_confirmation: "warning", completed: "success", disputed: "danger", cancelled: "neutral", declined: "neutral" };
 
@@ -41,7 +43,7 @@ export default function CustomerDrawer({ customer, onClose }: { customer: Custom
               {customer.email && <a href={`mailto:${customer.email}`} className="flex items-center gap-2 break-all text-[#0b1f3b] hover:underline"><FaEnvelope className="h-3 w-3" />{customer.email}</a>}
             </div>
           ) : <p className="flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 text-sm text-gray-600"><FaLock className="h-3 w-3" />Contact details are shared once you accept one of their bookings.</p>}
-          {latestOpen && <MessageButton base="/companies" bookingId={latestOpen._id} label="Message customer" />}
+          {latestOpen && <MessageButton base={apiBase() as ProviderBase} bookingId={latestOpen._id} label="Message customer" />}
           {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
           <section>
             <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Bookings</h3>
@@ -49,7 +51,7 @@ export default function CustomerDrawer({ customer, onClose }: { customer: Custom
               <ul className="mt-2 divide-y divide-gray-100 rounded-xl border border-gray-200">
                 {data.bookings.map((b) => (
                   <li key={b._id}>
-                    <Link href={`/company-dashboard/bookings?booking=${b._id}`} className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-gray-50">
+                    <Link href={`${dashBase()}/bookings?booking=${b._id}`} className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-gray-50">
                       <span className="min-w-0 flex-1"><span className="block truncate font-semibold text-gray-900">{b.service}</span><span className="block text-xs text-gray-500"><span className="font-mono">{b.reference}</span> · {visitDate(b.scheduledDate)}</span></span>
                       {b.price ? <span className="text-sm font-semibold tabular-nums">{formatMoney(b.price * (b.quantity ?? 1))}</span> : null}
                       <StatusPill tone={tones[b.status] ?? "neutral"}>{stageLabel[b.status] ?? (b.status === "pending" ? "New request" : "Declined")}</StatusPill>
@@ -62,7 +64,7 @@ export default function CustomerDrawer({ customer, onClose }: { customer: Custom
           {data && data.reviews.length > 0 && (
             <section>
               <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Their reviews of you</h3>
-              <ul className="mt-2 space-y-2">{data.reviews.map((r) => <li key={r._id} className="rounded-xl border border-gray-200 p-3 text-sm"><Stars value={r.rating} size="h-3 w-3" />{r.title && <p className="mt-1 font-semibold text-gray-900">{r.title}</p>}<p className="text-gray-700">{r.body}</p>{!r.reply && <Link href="/company-dashboard/business-profile/reviews" className="mt-1 inline-block text-xs font-semibold text-[#8a7300] hover:underline">Reply →</Link>}</li>)}</ul>
+              <ul className="mt-2 space-y-2">{data.reviews.map((r) => <li key={r._id} className="rounded-xl border border-gray-200 p-3 text-sm"><Stars value={r.rating} size="h-3 w-3" />{r.title && <p className="mt-1 font-semibold text-gray-900">{r.title}</p>}<p className="text-gray-700">{r.body}</p>{!r.reply && <Link href={editorHref("reviews")} className="mt-1 inline-block text-xs font-semibold text-[#8a7300] hover:underline">Reply →</Link>}</li>)}</ul>
             </section>
           )}
         </div>

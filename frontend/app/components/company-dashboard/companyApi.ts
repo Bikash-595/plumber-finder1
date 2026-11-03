@@ -4,6 +4,7 @@ import { useCallback, useEffect, useEffectEvent, useState } from "react";
 import { apiRequest } from "@/components/utils/apiClient";
 import { readStoredUser, storeUser } from "@/components/utils/auth";
 import { fetchShared, readCache, writeCache } from "@/components/dashboard/dataCache";
+import { apiBase } from "@/components/utils/providerSide";
 
 // The company dashboard's own endpoints: /api/companies/dashboard, /analytics, /settings.
 
@@ -11,12 +12,13 @@ export type Kpi = { value: number; previous: number; change: number };
 export type Rate = { value: number | null; previous: number | null };
 export type StrengthItem = { key: string; group: string; label: string; weight: number; done: boolean; progress?: string; tip: string; href: string };
 export type Strength = { percent: number; level: string; items: StrengthItem[]; next: string[]; extras: { blogs: number; services: number; photos: number; reviews: number } };
-export type ListingSummary = { id: string; slug: string; name: string; published: boolean; logo: string | null; city?: string; state?: string };
+/** The public listing; `url` is /company/<slug> for companies and /plumber/<id> for freelancers. */
+export type ListingSummary = { id: string; slug: string; name: string; published: boolean; logo: string | null; city?: string; state?: string; url?: string };
 export type BookingRow = { _id: string; reference?: string; customerName?: string; service: string; status: string; scheduledDate?: string; timeSlot?: string; price?: number; quantity?: number; createdAt: string };
 export type NoticeRow = { _id: string; type: "booking" | "review" | "comment" | "system"; title: string; message?: string; link?: string; read: boolean; createdAt: string };
 
 export type CompanyDashboard = {
-  account: { companyName?: string; status?: "pending" | "approved" | "suspended"; emailVerified: boolean };
+  account: { companyName?: string; status?: "pending" | "approved" | "suspended" | "rejected"; emailVerified: boolean };
   listing: ListingSummary | null;
   strength: { percent: number; level: string; next: StrengthItem[] };
   period: { days: number };
@@ -47,8 +49,9 @@ export type CompanySettings = {
   security: { hasPassword: boolean; googleLinked: boolean; appleLinked: boolean; passwordChangedAt: string | null; recentLogins: { _id: string; method?: string; ip?: string; userAgent?: string; createdAt: string }[] };
 };
 
-const loginMessage = "Please log in with your company account.";
-const get = <T,>(path: string) => () => apiRequest<T>(path, { loginMessage }).then(({ data }) => data);
+const loginMessage = "Please log in with your business account.";
+// Paths are built per call: the same screens serve companies and freelancers (see providerSide).
+const get = <T,>(path: () => string) => () => apiRequest<T>(path(), { loginMessage }).then(({ data }) => data);
 
 /** A new token after a password change or "sign out everywhere": this browser stays signed in. */
 function keepSession(token: string) {
@@ -57,19 +60,19 @@ function keepSession(token: string) {
 }
 
 export const companyApi = {
-  dashboard: get<CompanyDashboard>("/companies/dashboard"),
-  strength: get<Strength & { listing: ListingSummary | null }>("/companies/dashboard/strength"),
-  analytics: (days: number) => get<CompanyAnalytics>(`/companies/analytics?days=${days}`)(),
-  settings: get<CompanySettings>("/companies/settings"),
-  savePreferences: (body: Partial<CompanySettings["preferences"]>) => apiRequest<CompanySettings["preferences"]>("/companies/settings/preferences", { method: "PUT", body, loginMessage }),
-  saveAccount: (body: { phone: string }) => apiRequest<CompanySettings["account"]>("/companies/settings/account", { method: "PUT", body, loginMessage }),
+  dashboard: get<CompanyDashboard>(() => `${apiBase()}/dashboard`),
+  strength: get<Strength & { listing: ListingSummary | null }>(() => `${apiBase()}/dashboard/strength`),
+  analytics: (days: number) => get<CompanyAnalytics>(() => `${apiBase()}/analytics?days=${days}`)(),
+  settings: get<CompanySettings>(() => `${apiBase()}/settings`),
+  savePreferences: (body: Partial<CompanySettings["preferences"]>) => apiRequest<CompanySettings["preferences"]>(`${apiBase()}/settings/preferences`, { method: "PUT", body, loginMessage }),
+  saveAccount: (body: { phone: string }) => apiRequest<CompanySettings["account"]>(`${apiBase()}/settings/account`, { method: "PUT", body, loginMessage }),
   changePassword: async (body: { currentPassword?: string; newPassword: string }) => {
-    const result = await apiRequest<{ token: string }>("/companies/settings/password", { method: "POST", body, loginMessage });
+    const result = await apiRequest<{ token: string }>(`${apiBase()}/settings/password`, { method: "POST", body, loginMessage });
     keepSession(result.data.token);
     return result;
   },
   signOutEverywhere: async () => {
-    const result = await apiRequest<{ token: string }>("/companies/settings/sign-out-everywhere", { method: "POST", loginMessage });
+    const result = await apiRequest<{ token: string }>(`${apiBase()}/settings/sign-out-everywhere`, { method: "POST", loginMessage });
     keepSession(result.data.token);
     return result;
   },

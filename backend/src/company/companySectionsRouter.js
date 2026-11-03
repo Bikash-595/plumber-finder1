@@ -26,6 +26,10 @@ import { serviceAreasRouter } from "./service-areas/routers/serviceAreasRouter.j
 import { servicesRouter } from "./services/routers/servicesRouter.js";
 import { specialOffersRouter } from "./special-offers/routers/specialOffersRouter.js";
 import { teamRouter } from "./team/routers/teamRouter.js";
+import { contactRouter } from "./contact/routers/contactRouter.js";
+import { locationRouter } from "./location/routers/locationRouter.js";
+import { branchesRouter } from "./branches/routers/branchesRouter.js";
+import { verificationRouter } from "./verification/routers/verificationRouter.js";
 
 // Business-profile sections, each in its own folder (config, models, middleware, controllers, routers).
 // Mounted at /api/companies, e.g. /api/companies/services.
@@ -45,6 +49,10 @@ export const companySections = [
   { path: "/social-links", router: socialLinksRouter },
   { path: "/opening-hours", router: openingHoursRouter },
   { path: "/special-offers", router: specialOffersRouter },
+  { path: "/contact", router: contactRouter },
+  { path: "/location", router: locationRouter },
+  { path: "/branches", router: branchesRouter },
+  { path: "/verification", router: verificationRouter },
   // Booking requests from customers (accept / decline) and the company's notifications.
   { path: "/bookings", router: companyBookingsRouter },
   { path: "/notifications", router: companyNotificationsRouter },

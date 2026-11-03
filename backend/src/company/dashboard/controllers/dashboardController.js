@@ -1,44 +1,46 @@
-import { Company } from "../../../auth/company/models/Company.js";
 import { CustomerReview, GoogleBusinessLink } from "../../../reviews/models/index.js";
 import { reviewStatsForAccount } from "../../../reviews/services/stats.js";
 import { ProfileActivity } from "../../../activity/ProfileActivity.js";
 import { AccountNotification } from "../../../shared/notifications/AccountNotification.js";
 import { UserBooking } from "../../../user/bookings/models/UserBooking.js";
 import { dashboardConfig as config } from "../config/dashboardConfig.js";
-import { activityTotals, bookingTotals, DAY_MS, listingOf, pctChange, toId } from "../services/metrics.js";
-import { profileStrength } from "../services/profileStrength.js";
+import { sideOf, listingFor } from "../../../shared/business/sides.js";
+import { profileStrength as freelancerStrength } from "../../../freelancer/dashboard/services/profileStrength.js";
+import { activityTotals, bookingTotals, DAY_MS, pctChange, toId } from "../services/metrics.js";
+import { profileStrength as companyStrength } from "../services/profileStrength.js";
 
 const startOfDay = (date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 const bookingCard = "reference customerName service status scheduledDate timeSlot price quantity createdAt";
+const strengthOf = { company: companyStrength, freelancer: freelancerStrength };
 
-/** GET /api/companies/dashboard — everything the dashboard home shows, in one request. */
+/** GET /api/companies/dashboard (and /api/freelancers/dashboard) — everything the dashboard home shows, in one request. */
 export async function getDashboard(req, res, next) {
   try {
-    const companyId = req.auth.sub;
-    const company = toId(companyId);
-    const scope = { providerType: "company", providerAccount: company };
+    const side = sideOf(req);
+    const company = toId(req.auth.sub);
+    const scope = { providerType: side.type, providerAccount: company };
     const now = new Date();
     const from = new Date(now.getTime() - config.periodDays * DAY_MS);
     const prevFrom = new Date(from.getTime() - config.periodDays * DAY_MS);
     const trendFrom = new Date(startOfDay(now).getTime() - (config.trendDays - 1) * DAY_MS);
-    const listing = await listingOf(company);
+    const listing = await listingFor(side.type, company);
 
     const [account, strength, activity, activityPrev, bookings, bookingsPrev, pipeline, pending, upcoming, reviews, unanswered, google, unread, notes, viewsTrend, bookingsTrend] = await Promise.all([
-      Company.findById(company).select("companyName status emailVerified").lean(),
-      profileStrength(company),
-      activityTotals(listing?._id, from, now),
-      activityTotals(listing?._id, prevFrom, from),
-      bookingTotals(company, from, now),
-      bookingTotals(company, prevFrom, from),
+      side.Account.findById(company).select(side.accountFields).lean(),
+      strengthOf[side.type](company),
+      activityTotals(listing?._id, from, now, side.type),
+      activityTotals(listing?._id, prevFrom, from, side.type),
+      bookingTotals(company, from, now, side.type),
+      bookingTotals(company, prevFrom, from, side.type),
       UserBooking.aggregate([{ $match: scope }, { $group: { _id: "$status", count: { $sum: 1 } } }]),
       UserBooking.find({ ...scope, status: "pending" }).sort({ createdAt: -1 }).limit(config.listSize).select(bookingCard).lean(),
       UserBooking.find({ ...scope, status: { $in: ["scheduled", "in_progress"] }, scheduledDate: { $gte: startOfDay(now) } }).sort({ scheduledDate: 1 }).limit(config.listSize).select(bookingCard).lean(),
-      reviewStatsForAccount("company", company),
+      reviewStatsForAccount(side.type, company),
       CustomerReview.countDocuments({ ...scope, status: "published", "reply.body": { $exists: false } }),
       GoogleBusinessLink.findOne({ ...scope, connectionStatus: "connected" }).select("cache.rating cache.userRatingCount").lean(),
-      AccountNotification.countDocuments({ recipientType: "company", recipient: company, read: false }),
-      AccountNotification.find({ recipientType: "company", recipient: company }).sort({ _id: -1 }).limit(config.listSize).select("type title message link read createdAt").lean(),
-      listing ? ProfileActivity.aggregate([{ $match: { providerType: "company", providerId: String(listing._id), event: "profile_view", createdAt: { $gte: trendFrom } } }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, count: { $sum: 1 } } }]) : [],
+      AccountNotification.countDocuments({ recipientType: side.type, recipient: company, read: false }),
+      AccountNotification.find({ recipientType: side.type, recipient: company }).sort({ _id: -1 }).limit(config.listSize).select("type title message link read createdAt").lean(),
+      listing ? ProfileActivity.aggregate([{ $match: { providerType: side.type, providerId: String(listing._id), event: "profile_view", createdAt: { $gte: trendFrom } } }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, count: { $sum: 1 } } }]) : [],
       UserBooking.aggregate([{ $match: { ...scope, createdAt: { $gte: trendFrom } } }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, count: { $sum: 1 } } }]),
     ]);
 
@@ -53,8 +55,9 @@ export async function getDashboard(req, res, next) {
 
     res.json({
       data: {
-        account: { companyName: account?.companyName, status: account?.status, emailVerified: account?.emailVerified !== false },
-        listing: listing ? { id: listing._id, slug: listing.slug, name: listing.companyName, published: listing.isPublished !== false, logo: listing.logo ?? null } : null,
+        // `companyName` is the display name for both account types (kept for existing clients).
+        account: (({ name, ...rest }) => ({ companyName: name, ...rest }))(side.accountView(account)),
+        listing: side.listingView(listing) ?? null,
         strength: { percent: strength.percent, level: strength.level, next: strength.items.filter((item) => strength.next.includes(item.key)) },
         period: { days: config.periodDays },
         kpis: {
@@ -80,10 +83,11 @@ export async function getDashboard(req, res, next) {
   } catch (error) { next(error); }
 }
 
-/** GET /api/companies/dashboard/strength — the full profile checklist (Company Profile page). */
+/** GET /api/companies/dashboard/strength — the full profile checklist (Company Profile / My Profile page). */
 export async function getStrength(req, res, next) {
   try {
-    const [strength, listing] = await Promise.all([profileStrength(req.auth.sub), listingOf(toId(req.auth.sub))]);
-    res.json({ data: { ...strength, listing: listing ? { id: listing._id, slug: listing.slug, name: listing.companyName, published: listing.isPublished !== false, logo: listing.logo ?? null, city: listing.city, state: listing.state } : null } });
+    const side = sideOf(req);
+    const [strength, listing] = await Promise.all([strengthOf[side.type](req.auth.sub), listingFor(side.type, toId(req.auth.sub))]);
+    res.json({ data: { ...strength, listing: side.listingView(listing) ?? null } });
   } catch (error) { next(error); }
 }

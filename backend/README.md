@@ -168,6 +168,14 @@ Everything people do with a company or freelancer is stored in `profile_activity
 - `GET /api/companies/customers?q=&sort=recent|bookings|spent|name&page=` — one row per customer with bookings, spend and dates; phone and email only once the company accepted one of their bookings. `GET /:id` — their bookings and reviews.
 - **Messages** (`shared/messages`, collections `conversations` and `messages`): one conversation per booking between the customer and the plumber — `/api/users/messages`, `/api/companies/messages`, `/api/freelancers/messages`: `GET /` (inbox + unread), `POST / { bookingId }` (open), `GET /:id?before=` (thread), `POST /:id { body }` (≤ 2000 chars, 30 a minute), `PATCH /:id/read`. Only the two participants can read or write; not available for declined bookings; one notification per burst of messages.
 
+## Business profile: contact, map, branches, documents, service pages
+
+- `GET`/`PUT`/`DELETE /api/companies/contact` — phones, emails, WhatsApp, website, contact person (same record as the sign-up wizard); the main phone, email and website are copied to the public listing.
+- `GET`/`PUT`/`DELETE /api/companies/location { headquarters, latitude, longitude, serviceRadius, mapUrl }` — the address becomes the listing's location; the coordinates place the map pin. Deleting clears only these fields.
+- `/api/companies/branches` (collection `company_branches`): `GET`, `POST`, `GET`/`PUT`/`PATCH`/`DELETE /:id`, public `GET /public/:listingId`. Shown on the public profile (falls back to the wizard's locations).
+- `GET`/`PUT`/`DELETE /api/companies/verification` (collection `company_verification`) — private document links; admins read them at `GET /api/admin/companies/:id/verification`.
+- Services (company and freelancer) also take `images` (≤ 8; the first becomes `image`), `videos` (≤ 4: YouTube or .mp4/.webm/.mov links, at most one uploaded clip; photos + clip ≤ 13 MB), `overview`, `process` (≤ 8 steps) and `faqs` (≤ 10). The server keeps `photoCount`, `videoCount` and a YouTube `videoPoster` for cards. Lists and the public profile leave the media and content out; `GET /:id` and the public `GET /api/companies/services/public/:listingId/:serviceId` return everything. Public pages: `/company/<slug>/services` (all services) and `/company/<slug>/services/<name>-<id>`.
+
 ## Company growth tools: quotes, availability, saved replies, technicians
 
 - **Quotes** (`src/company/quotes`, collection `quotes`): `GET /api/companies/quotes?status=draft|sent|accepted|declined|withdrawn&q=&cursor=` (with counts, open/won value and acceptance rate), `GET /:id`, `POST / { bookingId, title?, items[{ description, quantity, unitPrice }], discount?, taxRate? (≤ 25), notes?, validUntil?, send? }`, `PATCH /:id` (drafts only), `POST /:id/send`, `POST /:id/withdraw`, `DELETE /:id` (drafts only). Totals are always computed on the server; a quote past `validUntil` reads as `expired`.
@@ -175,6 +183,12 @@ Everything people do with a company or freelancer is stored in `profile_activity
 - **Availability** (`src/company/availability`, collection `company_availability`): `GET`/`PUT /api/companies/availability { acceptingBookings, pauseMessage, maxJobsPerDay, minNoticeDays, timeOff[{ start, end, reason }] }`; public `GET /api/companies/availability/public/:listingId` (no reasons, blocked days for the next 90 days). New booking requests to a company are refused with 409 when paused, on a day off, inside the notice period, or when the day is full.
 - **Saved replies** (`src/company/saved-replies`): `GET`/`POST /api/companies/saved-replies`, `PATCH`/`DELETE /:id` — up to 50 message templates per company, inserted from the message box.
 - **Technicians**: `GET /api/companies/jobs/team`, `PATCH /api/companies/jobs/:id/assign { memberId | null }` (must be the company's own team member); `GET /api/companies/jobs?assignee=<id>|none`. The customer sees the assigned plumber's name on their booking.
+
+## Freelancer dashboard (same tools as companies)
+
+Freelancers get the company dashboard's tools under `/api/freelancers/…`, each in its own folder in `src/freelancer` (config, middleware, routers): `dashboard` (+ `/strength`, the freelancer's own checklist in `dashboard/services/profileStrength.js`), `analytics`, `settings` (preferences, phone, password, sign-out-everywhere — freelancer tokens are now revocable too), `leads`, `jobs` (notes; no team assignment), `schedule`, `customers`, `quotes`, `availability` (+ public `/public/:listingId`; enforced on freelancer bookings), `saved-replies`, `contact` (main phone → listing; email/website/WhatsApp on the profile), `location` (map pin and radius) and `verification` (private; admins: `GET /api/admin/freelancers/:id/documents`).
+
+The controllers are shared with companies: they take the account type from the signed-in token, and `src/shared/business/sides.js` says where each type keeps its records (account, listing, opening hours, settings, availability). Freelancer-only models: `freelancer_settings`, `freelancer_availability`, `freelancer_saved_replies`, `freelancer_contact`, `freelancer_location`, `freelancer_verification`.
 
 ## Reviews (`src/reviews` + a `reviews/` folder in each area)
 

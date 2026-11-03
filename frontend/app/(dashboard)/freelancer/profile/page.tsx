@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import CompanyProfileOverview from "@/components/company-dashboard/profile/CompanyProfileOverview";
 
+/** /freelancer/profile — profile strength %, the checklist, and every editor. */
 export default function FreelancerProfilePage() {
-  redirect("/freelancer/business-profile/header-profile");
+  return <CompanyProfileOverview />;
 }

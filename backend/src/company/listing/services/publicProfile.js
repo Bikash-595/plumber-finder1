@@ -14,8 +14,10 @@ import { CompanyProject } from "../../previous-projects/models/CompanyProject.js
 import { latestReviews, ratingsByAccount } from "../../../reviews/services/stats.js";
 import { CompanyServiceArea } from "../../service-areas/models/CompanyServiceArea.js";
 import { CompanyServiceOffering } from "../../services/models/CompanyServiceOffering.js";
+import { SERVICE_LIST_SELECT } from "../../../shared/profileSections/servicesSection.js";
 import { CompanySpecialOffer } from "../../special-offers/models/CompanySpecialOffer.js";
 import { CompanyTeamMember } from "../../team/models/CompanyTeamMember.js";
+import { CompanyBranch } from "../../branches/models/CompanyBranch.js";
 import { CompanySocialLinks } from "../../social-links/models/CompanySocialLinks.js";
 import { CompanyOpeningHours } from "../../opening-hours/models/CompanyOpeningHours.js";
 import { publicHours } from "../../../shared/profileSections/openingHoursSection.js";
@@ -126,10 +128,10 @@ function withCurrentServices(serviceArea, services) {
 /** Everything shown on a company's public profile page, for one published listing. */
 export async function fullProfile(listing) {
   const company = listing.company;
-  const [summaries, header, services, gallery, projects, reviews, team, faqs, blogs, offers, booking, serviceArea, operations, locations, contact, profile, draft, socialLinks, openingHours] = await Promise.all([
+  const [summaries, header, services, gallery, projects, reviews, team, faqs, blogs, offers, booking, serviceArea, operations, locations, contact, profile, draft, socialLinks, openingHours, branchList] = await Promise.all([
     cardSummaries([listing]),
     CompanyHeaderProfile.findOne({ company }).select(hidden).lean(),
-    CompanyServiceOffering.find({ company }).sort(byPosition).select(hidden).lean(),
+    CompanyServiceOffering.find({ company }).sort(byPosition).select(`${hidden} ${SERVICE_LIST_SELECT}`).lean(),
     CompanyGalleryItem.find({ company }).sort(byPosition).select(hidden).lean(),
     CompanyProject.find({ company, ...visibleProjects() }).sort(byPosition).select(hidden).lean(),
     latestReviews("company", listing._id),
@@ -146,6 +148,7 @@ export async function fullProfile(listing) {
     CompanyOnboardingDraft.findOne({ company }).select("formData").lean(),
     CompanySocialLinks.findOne({ company }).select(`${hidden} -_id -createdAt -updatedAt`).lean(),
     CompanyOpeningHours.findOne({ company }).lean(),
+    CompanyBranch.find({ company }).sort(byPosition).select(`${hidden} -_id -createdAt -updatedAt -position`).lean(),
   ]);
   const { company: _owner, __v, ...publicListing } = listing;
   return {
@@ -155,7 +158,10 @@ export async function fullProfile(listing) {
     about: { ...pick(draft?.formData, publicWizardFields), ...pick(profile, ["companyHistory", "founderStory", "businessGoals", "coreValues"]) },
     contact: pick(contact, publicContactFields),
     hours: publicHours(openingHours) ?? { ...pick(operations, hoursFields), weeklyHours: operations?.weeklyHours ?? [] },
-    branches: (locations?.locations ?? []).map(({ _id, ...branch }) => branch),
+    // The dashboard's Branches section wins; companies that haven't used it show the wizard's locations.
+    branches: branchList.length
+      ? branchList.map(({ name, latitude, longitude, ...branch }) => ({ ...branch, label: name, latitude: latitude ?? undefined, longitude: longitude ?? undefined }))
+      : (locations?.locations ?? []).map(({ _id, ...branch }) => branch),
     // Wizard-only service names still show when the Services section is empty.
     services: services.length ? services : (listing.services ?? []).map((name) => ({ name })),
     gallery, projects, reviews, team, faqs, blogs: await withViews(blogs, "company"), offers: offers.map(publicOffer),

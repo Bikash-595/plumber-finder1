@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FaArrowRight, FaCheckCircle, FaClock, FaExclamationTriangle, FaExternalLinkAlt } from "react-icons/fa";
 import type { CompanyDashboard } from "../companyApi";
 import StrengthRing from "../ui/StrengthRing";
+import { dashBase } from "@/components/utils/providerSide";
 
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; };
 
@@ -9,7 +10,7 @@ const greeting = () => { const h = new Date().getHours(); return h < 12 ? "Good 
 export default function WelcomeHero({ data }: { data: CompanyDashboard }) {
   const { account, listing, strength } = data;
   const chips = [
-    account.status === "approved" ? { ok: true, text: "Approved by Plumber Finder" } : account.status === "suspended" ? { ok: false, text: "Account suspended — contact support" } : { ok: false, text: "Waiting for approval" },
+    account.status === "approved" ? { ok: true, text: "Approved by Plumber Finder" } : account.status === "suspended" ? { ok: false, text: "Account suspended — contact support" } : account.status === "rejected" ? { ok: false, text: "Verification declined — contact support" } : { ok: false, text: "Waiting for approval" },
     listing ? (listing.published ? { ok: true, text: "Listing is live" } : { ok: false, text: "Listing is hidden" }) : { ok: false, text: "No public listing yet" },
     account.emailVerified ? { ok: true, text: "Email verified" } : { ok: false, text: "Verify your email" },
   ];
@@ -29,11 +30,11 @@ export default function WelcomeHero({ data }: { data: CompanyDashboard }) {
             ))}
           </ul>
           <div className="mt-5 flex flex-wrap gap-2">
-            {listing?.slug && <a href={`/company/${listing.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full bg-[#FFD60A] px-4 py-2 text-sm font-bold text-[#0b1f3b] hover:brightness-95">View public profile <FaExternalLinkAlt className="h-3 w-3" /></a>}
-            <Link href="/company-dashboard/bookings" className="inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2 text-sm font-semibold hover:bg-white/10">Manage bookings <FaArrowRight className="h-3 w-3" /></Link>
+            {listing?.slug && <a href={listing.url ?? `/company/${listing.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full bg-[#FFD60A] px-4 py-2 text-sm font-bold text-[#0b1f3b] hover:brightness-95">View public profile <FaExternalLinkAlt className="h-3 w-3" /></a>}
+            <Link href={`${dashBase()}/bookings`} className="inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2 text-sm font-semibold hover:bg-white/10">Manage bookings <FaArrowRight className="h-3 w-3" /></Link>
           </div>
         </div>
-        <Link href="/company-dashboard/profile" className="flex items-center gap-4 rounded-2xl bg-white p-4 text-gray-900 shadow-md transition hover:-translate-y-0.5">
+        <Link href={`${dashBase()}/profile`} className="flex items-center gap-4 rounded-2xl bg-white p-4 text-gray-900 shadow-md transition hover:-translate-y-0.5">
           <StrengthRing percent={strength.percent} size={84} />
           <span>
             <span className="block text-xs font-bold uppercase tracking-wide text-gray-500">Profile strength</span>

@@ -1,5 +1,6 @@
 import { Company } from "../../../auth/company/models/Company.js";
 import { CompanyListing } from "../../../company/listing/models/CompanyListing.js";
+import { CompanyVerification } from "../../../company/verification/models/CompanyVerification.js";
 import { paginatedList, searchFilter } from "../../shared/listQuery.js";
 import { companiesConfig } from "../config/companiesConfig.js";
 
@@ -11,6 +12,14 @@ export async function listCompanies(req, res, next) {
     const listings = await CompanyListing.find({ company: { $in: result.data.map((company) => company._id) } }).select("company slug isPublished city state services").lean();
     const byCompany = Object.fromEntries(listings.map((listing) => [String(listing.company), listing]));
     res.json({ ...result, data: result.data.map((company) => ({ ...company, listing: byCompany[String(company._id)] ?? null })) });
+  } catch (error) { next(error); }
+}
+
+/** GET /api/admin/companies/:id/verification — the document links the company saved for verification (or null). */
+export async function getCompanyVerification(req, res, next) {
+  try {
+    if (!(await Company.exists({ _id: req.params.id }))) return res.status(404).json({ message: "Company not found." });
+    res.json({ data: await CompanyVerification.findOne({ company: req.params.id }).select("-company -__v").lean() });
   } catch (error) { next(error); }
 }
 

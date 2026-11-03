@@ -6,6 +6,9 @@
 const DATA_IMAGE = /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/;
 const DATA_MEDIA = /^data:(image\/(png|jpe?g|webp|gif)|video\/(mp4|webm|quicktime));base64,[A-Za-z0-9+/=]+$/;
 const HTTP_URL = /^https?:\/\/\S+$/i;
+const DATA_VIDEO = /^data:video\/(mp4|webm|quicktime);base64,[A-Za-z0-9+/=]+$/;
+// A video link: YouTube (watch, embed, shorts, youtu.be) or a direct .mp4 / .webm / .mov file.
+const VIDEO_LINK = /^https:\/\/((www\.|m\.)?youtube(-nocookie)?\.com\/(watch\?v=|embed\/|shorts\/)[\w-]{11}|youtu\.be\/[\w-]{11})\S*$|^https:\/\/\S+\.(mp4|webm|mov)(\?\S*)?$/i;
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})(T[\d:.]+(Z|[+-]\d{2}:?\d{2})?)?$/;
 const MIN_YEAR = 1900;
 const MAX_YEAR = 2100;
@@ -46,6 +49,22 @@ function coerce(spec, raw) {
         if (result.error) return { error: `image ${index + 1} ${result.error}` };
         value.push(result.value);
       }
+      return { value };
+    }
+    case "videos": {
+      // Videos for a service: YouTube or direct video links, and at most `maxUploads` uploaded clips.
+      if (!Array.isArray(raw)) return { error: "must be a list of videos" };
+      if (raw.length > (spec.maxItems ?? 4)) return { error: `can have ${spec.maxItems ?? 4} videos at most` };
+      const value = [];
+      for (const [index, item] of raw.entries()) {
+        if (typeof item !== "string") return { error: `video ${index + 1} must be a link or an uploaded video` };
+        const video = item.trim();
+        if (DATA_VIDEO.test(video)) {
+          if (video.length > (spec.maxUploadSize ?? 6_000_000)) return { error: `video ${index + 1} is too large` };
+        } else if (!VIDEO_LINK.test(video) || video.length > 500) return { error: `video ${index + 1} must be a YouTube link, a link to an .mp4/.webm file, or an uploaded video` };
+        value.push(video);
+      }
+      if (value.filter((video) => video.startsWith("data:")).length > (spec.maxUploads ?? 1)) return { error: `only ${spec.maxUploads ?? 1} uploaded video is allowed; add others as YouTube links` };
       return { value };
     }
     case "boolean": {
@@ -124,7 +143,7 @@ export function validateFields(fields, body, { partial = false } = {}) {
     const isEmpty = raw === null || (typeof raw === "string" && raw.trim() === "") || (Array.isArray(raw) && raw.length === 0);
     if (isEmpty) {
       if (spec.required) errors[name] = "is required";
-      else values[name] = spec.default !== undefined ? spec.default : spec.type === "list" || spec.type === "objects" || spec.type === "images" ? [] : null;
+      else values[name] = spec.default !== undefined ? spec.default : spec.type === "list" || spec.type === "objects" || spec.type === "images" || spec.type === "videos" ? [] : null;
       continue;
     }
     const result = coerce(spec, raw);

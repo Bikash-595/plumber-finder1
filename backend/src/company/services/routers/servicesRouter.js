@@ -7,6 +7,8 @@ export const servicesRouter = Router();
 
 // Public: services shown on a published company profile (by public listing id).
 servicesRouter.get("/public/:listingId", servicesController.listPublic);
+// Public: one service with its photos, overview, steps and FAQs (the service's own page).
+servicesRouter.get("/public/:listingId/:id", servicesController.getPublicOne);
 
 // Signed-in company: manage its own services.
 servicesRouter.get("/", requireCompanyServicesAccess, servicesController.list);

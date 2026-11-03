@@ -22,8 +22,11 @@ interface CompanySidebarProps {
   onLinkClick?: () => void;
 }
 
+// Overview pages whose sections have their own links are only active on their own URL.
+const exactRoutes = new Set(["/company-dashboard", "/company-dashboard/business-profile"]);
+
 function isRouteActive(pathname: string, href: string) {
-  if (href === "/company-dashboard") return pathname === href;
+  if (exactRoutes.has(href)) return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

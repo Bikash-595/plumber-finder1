@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import AdminSectionPage from "@/components/AdminSectionPage";
 import { DataTable, FilterBar, Pager, Panel, StatusBadge, useAdminQuery } from "@/components/AdminData";
 import { adminApi, formatDate, type CompanyStatus } from "@/lib/adminApi";
+import CompanyDocuments from "@/components/companies/CompanyDocuments";
 
 const statuses = [{ value: "all", label: "All" }, { value: "pending", label: "Pending" }, { value: "approved", label: "Approved" }, { value: "suspended", label: "Suspended" }];
 const actions: Record<CompanyStatus, { label: string; status: CompanyStatus; tone: string }[]> = {
@@ -45,6 +46,7 @@ function CompaniesManager() {
                 {actions[company.status].map((action) => (
                   <button key={action.label} type="button" disabled={busyId === company._id} onClick={() => change(company._id, company.companyName, action.status)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${action.tone}`}>{action.label}</button>
                 ))}
+                <CompanyDocuments companyId={company._id} />
               </div>
             </td>
           </tr>

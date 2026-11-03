@@ -16,6 +16,19 @@ import { freelancerReviewsRouter } from "./reviews/routers/reviewsRouter.js";
 import { serviceAreasRouter } from "./service-areas/routers/serviceAreasRouter.js";
 import { servicesRouter } from "./services/routers/servicesRouter.js";
 import { specialOffersRouter } from "./special-offers/routers/specialOffersRouter.js";
+import { contactRouter } from "./contact/routers/contactRouter.js";
+import { locationRouter } from "./location/routers/locationRouter.js";
+import { verificationRouter } from "./verification/routers/verificationRouter.js";
+import { freelancerDashboardRouter } from "./dashboard/routers/dashboardRouter.js";
+import { freelancerAnalyticsRouter } from "./analytics/routers/analyticsRouter.js";
+import { freelancerSettingsRouter } from "./settings/routers/settingsRouter.js";
+import { freelancerLeadsRouter } from "./leads/routers/leadsRouter.js";
+import { freelancerJobsRouter } from "./jobs/routers/jobsRouter.js";
+import { freelancerScheduleRouter } from "./schedule/routers/scheduleRouter.js";
+import { freelancerCustomersRouter } from "./customers/routers/customersRouter.js";
+import { freelancerQuotesRouter } from "./quotes/routers/quotesRouter.js";
+import { freelancerAvailabilityRouter } from "./availability/routers/availabilityRouter.js";
+import { freelancerSavedRepliesRouter } from "./saved-replies/routers/savedRepliesRouter.js";
 
 // Freelancer profile sections, each in its own folder (config, models, middleware, controllers, routers).
 // Mounted at /api/freelancers, e.g. /api/freelancers/services.
@@ -38,6 +51,20 @@ export const freelancerSections = [
   { path: "/bookings", router: freelancerBookingsRouter },
   { path: "/notifications", router: freelancerNotificationsRouter },
   { path: "/messages", router: freelancerMessagesRouter },
+  { path: "/contact", router: contactRouter },
+  { path: "/location", router: locationRouter },
+  { path: "/verification", router: verificationRouter },
+  // The same business tools as companies: dashboard, analytics, settings, operations and growth.
+  { path: "/dashboard", router: freelancerDashboardRouter },
+  { path: "/analytics", router: freelancerAnalyticsRouter },
+  { path: "/settings", router: freelancerSettingsRouter },
+  { path: "/leads", router: freelancerLeadsRouter },
+  { path: "/jobs", router: freelancerJobsRouter },
+  { path: "/schedule", router: freelancerScheduleRouter },
+  { path: "/customers", router: freelancerCustomersRouter },
+  { path: "/quotes", router: freelancerQuotesRouter },
+  { path: "/availability", router: freelancerAvailabilityRouter },
+  { path: "/saved-replies", router: freelancerSavedRepliesRouter },
 ];
 
 export const freelancerRouter = Router();

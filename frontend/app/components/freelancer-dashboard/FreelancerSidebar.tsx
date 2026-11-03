@@ -15,8 +15,11 @@ interface FreelancerSidebarProps {
   onLinkClick?: () => void;
 }
 
+// Overview pages whose sections have their own links are only active on their own URL.
+const exactRoutes = new Set(["/freelancer", "/freelancer/business-profile"]);
+
 function isRouteActive(pathname: string, href: string) {
-  if (href === "/freelancer") return pathname === href;
+  if (exactRoutes.has(href)) return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

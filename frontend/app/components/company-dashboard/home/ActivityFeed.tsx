@@ -3,13 +3,14 @@ import { FaBell, FaCalendarCheck, FaCommentDots, FaStar } from "react-icons/fa";
 import Panel from "@/components/dashboard/ui/Panel";
 import { timeAgo } from "@/components/dashboard/ui/format";
 import type { NoticeRow } from "../companyApi";
+import { dashBase } from "@/components/utils/providerSide";
 
 const icons = { booking: FaCalendarCheck, review: FaStar, comment: FaCommentDots, system: FaBell };
 
 /** The latest notifications. */
 export default function ActivityFeed({ items }: { items: NoticeRow[] }) {
   return (
-    <Panel title="Recent activity" action={<Link href="/company-dashboard/notifications" className="text-sm font-semibold text-[#8a7300] hover:underline">All →</Link>} bodyClassName="">
+    <Panel title="Recent activity" action={<Link href={`${dashBase()}/notifications`} className="text-sm font-semibold text-[#8a7300] hover:underline">All →</Link>} bodyClassName="">
       {items.length === 0 ? <p className="px-5 py-6 text-sm text-gray-500 sm:px-6">Nothing yet. Booking requests and reviews will show up here.</p> : (
         <ul className="divide-y divide-gray-100">
           {items.map((item) => {

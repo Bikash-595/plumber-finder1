@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import AdminSectionPage from "@/components/AdminSectionPage";
 import { DataTable, FilterBar, Pager, Panel, StatusBadge, useAdminQuery } from "@/components/AdminData";
 import { adminApi, formatDate, type FreelancerStatus } from "@/lib/adminApi";
+import CompanyDocuments from "@/components/companies/CompanyDocuments";
 
 const statuses = [{ value: "all", label: "All" }, { value: "pending", label: "Pending" }, { value: "verified", label: "Verified" }, { value: "rejected", label: "Rejected" }];
 const actions: Record<FreelancerStatus, { label: string; status: FreelancerStatus; tone: string }[]> = {
@@ -45,6 +46,7 @@ function FreelancersManager() {
                 {actions[freelancer.verificationStatus].map((action) => (
                   <button key={action.label} type="button" disabled={busyId === freelancer._id} onClick={() => change(freelancer._id, action.status)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${action.tone}`}>{action.label}</button>
                 ))}
+                <CompanyDocuments companyId={freelancer._id} load={adminApi.freelancerDocuments} />
               </div>
             </td>
           </tr>

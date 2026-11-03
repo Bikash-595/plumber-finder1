@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { FaBell, FaCalendarPlus, FaExclamationTriangle, FaStar, FaUserCheck } from "react-icons/fa";
 import type { CompanyDashboard } from "../companyApi";
+import { dashBase, editorHref } from "@/components/utils/providerSide";
 
 /** What needs the company's attention right now; the most urgent are highlighted. */
 export default function ActionCenter({ actions }: { actions: CompanyDashboard["actions"] }) {
   const tiles = [
-    { label: "Requests to answer", value: actions.pendingRequests, href: "/company-dashboard/bookings", icon: FaCalendarPlus, urgent: actions.pendingRequests > 0 },
-    { label: "Waiting for customer", value: actions.awaitingConfirmation, href: "/company-dashboard/bookings", icon: FaUserCheck, urgent: false },
-    { label: "Disputed jobs", value: actions.disputed, href: "/company-dashboard/bookings", icon: FaExclamationTriangle, urgent: actions.disputed > 0 },
-    { label: "Reviews to reply to", value: actions.unansweredReviews, href: "/company-dashboard/business-profile/reviews", icon: FaStar, urgent: false },
-    { label: "Unread notifications", value: actions.unreadNotifications, href: "/company-dashboard/notifications", icon: FaBell, urgent: false },
+    { label: "Requests to answer", value: actions.pendingRequests, href: `${dashBase()}/bookings`, icon: FaCalendarPlus, urgent: actions.pendingRequests > 0 },
+    { label: "Waiting for customer", value: actions.awaitingConfirmation, href: `${dashBase()}/bookings`, icon: FaUserCheck, urgent: false },
+    { label: "Disputed jobs", value: actions.disputed, href: `${dashBase()}/bookings`, icon: FaExclamationTriangle, urgent: actions.disputed > 0 },
+    { label: "Reviews to reply to", value: actions.unansweredReviews, href: editorHref("reviews"), icon: FaStar, urgent: false },
+    { label: "Unread notifications", value: actions.unreadNotifications, href: `${dashBase()}/notifications`, icon: FaBell, urgent: false },
   ];
   return (
     <nav aria-label="Needs your attention" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">

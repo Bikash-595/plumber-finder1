@@ -14,6 +14,7 @@ import { operationsApi, type Lead, type LeadsPage, type LeadStage } from "../ope
 import { useCompanyData } from "../companyApi";
 import LeadCard from "./LeadCard";
 import SignalsStrip from "./SignalsStrip";
+import { dashBase } from "@/components/utils/providerSide";
 
 const stages: { value: LeadStage; label: string }[] = [{ value: "new", label: "New" }, { value: "won", label: "Won" }, { value: "lost", label: "Lost" }];
 
@@ -50,7 +51,7 @@ export default function CompanyLeads() {
       </div>
       <Notice>{error}</Notice>
       {loading ? <SkeletonRows rows={3} className="h-28" /> : items.length === 0 ? (
-        <EmptyState icon={FaAddressBook} title={q ? "No matching leads" : stage === "new" ? "No new leads right now" : `No ${stage} leads yet`} text={stage === "new" ? "When a customer sends you a booking request, it appears here and in your notifications." : undefined} action={stage === "new" ? { label: "Improve your profile", href: "/company-dashboard/profile" } : undefined} />
+        <EmptyState icon={FaAddressBook} title={q ? "No matching leads" : stage === "new" ? "No new leads right now" : `No ${stage} leads yet`} text={stage === "new" ? "When a customer sends you a booking request, it appears here and in your notifications." : undefined} action={stage === "new" ? { label: "Improve your profile", href: `${dashBase()}/profile` } : undefined} />
       ) : (
         <div className="space-y-3">
           {items.map((lead) => <LeadCard key={lead._id} lead={lead} />)}

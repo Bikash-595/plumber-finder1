@@ -3,8 +3,8 @@ import { ProfileActivity } from "../../../activity/ProfileActivity.js";
 import { UserBooking } from "../../../user/bookings/models/UserBooking.js";
 import { CompanyListing } from "../../listing/models/CompanyListing.js";
 
-// Numbers shared by the company dashboard and analytics. Every query is scoped to one company (its account id
-// or its public listing id) and served by an index that starts with that scope.
+// Numbers shared by the business dashboards (companies and freelancers) and analytics. Every query is scoped to
+// one account (its account id or its public listing id) and served by an index that starts with that scope.
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 export const CONTACT_EVENTS = ["call_click", "email_click", "website_click"];
@@ -15,9 +15,9 @@ export const pctChange = (now, before) => (before ? Math.round(((now - before) /
 export const listingOf = (companyId) => CompanyListing.findOne({ company: companyId }).select("companyName slug isPublished logo city state").lean();
 
 /** Profile views, unique visitors and contact clicks for a listing in [from, to). */
-export async function activityTotals(listingId, from, to) {
+export async function activityTotals(listingId, from, to, type = "company") {
   if (!listingId) return { views: 0, visitors: 0, contacts: 0, byEvent: {} };
-  const match = { providerType: "company", providerId: String(listingId), createdAt: { $gte: from, $lt: to } };
+  const match = { providerType: type, providerId: String(listingId), createdAt: { $gte: from, $lt: to } };
   const [events, visitors] = await Promise.all([
     ProfileActivity.aggregate([{ $match: match }, { $group: { _id: "$event", count: { $sum: 1 } } }]),
     ProfileActivity.aggregate([{ $match: { ...match, event: "profile_view" } }, { $group: { _id: "$actor.id" } }, { $count: "n" }]),
@@ -27,8 +27,8 @@ export async function activityTotals(listingId, from, to) {
 }
 
 /** Booking requests received, accepted, completed, revenue (completed jobs) and reply speed in [from, to). */
-export async function bookingTotals(companyId, from, to) {
-  const scope = { providerType: "company", providerAccount: toId(companyId) };
+export async function bookingTotals(accountId, from, to, type = "company") {
+  const scope = { providerType: type, providerAccount: toId(accountId) };
   const [received, completed] = await Promise.all([
     UserBooking.aggregate([
       { $match: { ...scope, createdAt: { $gte: from, $lt: to } } },

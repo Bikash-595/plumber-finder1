@@ -69,7 +69,9 @@ export default function SectionForm({ section, title, description, fields, defau
     }
     companyApi<Record<string, unknown> | null>(apiEndpoint)
       .then(({ data }) => {
-        if (!data) return setMode("edit");
+        // A record with nothing filled in (e.g. created empty by the sign-up wizard) counts as not saved yet.
+        const filled = data && fields.some((field) => { const value = data[field.name]; return Array.isArray(value) ? value.length > 0 : value !== undefined && value !== null && value !== ""; });
+        if (!filled) return setMode("edit");
         const loaded = { ...blank, ...recordToValues(data, fields) };
         setSaved(loaded);
         setValues(loaded);

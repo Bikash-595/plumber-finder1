@@ -1,10 +1,14 @@
 // Services a company or freelancer offers, shared by both. Names are synced to the public listing
 // (search and /services pages); the rest is shown on the profile: category, price, duration, what's included.
+// Each service also has its own public page: photos, a full overview, how it works, and FAQs.
+import { blogFaqsField, blogFaqsSchema } from "./blogFaqs.js";
 
 export const SERVICE_CATEGORIES = ["Repairs", "Installation", "Drains & Sewer", "Water Heaters", "Leak Detection", "Emergency", "Inspection & Maintenance", "Remodeling", "Commercial", "Other"];
 // fixed: $89 · from: From $89 · hourly: $95/hr · quote: Free quote (no price) · free: Free.
 export const PRICE_TYPES = ["fixed", "from", "hourly", "quote", "free"];
 const needsAmount = ["fixed", "from", "hourly"];
+const MAX_MEDIA_SIZE = 13_000_000;
+const youtubeId = (url) => url.match(/(?:youtube(?:-nocookie)?\.com\/(?:embed\/|watch\?v=|shorts\/)|youtu\.be\/)([\w-]{11})/)?.[1] ?? null;
 
 export const servicesConfig = {
   label: "Service",
@@ -24,10 +28,20 @@ export const servicesConfig = {
     emergency: { type: "boolean", default: false },
     featured: { type: "boolean", default: false },
     image: { type: "image" },
+    // The service's own page.
+    images: { type: "images", maxItems: 8 },
+    videos: { type: "videos", maxItems: 4, maxUploads: 1 },
+    overview: { type: "text", max: 5000 },
+    process: { type: "list", maxItems: 8, max: 200 },
+    faqs: { ...blogFaqsField, maxItems: 10 },
   },
-  validate: ({ priceType, priceAmount }) => (
-    needsAmount.includes(priceType) && !(priceAmount > 0) ? { priceAmount: "is required for this price type" } : null
-  ),
+  validate: ({ priceType, priceAmount, images, videos }) => {
+    if (needsAmount.includes(priceType) && !(priceAmount > 0)) return { priceAmount: "is required for this price type" };
+    // Photos and an uploaded clip are stored in the service itself, which must stay well under MongoDB's 16 MB limit.
+    const size = [...(images ?? []), ...(videos ?? [])].reduce((total, item) => total + item.length, 0);
+    if (size > MAX_MEDIA_SIZE) return { images: "photos and videos are too large together — remove one or use smaller files (or add videos as YouTube links)" };
+    return null;
+  },
 };
 
 const money = (value) => `$${Number.isInteger(value) ? value : value.toFixed(2)}`;
@@ -40,10 +54,23 @@ export function priceLabel({ priceType, priceAmount }) {
   return priceType === "from" ? `From ${money(priceAmount)}` : priceType === "hourly" ? `${money(priceAmount)}/hr` : money(priceAmount);
 }
 
-/** beforeWrite hook: keeps the shown `price` in step with the structured price. */
+/** Heavy fields left out of lists (dashboard list, public profile); a service's own page loads them. */
+export const SERVICE_LIST_SELECT = "-images -videos -overview -process -faqs";
+
+/**
+ * beforeWrite hook: keeps the shown `price` in step with the structured price, and the card photo
+ * (`image`) in step with the first of the service's photos.
+ */
 export function syncPriceLabel(values) {
   if (values.priceType !== undefined) values.price = values.priceType ? priceLabel(values) : values.price ?? null;
   if (values.priceType && !needsAmount.includes(values.priceType)) values.priceAmount = null;
+  if (values.images !== undefined) { values.image = values.images[0] ?? null; values.photoCount = values.images.length; }
+  if (values.videos !== undefined) {
+    values.videoCount = values.videos.length;
+    // A still for cards when the service has a YouTube video (used when there's no photo).
+    const id = values.videos.map(youtubeId).find(Boolean);
+    values.videoPoster = id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
+  }
 }
 
 /** Mongoose fields for a company/freelancer service (the owner field is added by each model). */
@@ -60,5 +87,14 @@ export const serviceSchemaFields = {
   emergency: { type: Boolean, default: false },
   featured: { type: Boolean, default: false },
   image: { type: String },
+  images: { type: [String], default: undefined },
+  videos: { type: [String], default: undefined },
+  // Kept in step with images/videos so lists can show "3 photos · 1 video" without loading them.
+  photoCount: { type: Number, default: 0 },
+  videoCount: { type: Number, default: 0 },
+  videoPoster: { type: String },
+  overview: { type: String, trim: true, maxlength: 5000 },
+  process: { type: [String], default: undefined },
+  faqs: blogFaqsSchema,
   position: { type: Number, default: 0 },
 };

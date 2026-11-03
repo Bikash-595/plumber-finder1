@@ -80,7 +80,7 @@ export default function ThreadView({ base, id, onBack, onActivity }: { base: Mes
         <div ref={bottom} />
       </div>
       {error && <p role="alert" className="bg-red-50 px-4 py-2 text-xs text-red-700">{error}</p>}
-      <Composer onSend={send} disabled={!current} tools={base === "/companies" ? (insert) => <SavedReplyPicker onPick={insert} /> : undefined} />
+      <Composer onSend={send} disabled={!current} tools={base !== "/users" ? (insert) => <SavedReplyPicker onPick={insert} /> : undefined} />
       <p className="bg-white px-4 pb-2 text-[11px] text-gray-400">For your safety, never share card details or passwords in messages.</p>
     </section>
   );

@@ -1,7 +1,8 @@
 import { ProfileActivity } from "../../../activity/ProfileActivity.js";
 import { UserBooking } from "../../../user/bookings/models/UserBooking.js";
 import { findPage, pageParams, textFilter } from "../../../user/shared/paginate.js";
-import { DAY_MS, listingOf, toId } from "../../dashboard/services/metrics.js";
+import { listingFor, sideOf } from "../../../shared/business/sides.js";
+import { DAY_MS, toId } from "../../dashboard/services/metrics.js";
 import { leadsConfig as config } from "../config/leadsConfig.js";
 
 const stageFilter = {
@@ -15,22 +16,23 @@ const stageOf = (b) => (b.status === "pending" ? "new" : b.acceptedAt ? "won" : 
 /** GET /api/companies/leads?stage=new|won|lost&q=&cursor= — requests by stage, stage counts, and interest signals. */
 export async function listLeads(req, res, next) {
   try {
+    const { type } = sideOf(req);
     const company = toId(req.auth.sub);
-    const scope = { providerType: "company", providerAccount: company };
+    const scope = { providerType: type, providerAccount: company };
     const stage = config.stages.includes(req.query.stage) ? req.query.stage : "new";
     const params = pageParams(req.query, { defaultLimit: 20, maxLimit: 50 });
     const page = await findPage(UserBooking, { ...scope, ...stageFilter[stage], ...textFilter(req.query.q, ["reference", "customerName", "service"]) }, params, leadFields);
     let extra = {};
     if (!params.cursor) {
       const since = new Date(Date.now() - config.signalDays * DAY_MS);
-      const listing = await listingOf(company);
+      const listing = await listingFor(type, company);
       const [counts, outcome, signals] = await Promise.all([
         Promise.all(config.stages.map((name) => UserBooking.countDocuments({ ...scope, ...stageFilter[name] }))),
         UserBooking.aggregate([
           { $match: { ...scope, createdAt: { $gte: since } } },
           { $group: { _id: null, total: { $sum: 1 }, won: { $sum: { $cond: [{ $ifNull: ["$acceptedAt", false] }, 1, 0] } }, waitingMs: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, { $subtract: [new Date(), "$createdAt"] }, 0] } }, waiting: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } } } },
         ]),
-        listing ? ProfileActivity.aggregate([{ $match: { providerType: "company", providerId: String(listing._id), event: { $in: config.signalEvents }, createdAt: { $gte: since } } }, { $group: { _id: "$event", count: { $sum: 1 } } }]) : [],
+        listing ? ProfileActivity.aggregate([{ $match: { providerType: type, providerId: String(listing._id), event: { $in: config.signalEvents }, createdAt: { $gte: since } } }, { $group: { _id: "$event", count: { $sum: 1 } } }]) : [],
       ]);
       const o = outcome[0] ?? {};
       extra = {

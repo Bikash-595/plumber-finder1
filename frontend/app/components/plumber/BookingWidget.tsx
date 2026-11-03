@@ -10,10 +10,11 @@ import BookingCoupon from "./BookingCoupon";
 import SavedAddressPicker from "@/components/dashboard/profile/SavedAddressPicker";
 import { useProviderAvailability } from "./useProviderAvailability";
 
-export default function BookingWidget({ plumber }: { plumber: Plumber }) {
+/** `initialService` pre-selects a service (e.g. on that service's own page). */
+export default function BookingWidget({ plumber, initialService = "" }: { plumber: Plumber; initialService?: string }) {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
-  const [selectedService, setSelectedService] = useState("");
+  const [selectedService, setSelectedService] = useState(initialService);
   const [message, setMessage] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -72,7 +73,7 @@ export default function BookingWidget({ plumber }: { plumber: Plumber }) {
   };
 
   return (
-    <div id="booking" className={`scroll-mt-24 rounded-2xl border bg-white p-5 shadow-lg transition-all hover:shadow-xl sm:p-6 lg:sticky lg:top-32 ${highlight ? "border-[#FFD60A] ring-4 ring-[#FFD60A]/40" : "border-gray-200"}`}>
+    <div id="booking" className={`scroll-mt-24 rounded-2xl border bg-white p-5 shadow-lg transition-all hover:shadow-xl sm:p-6 ${highlight ? "border-[#FFD60A] ring-4 ring-[#FFD60A]/40" : "border-gray-200"}`}>
       <h3 className="text-xl font-bold text-gray-900">📋 Book This Plumber</h3>
       <p className="mt-1 text-sm text-gray-500">Fill in your details and we&apos;ll connect you with {plumber.companyName}.</p>
 

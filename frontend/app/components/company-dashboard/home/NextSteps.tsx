@@ -2,11 +2,12 @@ import Link from "next/link";
 import { FaArrowRight } from "react-icons/fa";
 import Panel from "@/components/dashboard/ui/Panel";
 import type { StrengthItem } from "../companyApi";
+import { dashBase } from "@/components/utils/providerSide";
 
 /** The three improvements that add the most to profile strength. */
 export default function NextSteps({ items }: { items: StrengthItem[] }) {
   return (
-    <Panel title="Grow your profile" action={<Link href="/company-dashboard/profile" className="text-sm font-semibold text-[#8a7300] hover:underline">Full checklist →</Link>} bodyClassName="">
+    <Panel title="Grow your profile" action={<Link href={`${dashBase()}/profile`} className="text-sm font-semibold text-[#8a7300] hover:underline">Full checklist →</Link>} bodyClassName="">
       {items.length === 0 ? <p className="px-5 py-6 text-sm text-emerald-700 sm:px-6">Your profile is complete — great work.</p> : (
         <ul className="divide-y divide-gray-100">
           {items.map((item) => (

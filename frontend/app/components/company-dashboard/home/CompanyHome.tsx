@@ -13,6 +13,7 @@ import NextSteps from "./NextSteps";
 import ReviewsSnapshot from "./ReviewsSnapshot";
 import TrendPanel from "./TrendPanel";
 import WelcomeHero from "./WelcomeHero";
+import { dashBase } from "@/components/utils/providerSide";
 
 /** /company-dashboard — one request fills the whole page. */
 export default function CompanyHome() {
@@ -31,7 +32,7 @@ export default function CompanyHome() {
       <section aria-labelledby="perf-heading" className="space-y-3">
         <div className="flex items-baseline justify-between">
           <h2 id="perf-heading" className="text-lg font-bold text-gray-900">Last {days} days</h2>
-          <Link href="/company-dashboard/analytics" className="text-sm font-semibold text-[#8a7300] hover:underline">Full analytics →</Link>
+          <Link href={`${dashBase()}/analytics`} className="text-sm font-semibold text-[#8a7300] hover:underline">Full analytics →</Link>
         </div>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <KpiCard label="Profile views" icon={FaEye} tone="info" value={kpis.views.value.toLocaleString()} change={kpis.views.change} />

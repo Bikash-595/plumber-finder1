@@ -187,14 +187,14 @@ import ProfileServices from "@/components/plumber/ProfileServices";
 // import ProfileAdditionalInfo from "@/components/plumber/ProfileAdditionalInfo";
 import ProfileReviews from "@/components/plumber/ProfileReviews";
 import ProfileMap from "@/components/plumber/ProfileMap";
-import BookingWidget from "@/components/plumber/BookingWidget";
+import BookingPanel from "@/components/plumber/booking-panel/BookingPanel";
 import MediaGallery from "@/components/plumber/MediaGallery";
 import ProfilePreviousProjects from "@/components/plumber/ProfilePreviousProjects";
 import DiscountCard from "@/components/plumber/DiscountCard";
 import ProfileBlogSection from "@/components/plumber/ProfileBlogSection";
 import ProfileFaq from "@/components/plumber/ProfileFaq";
 import ProfileTeam from "@/components/plumber/ProfileTeam";
-import ProfileActions from "@/components/plumber/ProfileActions";
+import ActionsPanel from "@/components/plumber/profile-actions/ActionsPanel";
 import { useTrackView } from "@/components/activity/track";
 
 const RECENT_DEALS_KEY = "plumberfinder_recent_deals";
@@ -267,18 +267,19 @@ export default function PlumberProfilePage({ params }: { params: Promise<{ id: s
 
             {plumber.projects && plumber.projects.length > 0 && <ProfilePreviousProjects plumber={plumber} />}
             <ProfileFaq plumber={plumber} />
-            <ProfileReviews plumber={plumber} />
+            
             <ProfileMap plumber={plumber} />
 
             <ProfileBlogSection plumber={plumber} />
-            
-            
-            
+            <ProfileReviews plumber={plumber} />
+                        
           </div>
           <aside className="min-w-0 space-y-5 sm:space-y-6">
-            <ProfileActions plumber={plumber} />
+            {/* Save / Compare / Add to cart: sidebar card on desktop; opened from the bottom bar on phones. */}
+            <ActionsPanel plumber={plumber} />
             <DiscountCard plumber={plumber} />
-             <BookingWidget plumber={plumber} />
+            {/* Sidebar card on desktop; a "Book now" bar and slide-up sheet on phones. */}
+            <BookingPanel plumber={plumber} />
           </aside>
         </div>
       </div>

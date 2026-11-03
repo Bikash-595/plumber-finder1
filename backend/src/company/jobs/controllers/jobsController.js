@@ -2,12 +2,14 @@ import mongoose from "mongoose";
 import { forProvider } from "../../../shared/bookings/bookingWorkflow.js";
 import { UserBooking } from "../../../user/bookings/models/UserBooking.js";
 import { findPage, pageParams, textFilter } from "../../../user/shared/paginate.js";
+import { sideOf } from "../../../shared/business/sides.js";
 import { toId } from "../../dashboard/services/metrics.js";
 import { jobsConfig as config } from "../config/jobsConfig.js";
 import { CompanyTeamMember } from "../../team/models/CompanyTeamMember.js";
 import { JobNote } from "../models/JobNote.js";
 
-const scopeOf = (req) => ({ providerType: "company", providerAccount: toId(req.auth.sub) });
+// Companies and freelancers share this controller; the side comes from the signed-in account.
+const scopeOf = (req) => ({ providerType: sideOf(req).type, providerAccount: toId(req.auth.sub) });
 const accepted = { acceptedAt: { $exists: true } };
 
 export const jobsController = {

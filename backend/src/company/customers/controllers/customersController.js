@@ -3,6 +3,7 @@ import { CustomerReview } from "../../../reviews/models/index.js";
 import { forProvider } from "../../../shared/bookings/bookingWorkflow.js";
 import { UserBooking } from "../../../user/bookings/models/UserBooking.js";
 import { textFilter } from "../../../user/shared/paginate.js";
+import { sideOf } from "../../../shared/business/sides.js";
 import { money, toId } from "../../dashboard/services/metrics.js";
 import { customersConfig as config } from "../config/customersConfig.js";
 
@@ -12,7 +13,7 @@ const spentExpr = { $cond: [{ $eq: ["$status", "completed"] }, { $multiply: [{ $
 /** GET /api/companies/customers?q=&sort=recent|bookings|spent|name&page= — one row per customer, with totals. */
 export async function listCustomers(req, res, next) {
   try {
-    const scope = { providerType: "company", providerAccount: toId(req.auth.sub) };
+    const scope = { providerType: sideOf(req).type, providerAccount: toId(req.auth.sub) };
     const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
     const sort = sorts[req.query.sort] ?? sorts.recent;
     const [result] = await UserBooking.aggregate([
@@ -42,7 +43,7 @@ export async function listCustomers(req, res, next) {
 export async function getCustomer(req, res, next) {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: "Customer not found." });
-    const scope = { providerType: "company", providerAccount: toId(req.auth.sub) };
+    const scope = { providerType: sideOf(req).type, providerAccount: toId(req.auth.sub) };
     const [bookings, reviews] = await Promise.all([
       UserBooking.find({ ...scope, user: req.params.id }).sort({ createdAt: -1 }).limit(100),
       CustomerReview.find({ ...scope, user: req.params.id, status: "published" }).sort({ createdAt: -1 }).select("rating title body source createdAt reply").lean(),

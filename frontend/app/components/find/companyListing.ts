@@ -1,5 +1,5 @@
 import { youtubeId } from "./media";
-import type { BlogPost, OpeningHours, OpeningHoursDay, Plumber, PlumberReview, TeamMember } from "./types";
+import type { BlogPost, OpeningHours, OpeningHoursDay, Plumber, PlumberReview, ServiceDetail, TeamMember } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
 
@@ -52,7 +52,7 @@ type Media = { _id: string; type?: string; media: string; mediaKind?: "image" | 
 
 // GET /companies/public/:id/profile — the card fields plus every public section.
 export type CompanyProfile = Omit<CompanyListing, "services"> & {
-  services?: { _id?: string; name: string; category?: string; description?: string; price?: string; duration?: string; includes?: string[]; warranty?: string; emergency?: boolean; featured?: boolean; image?: string }[];
+  services?: { _id?: string; name: string; category?: string; description?: string; price?: string; duration?: string; includes?: string[]; warranty?: string; emergency?: boolean; featured?: boolean; image?: string; photoCount?: number; videoCount?: number; videoPoster?: string }[];
   header?: { companyName?: string; ownerName?: string; logo?: string; coverImage?: string; coverImages?: string[] } | null;
   about?: Record<string, string>;
   contact?: Record<string, string>;
@@ -88,6 +88,9 @@ export function openNowLabel(weekly: OpeningHoursDay[] | undefined, now = new Da
 
 // next/image only renders configured hosts; uploads (data: URLs) and site images always work.
 const imageHosts = ["randomuser.me", "images.unsplash.com", "logo.clearbit.com", "api.dicebear.com", "upload.wikimedia.org"];
+/** Only YouTube's own stills are used as video posters. */
+const youtubePoster = (src?: string | null) => (src && /^https:\/\/i\.ytimg\.com\/vi\/[\w-]{11}\/hqdefault\.jpg$/.test(src) ? src : undefined);
+
 export function displayableImage(src?: string | null): string {
   if (!src) return "";
   if (src.startsWith("data:image/") || src.startsWith("/")) return src;
@@ -236,7 +239,7 @@ export function companyProfileToPlumber(profile: CompanyProfile): Plumber {
     priceRange: prices.length ? [...new Set([prices[0], prices[prices.length - 1]])].join(" – ") : card.priceRange,
     isEmergency: card.isEmergency || Boolean(profile.booking?.emergencyBooking),
     // Every service with its details, for the profile's Services section (featured first).
-    serviceDetails: offerings.map((service, index) => ({ id: service._id ?? `${index}`, name: service.name, category: service.category, description: service.description, price: service.price, duration: service.duration, includes: service.includes ?? [], warranty: service.warranty, emergency: Boolean(service.emergency), featured: Boolean(service.featured), image: displayableImage(service.image) || undefined })),
+    serviceDetails: offerings.map((service, index) => ({ id: service._id ?? `${index}`, name: service.name, category: service.category, description: service.description, price: service.price, duration: service.duration, includes: service.includes ?? [], warranty: service.warranty, emergency: Boolean(service.emergency), featured: Boolean(service.featured), image: displayableImage(service.image) || undefined, photoCount: service.photoCount ?? (service.image ? 1 : 0), videoCount: service.videoCount ?? 0, poster: youtubePoster(service.videoPoster) })),
     specializations: offerings.filter((service) => service.featured).map((service) => service.name).concat(serviceNames).filter((name, index, all) => all.indexOf(name) === index),
     teamSize: card.teamSize || teamMembers.length,
     teamMembers,
@@ -320,7 +323,10 @@ export type FreelancerListing = {
   galleryCounts?: { images: number; videos: number };
 };
 
-export type FreelancerProfile = Omit<FreelancerListing, "services"> & Pick<CompanyProfile, "services" | "gallery" | "projects" | "reviews" | "faqs" | "blogs" | "offers" | "booking" | "hours" | "serviceArea" | "socialLinks">;
+export type FreelancerProfile = Omit<FreelancerListing, "services"> & Pick<CompanyProfile, "services" | "gallery" | "projects" | "reviews" | "faqs" | "blogs" | "offers" | "booking" | "hours" | "serviceArea" | "socialLinks"> & {
+  /** Contact Information section (the main phone is on the listing). */
+  contact?: { email?: string; website?: string; whatsapp?: string; secondaryPhone?: string; emergencyHotline?: string };
+};
 
 /** A freelancer in company terms, so cards and profile pages render it the same way (a team of one). */
 function freelancerAsCompany(freelancer: Omit<FreelancerListing, "services">) {
@@ -382,7 +388,8 @@ export function freelancerListingToPlumber(freelancer: FreelancerListing): Plumb
 /** A live freelancer's full public profile, shaped like the demo plumbers (no team section). */
 export function freelancerProfileToPlumber(profile: FreelancerProfile): Plumber {
   const plumber = companyProfileToPlumber({ ...freelancerAsCompany(profile), services: profile.services, gallery: profile.gallery, projects: profile.projects, reviews: profile.reviews, faqs: profile.faqs, blogs: profile.blogs, offers: profile.offers, booking: profile.booking, hours: profile.hours, serviceArea: profile.serviceArea, socialLinks: profile.socialLinks, team: [] });
-  return { ...freelancerExtras(profile, plumber), teamMembers: [], about: profile.bio ? { longDescription: profile.bio } : {} };
+  const website = profile.contact?.website && /^https?:\/\//.test(profile.contact.website) ? profile.contact.website : undefined;
+  return { ...freelancerExtras(profile, plumber), email: profile.contact?.email || plumber.email, website: website ?? plumber.website, teamMembers: [], about: profile.bio ? { longDescription: profile.bio } : {} };
 }
 
 /** A plumber's public profile URL: /company/<slug> for live companies, /plumber/<id> otherwise. */
@@ -418,6 +425,26 @@ export async function fetchLiveProfile(id: string): Promise<Plumber | null> {
   if (!isListingId(key)) return null;
   const freelancer = await getData<FreelancerProfile>(`/freelancers/public/${id}/profile`);
   return freelancer ? freelancerProfileToPlumber(freelancer) : null;
+}
+
+// ---- One service's own page (GET /companies|freelancers/services/public/:listingId/:serviceId) ----
+
+/** A service with everything its page shows: photos, overview, steps and FAQs. */
+export type ServicePage = ServiceDetail & { images: string[]; videos: string[]; overview?: string; process: string[]; faqs: { question: string; answer: string }[]; priceType?: "fixed" | "from" | "hourly" | "quote" | "free"; priceAmount?: number };
+type ServiceRecord = { _id: string; name: string; priceType?: ServicePage["priceType"]; priceAmount?: number; category?: string; description?: string; price?: string; duration?: string; includes?: string[]; warranty?: string; emergency?: boolean; featured?: boolean; image?: string; images?: string[]; videos?: string[]; videoPoster?: string; overview?: string; process?: string[]; faqs?: { question: string; answer: string }[] };
+
+export async function fetchServicePage(plumber: Pick<Plumber, "id" | "providerType">, serviceId: string): Promise<ServicePage | null> {
+  const side = plumber.providerType === "freelancer" ? "freelancers" : "companies";
+  const record = await getData<ServiceRecord>(`/${side}/services/public/${encodeURIComponent(plumber.id)}/${encodeURIComponent(serviceId)}`);
+  if (!record) return null;
+  const images = (record.images?.length ? record.images : record.image ? [record.image] : []).map(displayableImage).filter(Boolean);
+  return {
+    id: record._id, name: record.name, category: record.category, description: record.description, price: record.price, duration: record.duration,
+    includes: record.includes ?? [], warranty: record.warranty, emergency: Boolean(record.emergency), featured: Boolean(record.featured), image: images[0],
+    photoCount: images.length, videoCount: record.videos?.length ?? 0, poster: youtubePoster(record.videoPoster),
+    priceType: record.priceType, priceAmount: record.priceAmount ?? undefined,
+    images, videos: record.videos ?? [], overview: record.overview, process: record.process ?? [], faqs: record.faqs ?? [],
+  };
 }
 
 // ---- Site-wide blog feed (GET /blogs) ----

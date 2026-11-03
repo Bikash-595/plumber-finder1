@@ -14,9 +14,12 @@ import { FreelancerProject } from "../../previous-projects/models/FreelancerProj
 import { latestReviews, ratingsByAccount } from "../../../reviews/services/stats.js";
 import { FreelancerServiceArea } from "../../service-areas/models/FreelancerServiceArea.js";
 import { FreelancerServiceOffering } from "../../services/models/FreelancerServiceOffering.js";
+import { SERVICE_LIST_SELECT } from "../../../shared/profileSections/servicesSection.js";
 import { FreelancerSpecialOffer } from "../../special-offers/models/FreelancerSpecialOffer.js";
 import { FreelancerSocialLinks } from "../../social-links/models/FreelancerSocialLinks.js";
 import { publicHours } from "../../../shared/profileSections/openingHoursSection.js";
+import { FreelancerContact } from "../../contact/models/FreelancerContact.js";
+import { FreelancerLocation } from "../../location/models/FreelancerLocation.js";
 
 const hidden = "-freelancer -__v";
 const byPosition = { position: 1, createdAt: 1 };
@@ -29,7 +32,7 @@ const byOwner = (docs) => new Map(docs.map((doc) => [String(doc.freelancer ?? do
 export async function cardSummaries(listings) {
   const freelancers = listings.map((listing) => listing.freelancer);
   const match = { freelancer: { $in: freelancers } };
-  const [ratings, headers, overviews, offers, hours, emergencyServices, accounts, serviceAreas, blogCounts, mediaCounts] = await Promise.all([
+  const [ratings, headers, overviews, offers, hours, emergencyServices, accounts, serviceAreas, blogCounts, mediaCounts, locations] = await Promise.all([
     // PlumberFinder rating: published customer reviews only (Google ratings are shown separately).
     ratingsByAccount("freelancer", freelancers),
     FreelancerHeaderProfile.find(match).select("freelancer licenseNumber insurance bio").lean(),
@@ -41,8 +44,10 @@ export async function cardSummaries(listings) {
     FreelancerServiceArea.find(match).select("freelancer latitude longitude branchLocation").lean(),
     publishedBlogCounts(FreelancerBlog, "freelancer", freelancers),
     galleryCounts(FreelancerGalleryItem, "freelancer", freelancers),
+    FreelancerLocation.find(match).select("freelancer headquarters latitude longitude").lean(),
   ]);
   const areasByOwner = byOwner(serviceAreas);
+  const locationsByOwner = byOwner(locations);
   const maps = { ratings, headers: byOwner(headers), overviews: byOwner(overviews), hours: byOwner(hours), accounts: byOwner(accounts) };
   const offerByOwner = new Map();
   // Every current offer per owner (in display order), summed up for the card.
@@ -57,9 +62,11 @@ export async function cardSummaries(listings) {
     const week = maps.hours.get(key) ?? {};
     const offer = cardOffer(offerByOwner.get(key) ?? []);
     const area = areasByOwner.get(key) ?? {};
+    const place = locationsByOwner.get(key) ?? {};
     return [key, {
-      coordinates: firstPoint({ lat: area.latitude, lng: area.longitude }),
-      baseLocation: area.branchLocation || undefined,
+      // The Service Areas pin wins; freelancers who only set their map location use that.
+      coordinates: firstPoint({ lat: area.latitude, lng: area.longitude }, { lat: place.latitude, lng: place.longitude }),
+      baseLocation: area.branchLocation || place.headquarters || undefined,
       blogCount: blogCounts.get(key) ?? 0,
       galleryCounts: mediaCounts.get(key) ?? { images: 0, videos: 0 },
       rating: rating?.rating ?? 0,
@@ -92,9 +99,9 @@ function withCurrentServices(serviceArea, services) {
 /** Everything shown on a freelancer's public profile page, for one published listing. */
 export async function fullProfile(listing) {
   const freelancer = listing.freelancer;
-  const [summaries, services, gallery, projects, reviews, faqs, blogs, offers, booking, serviceArea, hours, socialLinks] = await Promise.all([
+  const [summaries, services, gallery, projects, reviews, faqs, blogs, offers, booking, serviceArea, hours, socialLinks, contact] = await Promise.all([
     cardSummaries([listing]),
-    FreelancerServiceOffering.find({ freelancer }).sort(byPosition).select(hidden).lean(),
+    FreelancerServiceOffering.find({ freelancer }).sort(byPosition).select(`${hidden} ${SERVICE_LIST_SELECT}`).lean(),
     FreelancerGalleryItem.find({ freelancer }).sort(byPosition).select(hidden).lean(),
     FreelancerProject.find({ freelancer, ...visibleProjects() }).sort(byPosition).select(hidden).lean(),
     latestReviews("freelancer", listing._id),
@@ -105,6 +112,7 @@ export async function fullProfile(listing) {
     FreelancerServiceArea.findOne({ freelancer }).select(hidden).lean(),
     FreelancerOpeningHours.findOne({ freelancer }).select(hidden).lean(),
     FreelancerSocialLinks.findOne({ freelancer }).select(`${hidden} -_id -createdAt -updatedAt`).lean(),
+    FreelancerContact.findOne({ freelancer }).select("secondaryPhone whatsapp emergencyHotline email website").lean(),
   ]);
   const { freelancer: _owner, __v, ...publicListing } = listing;
   return {
@@ -116,5 +124,7 @@ export async function fullProfile(listing) {
     serviceArea: withCurrentServices(serviceArea, services),
     socialLinks: socialLinks ?? {},
     hours: publicHours(hours) ?? { weeklyHours: [] },
+    // Extra ways to reach the freelancer (Contact Information section); the main phone is on the listing.
+    contact: contact ? Object.fromEntries(Object.entries(contact).filter(([key, value]) => key !== "_id" && value)) : {},
   };
 }

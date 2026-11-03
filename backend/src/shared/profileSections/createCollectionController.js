@@ -8,8 +8,9 @@
  *  - beforeWrite(values, ctx & { id }) may add derived fields (slug, media kind, ...).
  *  - afterChange(ctx) runs after create/update/delete (e.g. to sync the public listing).
  *  - publicFilter() returns extra conditions for the public endpoint (e.g. only published blogs).
+ *  - listSelect leaves heavy fields out of lists (e.g. "-images -overview"); getOne / getPublicOne return everything.
  */
-export function createCollectionController({ Model, config, ownerField, resolvePublishedOwner, beforeWrite, afterChange, publicFilter }) {
+export function createCollectionController({ Model, config, ownerField, resolvePublishedOwner, beforeWrite, afterChange, publicFilter, listSelect = "" }) {
   const notFound = (res) => res.status(404).json({ message: `${config.label} not found.` });
   const sort = { position: 1, createdAt: 1 };
   const context = (ownerId) => ({ owner: ownerId, [ownerField]: ownerId });
@@ -17,7 +18,7 @@ export function createCollectionController({ Model, config, ownerField, resolveP
   return {
     list: async (req, res, next) => {
       try {
-        res.json({ data: await Model.find({ [ownerField]: req.auth.sub }).sort(sort) });
+        res.json({ data: await Model.find({ [ownerField]: req.auth.sub }).sort(sort).select(listSelect) });
       } catch (error) { next(error); }
     },
 
@@ -79,8 +80,19 @@ export function createCollectionController({ Model, config, ownerField, resolveP
       try {
         const ownerId = await resolvePublishedOwner(req.params.listingId);
         if (!ownerId) return res.status(404).json({ message: "Listing not found." });
-        const items = await Model.find({ [ownerField]: ownerId, ...(publicFilter?.() ?? {}) }).sort(sort).select(`-${ownerField} -__v`);
+        const items = await Model.find({ [ownerField]: ownerId, ...(publicFilter?.() ?? {}) }).sort(sort).select(`-${ownerField} -__v ${listSelect}`.trim());
         res.json({ data: items });
+      } catch (error) { next(error); }
+    },
+
+    // GET /public/:listingId/:id — one item with every field (e.g. a service's own page).
+    getPublicOne: async (req, res, next) => {
+      try {
+        const ownerId = await resolvePublishedOwner(req.params.listingId);
+        if (!ownerId) return res.status(404).json({ message: "Listing not found." });
+        const item = await Model.findOne({ _id: req.params.id, [ownerField]: ownerId, ...(publicFilter?.() ?? {}) }).select(`-${ownerField} -__v`);
+        if (!item) return notFound(res);
+        res.json({ data: item });
       } catch (error) { next(error); }
     },
   };

@@ -57,7 +57,7 @@ export default function SessionsPanel({ security, onSignedOut }: { security: Com
         </div>
       </div>
       <ConfirmDialog open={confirming} title="Sign out of every other device?" confirmLabel="Sign out other devices" busy={busy}
-        message="Anyone signed in to your company account elsewhere — including on other phones, computers or browsers — will have to log in again. You stay signed in here."
+        message="Anyone signed in to your account elsewhere — including on other phones, computers or browsers — will have to log in again. You stay signed in here."
         onConfirm={signOutAll} onClose={() => setConfirming(false)} />
     </Panel>
   );

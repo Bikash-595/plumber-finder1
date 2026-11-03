@@ -1,9 +1,10 @@
 import { Company } from "../../company/models/Company.js";
+import { Freelancer } from "../../freelancer/models/Freelancer.js";
 
 // Revocable sessions. Access tokens carry the account's `tokenVersion` (as `tv`); "Sign out everywhere" and a
-// password change bump it, which ends every older token. Checked for company accounts (the business dashboard);
-// other account types can opt in by adding their model here.
-const models = { company: Company };
+// password change bump it, which ends every older token. Checked for business accounts (company and freelancer
+// dashboards); other account types can opt in by adding their model here.
+const models = { company: Company, freelancer: Freelancer };
 const CACHE_MS = 15_000; // a revoked token stops working within 15 seconds on every server
 const cache = new Map();
 

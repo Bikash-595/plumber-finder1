@@ -1,5 +1,5 @@
 import { FreelancerListing } from "../../listing/models/FreelancerListing.js";
-import { syncPriceLabel } from "../../../shared/profileSections/servicesSection.js";
+import { SERVICE_LIST_SELECT, syncPriceLabel } from "../../../shared/profileSections/servicesSection.js";
 import { createCollectionController } from "../../shared/createCollectionController.js";
 import { servicesConfig } from "../config/servicesConfig.js";
 import { FreelancerServiceOffering } from "../models/FreelancerServiceOffering.js";
@@ -15,4 +15,5 @@ export const servicesController = createCollectionController({
   config: servicesConfig,
   beforeWrite: syncPriceLabel,
   afterChange: syncListingServices,
+  listSelect: SERVICE_LIST_SELECT,
 });

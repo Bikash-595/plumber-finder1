@@ -2,12 +2,14 @@ import mongoose from "mongoose";
 import { notify as notifyCustomer } from "../../../user/notifications/services/notify.js";
 import { UserBooking } from "../../../user/bookings/models/UserBooking.js";
 import { findPage, pageParams, textFilter } from "../../../user/shared/paginate.js";
+import { sideOf } from "../../../shared/business/sides.js";
 import { toId } from "../../dashboard/services/metrics.js";
 import { QUOTE_STATUSES } from "../config/quotesConfig.js";
 import { Quote } from "../models/Quote.js";
 import { effectiveStatus, quoteTotals } from "../services/quoteMath.js";
 
-const scopeOf = (req) => ({ providerType: "company", providerAccount: toId(req.auth.sub) });
+// Companies and freelancers share this controller; the side comes from the signed-in account.
+const scopeOf = (req) => ({ providerType: sideOf(req).type, providerAccount: toId(req.auth.sub) });
 const present = (quote) => ({ ...quote, status: effectiveStatus(quote) });
 const money = (value) => `$${value.toFixed(2)}`;
 

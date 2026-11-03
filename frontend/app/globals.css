@@ -128,3 +128,12 @@ html {
     outline-offset: 2px;
   }
 }
+
+/* Booking sheet on phones: slides up from the bottom (see components/plumber/booking-panel). */
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[sheet-up_\.28s_ease-out\] { animation: none; }
+}

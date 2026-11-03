@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FaEnvelope, FaMapMarkerAlt, FaPhoneAlt } from "react-icons/fa";
-import { providerApi } from "@/components/bookings/bookingsApi";
+import { providerApi, type ProviderBase } from "@/components/bookings/bookingsApi";
 import Drawer from "@/components/dashboard/ui/Drawer";
 import StatusPill from "@/components/dashboard/ui/StatusPill";
 import MessageButton from "@/components/messages/MessageButton";
@@ -12,6 +12,7 @@ import { operationsApi, visitDate, type Job, type JobNote } from "../operationsA
 import { growthApi, type TeamMember } from "../growthApi";
 import JobNotes from "./JobNotes";
 import { jobStages, stageLabel } from "./jobStages";
+import { apiBase, dashBase, editorHref, isFreelancer } from "@/components/utils/providerSide";
 
 const historyLabel: Record<string, string> = { pending: "Request received", scheduled: "Accepted", in_progress: "Started", awaiting_confirmation: "Marked as done", completed: "Completed", disputed: "Customer reported a problem", cancelled: "Cancelled", declined: "Declined" };
 
@@ -22,7 +23,9 @@ export default function JobDrawer({ jobId, onClose, onChanged }: { jobId: string
   const [busy, setBusy] = useState(false);
   const [cancelReason, setCancelReason] = useState<string | null>(null);
   const [team, setTeam] = useState<TeamMember[] | null>(null);
-  useEffect(() => { if (jobId && !team) growthApi.team().then(setTeam).catch(() => setTeam([])); }, [jobId, team]);
+  // Technicians come from the company's team; freelancers work alone, so there's nothing to assign.
+  const solo = isFreelancer();
+  useEffect(() => { if (jobId && !team && !solo) growthApi.team().then(setTeam).catch(() => setTeam([])); }, [jobId, team, solo]);
   const assign = async (memberId: string) => {
     if (!job) return;
     try { const { data } = await growthApi.assign(job._id, memberId || null); setState((s) => s && { ...s, job: data }); onChanged(); } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not assign."); }
@@ -40,7 +43,7 @@ export default function JobDrawer({ jobId, onClose, onChanged }: { jobId: string
     if (!job) return;
     if (action === "complete" && !window.confirm("Mark this job as done? The customer will be asked to confirm.")) return;
     setBusy(true);
-    try { const { data } = await providerApi.respond("/companies", job._id, action, body); setState((s) => s && { ...s, job: data }); setCancelReason(null); onChanged(); } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not update the job."); } finally { setBusy(false); }
+    try { const { data } = await providerApi.respond(apiBase() as ProviderBase, job._id, action, body); setState((s) => s && { ...s, job: data }); setCancelReason(null); onChanged(); } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not update the job."); } finally { setBusy(false); }
   };
   const tone = jobStages.find((s) => s.key === job?.status)?.tone ?? "neutral";
 
@@ -78,15 +81,15 @@ export default function JobDrawer({ jobId, onClose, onChanged }: { jobId: string
             {job.details && <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">Customer&apos;s notes</dt><dd className="whitespace-pre-line text-gray-800">{job.details}</dd></div>}
             {job.disputeReason && <div className="rounded-xl bg-red-50 p-3 sm:col-span-2"><dt className="text-xs font-semibold uppercase text-red-700">Problem reported</dt><dd className="text-red-900">{job.disputeReason}</dd></div>}
           </dl>
-          {job.status === "pending" ? <Link href={`/company-dashboard/bookings?booking=${job._id}`} className="inline-block rounded-full bg-[#0b1f3b] px-4 py-2 text-sm font-bold text-white">Accept or decline this request</Link>
-            : <div className="flex flex-wrap items-center gap-2"><MessageButton base="/companies" bookingId={job._id} label="Message customer" />{!["completed", "cancelled"].includes(job.status) && <Link href={`/company-dashboard/quotes?booking=${job._id}`} className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-[#0b1f3b] hover:bg-gray-50">Create a quote</Link>}</div>}
-          {job.status !== "pending" && (
+          {job.status === "pending" ? <Link href={`${dashBase()}/bookings?booking=${job._id}`} className="inline-block rounded-full bg-[#0b1f3b] px-4 py-2 text-sm font-bold text-white">Accept or decline this request</Link>
+            : <div className="flex flex-wrap items-center gap-2"><MessageButton base={apiBase() as ProviderBase} bookingId={job._id} label="Message customer" />{!["completed", "cancelled"].includes(job.status) && <Link href={`${dashBase()}/quotes?booking=${job._id}`} className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-[#0b1f3b] hover:bg-gray-50">Create a quote</Link>}</div>}
+          {job.status !== "pending" && !solo && (
             <label className="block text-sm font-medium text-gray-700">Technician
               <select value={job.assignedTo?.member ?? ""} onChange={(e) => assign(e.target.value)} disabled={!team} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm">
                 <option value="">Not assigned</option>
                 {team?.map((m) => <option key={m._id} value={m._id}>{m.name}{m.role ? ` — ${m.role}` : ""}</option>)}
               </select>
-              {team && team.length === 0 && <span className="mt-1 block text-xs text-gray-500"><Link href="/company-dashboard/business-profile/team" className="font-semibold underline">Add your team</Link> to assign jobs.</span>}
+              {team && team.length === 0 && <span className="mt-1 block text-xs text-gray-500"><Link href={editorHref("team")} className="font-semibold underline">Add your team</Link> to assign jobs.</span>}
             </label>
           )}
           <JobNotes jobId={job._id} notes={current!.notes} onChange={(notes) => setState((s) => s && { ...s, notes })} />

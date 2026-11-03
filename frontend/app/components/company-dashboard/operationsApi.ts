@@ -2,9 +2,10 @@
 
 import { apiRequest } from "@/components/utils/apiClient";
 import type { ProviderBooking } from "@/components/bookings/bookingsApi";
+import { apiBase } from "@/components/utils/providerSide";
 
 // Operations endpoints for the company dashboard: /api/companies/leads, /jobs, /schedule, /customers.
-const loginMessage = "Please log in with your company account.";
+const loginMessage = "Please log in with your business account.";
 const qs = (params: Record<string, string | number | null | undefined>) => {
   const search = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== "").map(([k, v]) => [k, String(v)]));
   return search.size ? `?${search}` : "";
@@ -24,14 +25,14 @@ export type CustomersPage = { data: CustomerRow[]; page: number; limit: number; 
 export type CustomerDetail = { id: string; name?: string; bookings: ProviderBooking[]; reviews: { _id: string; rating: number; title?: string; body: string; source: string; createdAt: string; reply?: { body: string } }[] };
 
 export const operationsApi = {
-  leads: (params: { stage?: LeadStage; q?: string; cursor?: string | null }) => apiRequest<Lead[]>(`/companies/leads${qs(params)}`, { loginMessage }) as unknown as Promise<LeadsPage>,
-  jobs: (params: { stage?: string; q?: string; assignee?: string; cursor?: string | null }) => apiRequest<Job[]>(`/companies/jobs${qs(params)}`, { loginMessage }) as unknown as Promise<JobsPage>,
-  job: (id: string) => apiRequest<Job & { notes: JobNote[] }>(`/companies/jobs/${id}`, { loginMessage }),
-  addNote: (id: string, body: string) => apiRequest<JobNote>(`/companies/jobs/${id}/notes`, { method: "POST", body: { body }, loginMessage }),
-  removeNote: (id: string, noteId: string) => apiRequest(`/companies/jobs/${id}/notes/${noteId}`, { method: "DELETE", loginMessage }),
-  schedule: (from: string, to: string) => apiRequest<Schedule>(`/companies/schedule${qs({ from, to })}`, { loginMessage }),
-  customers: (params: { q?: string; sort?: string; page?: number }) => apiRequest<CustomerRow[]>(`/companies/customers${qs(params)}`, { loginMessage }) as unknown as Promise<CustomersPage>,
-  customer: (id: string) => apiRequest<CustomerDetail>(`/companies/customers/${id}`, { loginMessage }),
+  leads: (params: { stage?: LeadStage; q?: string; cursor?: string | null }) => apiRequest<Lead[]>(`${apiBase()}/leads${qs(params)}`, { loginMessage }) as unknown as Promise<LeadsPage>,
+  jobs: (params: { stage?: string; q?: string; assignee?: string; cursor?: string | null }) => apiRequest<Job[]>(`${apiBase()}/jobs${qs(params)}`, { loginMessage }) as unknown as Promise<JobsPage>,
+  job: (id: string) => apiRequest<Job & { notes: JobNote[] }>(`${apiBase()}/jobs/${id}`, { loginMessage }),
+  addNote: (id: string, body: string) => apiRequest<JobNote>(`${apiBase()}/jobs/${id}/notes`, { method: "POST", body: { body }, loginMessage }),
+  removeNote: (id: string, noteId: string) => apiRequest(`${apiBase()}/jobs/${id}/notes/${noteId}`, { method: "DELETE", loginMessage }),
+  schedule: (from: string, to: string) => apiRequest<Schedule>(`${apiBase()}/schedule${qs({ from, to })}`, { loginMessage }),
+  customers: (params: { q?: string; sort?: string; page?: number }) => apiRequest<CustomerRow[]>(`${apiBase()}/customers${qs(params)}`, { loginMessage }) as unknown as Promise<CustomersPage>,
+  customer: (id: string) => apiRequest<CustomerDetail>(`${apiBase()}/customers/${id}`, { loginMessage }),
 };
 
 export const visitDate = (value?: string, opts: Intl.DateTimeFormatOptions = { weekday: "short", month: "short", day: "numeric" }) => (value ? new Date(value).toLocaleDateString("en-US", { ...opts, timeZone: "UTC" }) : "Flexible date");

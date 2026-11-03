@@ -16,7 +16,7 @@ export default function CompanySettingsView() {
   const { data, error, loading, reload, setData } = useCompanyData("company-settings", companyApi.settings);
   return (
     <div className="space-y-6">
-      <PageHeader icon={FaCog} title="Settings" description="Your account, how we notify you, and how your company account is protected." />
+      <PageHeader icon={FaCog} title="Settings" description="Your account, how we notify you, and how your account is protected." />
       <Notice>{error}</Notice>
       {loading || !data ? <SkeletonRows rows={3} className="h-48" /> : (
         <div className="grid items-start gap-6 xl:grid-cols-2">
@@ -25,7 +25,7 @@ export default function CompanySettingsView() {
             <NotificationPrefs preferences={data.preferences} onSaved={(preferences) => setData({ ...data, preferences })} />
             <section className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm">
               <p className="flex items-center gap-2 font-bold text-gray-900"><FaLifeRing className="h-4 w-4 text-[#b39200]" /> Need help or want to close your account?</p>
-              <p className="mt-1 text-sm text-gray-600">Our team can transfer ownership, merge listings or delete your company and its data.</p>
+              <p className="mt-1 text-sm text-gray-600">Our team can transfer ownership, merge listings or delete your account and its data.</p>
               <Link href="/contact" className="mt-3 inline-block rounded-full border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">Contact support</Link>
             </section>
           </div>

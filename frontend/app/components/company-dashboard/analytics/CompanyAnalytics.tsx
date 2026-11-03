@@ -34,7 +34,7 @@ export default function CompanyAnalytics() {
         actions={data && <button type="button" onClick={() => exportTimelineCsv(data)} className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"><FaDownload className="h-3 w-3" /> Export CSV</button>} />
       <FilterTabs label="Period" value={days} onChange={setDays} options={ranges.map((range) => ({ value: range.value, label: range.label }))} />
       <Notice>{error}</Notice>
-      {data && !data.hasListing && <Notice tone="info">Publish your company listing to start collecting profile views.</Notice>}
+      {data && !data.hasListing && <Notice tone="info">Publish your profile to start collecting profile views.</Notice>}
 
       {loading || !data ? <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">{Array.from({ length: 10 }, (_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}</div> : (
         <>

@@ -7,6 +7,7 @@ import Notice from "@/components/dashboard/ui/Notice";
 import Panel from "@/components/dashboard/ui/Panel";
 import StatusPill from "@/components/dashboard/ui/StatusPill";
 import { companyApi, type CompanySettings } from "../companyApi";
+import { editorHref, isFreelancer } from "@/components/utils/providerSide";
 
 const statusTone = { approved: "success", pending: "warning", suspended: "danger" } as const;
 const statusText = { approved: "Approved", pending: "Waiting for approval", suspended: "Suspended" } as const;
@@ -25,10 +26,10 @@ export default function AccountPanel({ account, onSaved }: { account: CompanySet
   };
   const status = (account.status in statusText ? account.status : "pending") as keyof typeof statusText;
   return (
-    <Panel title="Account" description="The login for your company. Your public name, logo and contact details are edited on your profile.">
+    <Panel title="Account" description="Your login. Your public name, photo and contact details are edited on your profile.">
       <form onSubmit={save} className="space-y-4">
         <dl className="grid gap-4 sm:grid-cols-2">
-          <div><dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">Company</dt><dd className="mt-1 font-semibold text-gray-900">{account.companyName} <Link href="/company-dashboard/business-profile/header-profile" className="ml-1 text-xs font-semibold text-[#8a7300] hover:underline">Edit profile</Link></dd></div>
+          <div><dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">{isFreelancer() ? "Name" : "Company"}</dt><dd className="mt-1 font-semibold text-gray-900">{account.companyName} <Link href={editorHref("header-profile")} className="ml-1 text-xs font-semibold text-[#8a7300] hover:underline">Edit profile</Link></dd></div>
           <div><dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">Approval</dt><dd className="mt-1"><StatusPill tone={statusTone[status]}>{statusText[status]}</StatusPill></dd></div>
           <div><dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">Login email</dt><dd className="mt-1 flex flex-wrap items-center gap-2 text-gray-900">{account.email}{account.emailVerified ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"><FaCheckCircle className="h-3 w-3" /> Verified</span> : <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700"><FaExclamationCircle className="h-3 w-3" /> Not verified</span>}</dd></div>
           <div><dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">Member since</dt><dd className="mt-1 text-gray-900">{new Date(account.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</dd></div>

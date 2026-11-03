@@ -1,4 +1,4 @@
-import { CompanyOpeningHours } from "../../opening-hours/models/CompanyOpeningHours.js";
+import { sideOf } from "../../../shared/business/sides.js";
 import { UserBooking } from "../../../user/bookings/models/UserBooking.js";
 import { DAY_MS, toId } from "../../dashboard/services/metrics.js";
 import { scheduleConfig as config } from "../config/scheduleConfig.js";
@@ -16,11 +16,12 @@ export async function getSchedule(req, res, next) {
     const to = new Date(`${req.query.to}T00:00:00Z`);
     if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || to < from) return res.status(400).json({ message: "Choose a valid date range." });
     if ((to - from) / DAY_MS > config.maxDays) return res.status(400).json({ message: `Show at most ${config.maxDays} days at a time.` });
+    const side = sideOf(req);
     const company = toId(req.auth.sub);
     const [items, hours] = await Promise.all([
-      UserBooking.find({ providerType: "company", providerAccount: company, status: { $in: config.statuses }, scheduledDate: { $gte: from, $lt: new Date(to.getTime() + DAY_MS) } })
+      UserBooking.find({ providerType: side.type, providerAccount: company, status: { $in: config.statuses }, scheduledDate: { $gte: from, $lt: new Date(to.getTime() + DAY_MS) } })
         .sort({ scheduledDate: 1, timeSlot: 1 }).limit(500).select("reference customerName service status scheduledDate timeSlot address price quantity").lean(),
-      CompanyOpeningHours.findOne({ company }).lean(),
+      side.OpeningHours.findOne({ [side.ownerField]: company }).lean(),
     ]);
     res.json({ data: { from: req.query.from, to: req.query.to, items, hours: hours ? { weekly: hours.weeklyHours ?? [], emergency: hours.emergencyHours ?? null } : null } });
   } catch (error) { next(error); }
