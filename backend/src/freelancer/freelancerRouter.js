@@ -30,6 +30,7 @@ import { freelancerQuotesRouter } from "./quotes/routers/quotesRouter.js";
 import { freelancerAvailabilityRouter } from "./availability/routers/availabilityRouter.js";
 import { freelancerSavedRepliesRouter } from "./saved-replies/routers/savedRepliesRouter.js";
 import { freelancerPremiumRouter } from "./premium/routers/premiumRouter.js";
+import { seoRouter } from "./seo/routers/seoRouter.js";
 
 // Freelancer profile sections, each in its own folder (config, models, middleware, controllers, routers).
 // Mounted at /api/freelancers, e.g. /api/freelancers/services.
@@ -55,6 +56,7 @@ export const freelancerSections = [
   { path: "/contact", router: contactRouter },
   { path: "/location", router: locationRouter },
   { path: "/verification", router: verificationRouter },
+  { path: "/seo", router: seoRouter },
   // The same business tools as companies: dashboard, analytics, settings, operations and growth.
   { path: "/dashboard", router: freelancerDashboardRouter },
   { path: "/analytics", router: freelancerAnalyticsRouter },

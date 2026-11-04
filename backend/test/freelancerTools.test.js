@@ -138,3 +138,16 @@ describe("booking time windows", () => {
     assert.deepEqual(profile.booking.slots, ["7:00 AM – 9:00 AM", "6:00 PM – 8:00 PM"]);
   });
 });
+
+describe("SEO & keywords", () => {
+  test("companies and freelancers save their own SEO text; it shows on the public profile", async () => {
+    const fl = await newFreelancer();
+    assert.equal((await api("PUT", "/api/freelancers/seo", { token: fl.token, body: { metaTitle: "x".repeat(71) } })).status, 400, "title limit");
+    const saved = await api("PUT", "/api/freelancers/seo", { token: fl.token, body: { metaTitle: "Fiona Fix — Austin plumber", metaDescription: "Leak repair and water heaters in Austin.", keywords: "austin plumber, leak repair, austin plumber", sidebarHeading: "Austin's friendly plumber", sidebarContent: "<b>Same-day</b> visits." } });
+    assert.equal(saved.status, 200);
+    assert.deepEqual(saved.body.data.keywords, ["austin plumber", "leak repair"], "duplicates removed");
+    const profile = (await api("GET", `/api/freelancers/public/${fl.id}/profile`)).body.data;
+    assert.deepEqual([profile.seo.metaTitle, profile.seo.sidebarContent], ["Fiona Fix — Austin plumber", "<b>Same-day</b> visits."], "stored as plain text (shown escaped)");
+    assert.equal((await api("GET", "/api/freelancers/seo", { token: (await newFreelancer()).token })).body.data, null, "private to each account");
+  });
+});

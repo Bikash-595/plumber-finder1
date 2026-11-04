@@ -1,5 +1,5 @@
 import { youtubeId } from "./media";
-import type { BlogPost, OpeningHours, OpeningHoursDay, Plumber, PlumberReview, ServiceDetail, TeamMember } from "./types";
+import type { BlogPost, OpeningHours, OpeningHoursDay, Plumber, PlumberReview, ProfileSeo, ServiceDetail, TeamMember } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
 
@@ -68,6 +68,8 @@ export type CompanyProfile = Omit<CompanyListing, "services"> & {
   blogs?: { _id: string; slug: string; title: string; category?: string; excerpt: string; content: string; coverImage?: string; author?: string; publishDate?: string; tags?: string[]; faqs?: { question: string; answer: string }[]; views?: number }[];
   offers?: PublicOffer[];
   booking?: { emergencyBooking?: boolean; slots?: string[] } | null;
+  /** SEO & keywords section (search title/description, keywords, sidebar card). */
+  seo?: ProfileSeo | null;
   serviceArea?: { areaDetails?: { name: string; services?: string[]; address?: string; radius?: number; latitude?: number; longitude?: number }[]; branchLocation?: string; latitude?: number; longitude?: number; radius?: number } | null;
   socialLinks?: Partial<Record<"facebook" | "instagram" | "twitter" | "linkedin" | "youtube" | "tiktok", string>>;
 };
@@ -245,6 +247,7 @@ export function companyProfileToPlumber(profile: CompanyProfile): Plumber {
     priceRange: prices.length ? [...new Set([prices[0], prices[prices.length - 1]])].join(" – ") : card.priceRange,
     isEmergency: card.isEmergency || Boolean(profile.booking?.emergencyBooking),
     timeSlots: profile.booking?.slots?.length ? profile.booking.slots : undefined,
+    seo: profile.seo ?? undefined,
     // Every service with its details, for the profile's Services section (featured first).
     serviceDetails: offerings.map((service, index) => ({ id: service._id ?? `${index}`, name: service.name, tagline: service.tagline, category: service.category, description: service.description, price: service.price, duration: service.duration, includes: service.includes ?? [], warranty: service.warranty, emergency: Boolean(service.emergency), featured: Boolean(service.featured), image: displayableImage(service.image) || undefined, photoCount: service.photoCount ?? (service.image ? 1 : 0), videoCount: service.videoCount ?? 0, poster: youtubePoster(service.videoPoster) })),
     specializations: offerings.filter((service) => service.featured).map((service) => service.name).concat(serviceNames).filter((name, index, all) => all.indexOf(name) === index),
@@ -332,7 +335,7 @@ export type FreelancerListing = {
   galleryCounts?: { images: number; videos: number };
 };
 
-export type FreelancerProfile = Omit<FreelancerListing, "services"> & Pick<CompanyProfile, "services" | "gallery" | "projects" | "reviews" | "faqs" | "blogs" | "offers" | "booking" | "hours" | "serviceArea" | "socialLinks"> & {
+export type FreelancerProfile = Omit<FreelancerListing, "services"> & Pick<CompanyProfile, "services" | "gallery" | "projects" | "reviews" | "faqs" | "blogs" | "offers" | "booking" | "hours" | "serviceArea" | "socialLinks" | "seo"> & {
   /** Contact Information section (the main phone is on the listing). */
   contact?: { email?: string; website?: string; whatsapp?: string; secondaryPhone?: string; emergencyHotline?: string };
 };
@@ -397,7 +400,7 @@ export function freelancerListingToPlumber(freelancer: FreelancerListing): Plumb
 
 /** A live freelancer's full public profile, shaped like the demo plumbers (no team section). */
 export function freelancerProfileToPlumber(profile: FreelancerProfile): Plumber {
-  const plumber = companyProfileToPlumber({ ...freelancerAsCompany(profile), services: profile.services, gallery: profile.gallery, projects: profile.projects, reviews: profile.reviews, faqs: profile.faqs, blogs: profile.blogs, offers: profile.offers, booking: profile.booking, hours: profile.hours, serviceArea: profile.serviceArea, socialLinks: profile.socialLinks, team: [] });
+  const plumber = companyProfileToPlumber({ ...freelancerAsCompany(profile), services: profile.services, gallery: profile.gallery, projects: profile.projects, reviews: profile.reviews, faqs: profile.faqs, blogs: profile.blogs, offers: profile.offers, booking: profile.booking, hours: profile.hours, serviceArea: profile.serviceArea, socialLinks: profile.socialLinks, seo: profile.seo, team: [] });
   const website = profile.contact?.website && /^https?:\/\//.test(profile.contact.website) ? profile.contact.website : undefined;
   return { ...freelancerExtras(profile, plumber), email: profile.contact?.email || plumber.email, website: website ?? plumber.website, teamMembers: [], about: profile.bio ? { longDescription: profile.bio } : {} };
 }

@@ -63,6 +63,8 @@ export interface Plumber {
   premiumTier?: "premium" | "elite";
   /** Visit time windows the provider offers (Booking Settings). */
   timeSlots?: string[];
+  /** The provider's own SEO & keywords (search title, description, keywords, sidebar card). */
+  seo?: ProfileSeo;
   isEmergency: boolean;
   location: string;
   city?: string;
@@ -248,4 +250,13 @@ export interface PlumberReview {
   text: string;
   date: string;
   photo?: string;
+}
+
+/** SEO & keywords a company or freelancer writes for their profile. */
+export interface ProfileSeo {
+  metaTitle?: string;
+  metaDescription?: string;
+  keywords: string[];
+  sidebarHeading?: string;
+  sidebarContent?: string;
 }

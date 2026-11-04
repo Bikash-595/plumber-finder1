@@ -1,7 +1,7 @@
 import {
   FaAddressBook, FaBell, FaBolt, FaCrown, FaBriefcase, FaCalendarAlt, FaCalendarCheck, FaChartLine, FaClock, FaCog, FaCommentDots,
   FaFileInvoiceDollar, FaHome, FaIdCard, FaImages, FaInfoCircle, FaMapMarkedAlt, FaMapMarkerAlt, FaNewspaper, FaPhoneAlt, FaQuestionCircle,
-  FaRegUser, FaShareAlt, FaShieldAlt, FaStar, FaTag, FaThLarge, FaTools, FaUsers,
+  FaRegUser, FaSearch, FaShareAlt, FaShieldAlt, FaStar, FaTag, FaThLarge, FaTools, FaUsers,
 } from "react-icons/fa";
 
 export type FreelancerSidebarState = "open" | "icons";
@@ -49,6 +49,7 @@ export const freelancerNavSections = [
       { label: "Social Links", href: "/freelancer/business-profile/social-links", icon: FaShareAlt },
       { label: "Booking Settings", href: "/freelancer/business-profile/booking", icon: FaCalendarAlt },
       { label: "Special Offers", href: "/freelancer/business-profile/offers", icon: FaTag },
+      { label: "SEO & Keywords", href: "/freelancer/business-profile/seo", icon: FaSearch },
       { label: "Blogs", href: "/freelancer/business-profile/blogs", icon: FaNewspaper },
       { label: "Documents & Verification", href: "/freelancer/business-profile/verification", icon: FaShieldAlt },
     ],

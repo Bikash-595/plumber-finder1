@@ -176,6 +176,11 @@ Everything people do with a company or freelancer is stored in `profile_activity
 - `GET`/`PUT`/`DELETE /api/companies/verification` (collection `company_verification`) — private document links; admins read them at `GET /api/admin/companies/:id/verification`.
 - Services (company and freelancer) also take `images` (≤ 8; the first becomes `image`), `videos` (≤ 4: YouTube or .mp4/.webm/.mov links, at most one uploaded clip; photos + clip ≤ 13 MB), `overview`, `process` (≤ 8 steps) and `faqs` (≤ 10). The server keeps `photoCount`, `videoCount` and a YouTube `videoPoster` for cards. Lists and the public profile leave the media and content out; `GET /:id` and the public `GET /api/companies/services/public/:listingId/:serviceId` return everything. Public pages: `/company/<slug>/services` (all services) and `/company/<slug>/services/<name>-<id>`.
 
+## SEO & keywords (`src/company/seo`, `src/freelancer/seo`)
+
+- `GET`/`PUT`/`DELETE /api/companies/seo` and `/api/freelancers/seo { metaTitle (≤ 70), metaDescription (≤ 160), keywords[] (≤ 20, each ≤ 40), sidebarHeading (≤ 80), sidebarContent (≤ 1200) }`; public `GET /public/:listingId`. Collections `company_seo` and `freelancer_seo`; fields are shared in `src/shared/profileSections/seoSection.js`.
+- The public profile returns it as `seo`. The page title, meta description and meta keywords use it, and the sidebar heading, text and keywords (linked to `/find?search=`) show under the booking form. Providers with no SEO record get a card built from their services and city.
+
 ## Company growth tools: quotes, availability, saved replies, technicians
 
 - **Quotes** (`src/company/quotes`, collection `quotes`): `GET /api/companies/quotes?status=draft|sent|accepted|declined|withdrawn&q=&cursor=` (with counts, open/won value and acceptance rate), `GET /:id`, `POST / { bookingId, title?, items[{ description, quantity, unitPrice }], discount?, taxRate? (≤ 25), notes?, validUntil?, send? }`, `PATCH /:id` (drafts only), `POST /:id/send`, `POST /:id/withdraw`, `DELETE /:id` (drafts only). Totals are always computed on the server; a quote past `validUntil` reads as `expired`.

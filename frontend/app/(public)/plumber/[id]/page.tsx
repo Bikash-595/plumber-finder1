@@ -188,6 +188,7 @@ import ProfileServices from "@/components/plumber/ProfileServices";
 import ProfileReviews from "@/components/plumber/ProfileReviews";
 import ProfileMap from "@/components/plumber/ProfileMap";
 import BookingPanel from "@/components/plumber/booking-panel/BookingPanel";
+import ProfileSeoCard from "@/components/plumber/profile-seo/ProfileSeoCard";
 import MediaGallery from "@/components/plumber/MediaGallery";
 import ProfilePreviousProjects from "@/components/plumber/ProfilePreviousProjects";
 import DiscountCard from "@/components/plumber/DiscountCard";
@@ -280,6 +281,8 @@ export default function PlumberProfilePage({ params }: { params: Promise<{ id: s
             <DiscountCard plumber={plumber} />
             {/* Sidebar card on desktop; a "Book now" bar and slide-up sheet on phones. */}
             <BookingPanel plumber={plumber} />
+            {/* The provider's own about text, popular searches and areas (SEO & keywords). */}
+            <ProfileSeoCard plumber={plumber} />
           </aside>
         </div>
       </div>

@@ -11,6 +11,7 @@ export const profileLinks: [string, string, string][] = [
   ["Customer Reviews", "reviews", "Read, reply to and report reviews; connect Google."],
   ["Service Areas", "service-areas", "The cities and neighbourhoods you cover, and what you offer in each."],
   ["Google Maps", "maps", "Your address, map pin and travel radius."],
+  ["SEO & Keywords", "seo", "Your Google title and description, keywords, and the about card on your profile."],
   ["Blogs", "blogs", "Articles that show your expertise and bring in search traffic."],
   ["Special Offers", "offers", "Discounts and coupon codes customers can use when booking."],
   ["Booking Settings", "booking", "Instant booking, working days, time slots and cancellation policy."],

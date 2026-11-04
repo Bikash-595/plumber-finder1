@@ -20,6 +20,8 @@ import { FreelancerSocialLinks } from "../../social-links/models/FreelancerSocia
 import { publicHours } from "../../../shared/profileSections/openingHoursSection.js";
 import { FreelancerContact } from "../../contact/models/FreelancerContact.js";
 import { FreelancerLocation } from "../../location/models/FreelancerLocation.js";
+import { FreelancerSeo } from "../../seo/models/FreelancerSeo.js";
+import { publicSeo } from "../../../shared/profileSections/seoSection.js";
 
 const hidden = "-freelancer -__v";
 const byPosition = { position: 1, createdAt: 1 };
@@ -99,7 +101,7 @@ function withCurrentServices(serviceArea, services) {
 /** Everything shown on a freelancer's public profile page, for one published listing. */
 export async function fullProfile(listing) {
   const freelancer = listing.freelancer;
-  const [summaries, services, gallery, projects, reviews, faqs, blogs, offers, booking, serviceArea, hours, socialLinks, contact] = await Promise.all([
+  const [summaries, services, gallery, projects, reviews, faqs, blogs, offers, booking, serviceArea, hours, socialLinks, contact, seo] = await Promise.all([
     cardSummaries([listing]),
     FreelancerServiceOffering.find({ freelancer }).sort(byPosition).select(`${hidden} ${SERVICE_LIST_SELECT}`).lean(),
     FreelancerGalleryItem.find({ freelancer }).sort(byPosition).select(hidden).lean(),
@@ -113,6 +115,7 @@ export async function fullProfile(listing) {
     FreelancerOpeningHours.findOne({ freelancer }).select(hidden).lean(),
     FreelancerSocialLinks.findOne({ freelancer }).select(`${hidden} -_id -createdAt -updatedAt`).lean(),
     FreelancerContact.findOne({ freelancer }).select("secondaryPhone whatsapp emergencyHotline email website").lean(),
+    FreelancerSeo.findOne({ freelancer }).lean(),
   ]);
   const { freelancer: _owner, __v, ...publicListing } = listing;
   return {
@@ -126,5 +129,6 @@ export async function fullProfile(listing) {
     hours: publicHours(hours) ?? { weeklyHours: [] },
     // Extra ways to reach the freelancer (Contact Information section); the main phone is on the listing.
     contact: contact ? Object.fromEntries(Object.entries(contact).filter(([key, value]) => key !== "_id" && value)) : {},
+    seo: publicSeo(seo),
   };
 }

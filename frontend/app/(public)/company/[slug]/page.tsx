@@ -12,11 +12,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const company = await fetchLiveProfile(slug);
   if (!company) return { title: "Company not found", robots: { index: false } };
   const where = company.location ? ` in ${company.location}` : "";
-  const description = (company.description || `${company.companyName} offers ${company.services.slice(0, 4).join(", ") || "plumbing services"}${where}.`).slice(0, 160);
+  // The company's own SEO & keywords first; otherwise built from its profile.
+  const description = (company.seo?.metaDescription || company.description || `${company.companyName} offers ${company.services.slice(0, 4).join(", ") || "plumbing services"}${where}.`).slice(0, 160);
   return {
     // The root layout appends " | Plumber Finder".
-    title: `${company.companyName} – Plumber${where}`,
+    title: company.seo?.metaTitle || `${company.companyName} – Plumber${where}`,
     description,
+    keywords: company.seo?.keywords?.length ? company.seo.keywords : undefined,
     alternates: { canonical: `/company/${company.slug ?? slug}` },
     openGraph: { title: company.companyName, description, type: "profile", images: company.logo?.startsWith("http") ? [company.logo] : undefined },
   };

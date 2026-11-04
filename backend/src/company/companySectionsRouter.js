@@ -31,6 +31,7 @@ import { locationRouter } from "./location/routers/locationRouter.js";
 import { branchesRouter } from "./branches/routers/branchesRouter.js";
 import { verificationRouter } from "./verification/routers/verificationRouter.js";
 import { companyPremiumRouter } from "./premium/routers/premiumRouter.js";
+import { seoRouter } from "./seo/routers/seoRouter.js";
 
 // Business-profile sections, each in its own folder (config, models, middleware, controllers, routers).
 // Mounted at /api/companies, e.g. /api/companies/services.
@@ -54,6 +55,7 @@ export const companySections = [
   { path: "/location", router: locationRouter },
   { path: "/branches", router: branchesRouter },
   { path: "/verification", router: verificationRouter },
+  { path: "/seo", router: seoRouter },
   // Premium plans (badge, top position): src/premium.
   { path: "/premium", router: companyPremiumRouter },
   // Booking requests from customers (accept / decline) and the company's notifications.

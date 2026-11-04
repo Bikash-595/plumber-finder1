@@ -11,6 +11,7 @@ import FreelancerOpeningHoursForm from "./sections/opening-hours/FreelancerOpeni
 import FreelancerOverviewForm from "./sections/overview/FreelancerOverviewForm";
 import FreelancerProjectsForm from "./sections/projects/FreelancerProjectsForm";
 import FreelancerReviewsForm from "./sections/reviews/FreelancerReviewsForm";
+import FreelancerSeoForm from "./sections/seo/FreelancerSeoForm";
 import FreelancerServiceAreasForm from "./sections/service-areas/FreelancerServiceAreasForm";
 import FreelancerServicesForm from "./sections/services/FreelancerServicesForm";
 import FreelancerSocialLinksForm from "./sections/social-links/FreelancerSocialLinksForm";
@@ -45,6 +46,7 @@ export const freelancerProfileSections: FreelancerProfileSection[] = [
   { slug: "social-links", label: "Social Links", about: "Facebook, Instagram and more, shown on your profile.", Form: FreelancerSocialLinksForm },
   { slug: "booking", label: "Booking", about: "Instant booking, working days, time slots and cancellation policy.", Form: FreelancerBookingForm },
   { slug: "offers", label: "Special Offers", about: "Discounts and coupon codes customers can use when booking.", Form: FreelancerOffersForm },
+  { slug: "seo", label: "SEO & Keywords", about: "Your Google title and description, keywords, and the about card on your profile.", Form: FreelancerSeoForm },
   { slug: "blogs", label: "Blogs", about: "Articles that show your expertise and bring in search traffic.", Form: FreelancerBlogsForm },
   { slug: "verification", label: "Documents", about: "Private links to your licence and insurance for verification.", Form: FreelancerVerificationForm },
 ];

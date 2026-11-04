@@ -18,6 +18,8 @@ import { SERVICE_LIST_SELECT } from "../../../shared/profileSections/servicesSec
 import { CompanySpecialOffer } from "../../special-offers/models/CompanySpecialOffer.js";
 import { CompanyTeamMember } from "../../team/models/CompanyTeamMember.js";
 import { CompanyBranch } from "../../branches/models/CompanyBranch.js";
+import { CompanySeo } from "../../seo/models/CompanySeo.js";
+import { publicSeo } from "../../../shared/profileSections/seoSection.js";
 import { CompanySocialLinks } from "../../social-links/models/CompanySocialLinks.js";
 import { CompanyOpeningHours } from "../../opening-hours/models/CompanyOpeningHours.js";
 import { publicHours } from "../../../shared/profileSections/openingHoursSection.js";
@@ -128,7 +130,7 @@ function withCurrentServices(serviceArea, services) {
 /** Everything shown on a company's public profile page, for one published listing. */
 export async function fullProfile(listing) {
   const company = listing.company;
-  const [summaries, header, services, gallery, projects, reviews, team, faqs, blogs, offers, booking, serviceArea, operations, locations, contact, profile, draft, socialLinks, openingHours, branchList] = await Promise.all([
+  const [summaries, header, services, gallery, projects, reviews, team, faqs, blogs, offers, booking, serviceArea, operations, locations, contact, profile, draft, socialLinks, openingHours, branchList, seo] = await Promise.all([
     cardSummaries([listing]),
     CompanyHeaderProfile.findOne({ company }).select(hidden).lean(),
     CompanyServiceOffering.find({ company }).sort(byPosition).select(`${hidden} ${SERVICE_LIST_SELECT}`).lean(),
@@ -149,6 +151,7 @@ export async function fullProfile(listing) {
     CompanySocialLinks.findOne({ company }).select(`${hidden} -_id -createdAt -updatedAt`).lean(),
     CompanyOpeningHours.findOne({ company }).lean(),
     CompanyBranch.find({ company }).sort(byPosition).select(`${hidden} -_id -createdAt -updatedAt -position`).lean(),
+    CompanySeo.findOne({ company }).lean(),
   ]);
   const { company: _owner, __v, ...publicListing } = listing;
   return {
@@ -168,5 +171,6 @@ export async function fullProfile(listing) {
     booking: booking ?? null,
     serviceArea: withCurrentServices(serviceArea, services),
     socialLinks: socialLinks ?? {},
+    seo: publicSeo(seo),
   };
 }
