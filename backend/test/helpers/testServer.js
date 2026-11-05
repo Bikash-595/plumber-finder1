@@ -59,5 +59,5 @@ export async function startTestServer() {
     rmSync(dbPath, { recursive: true, force: true });
   };
 
-  return { api, stop, uri };
+  return { api, stop, uri, baseUrl };
 }

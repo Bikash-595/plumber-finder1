@@ -5,12 +5,29 @@ import { plumbers as demoPlumbers } from "@/data/plumbers";
 import { fetchPublishedPlumbers } from "./companyListing";
 import type { Plumber } from "./types";
 
+// One copy of the directory for the whole browser tab: every page and component that lists plumbers shares it,
+// so moving between Home, Find, States and Book a Plumber doesn't download it again. It is refreshed in the
+// background once it is older than FRESH_MS (the server also caches it and answers 304 when nothing changed).
+const FRESH_MS = 60_000;
+let directory: { at: number; list: Plumber[] | null; pending: Promise<Plumber[]> | null } = { at: 0, list: null, pending: null };
+
+function loadDirectory(): Promise<Plumber[]> {
+  if (directory.pending) return directory.pending;
+  const pending = fetchPublishedPlumbers()
+    .catch(() => directory.list ?? [])
+    .then((list) => { directory = { at: Date.now(), list, pending: null }; return list; });
+  directory = { ...directory, pending };
+  return pending;
+}
+
 /** Live companies and freelancers published through their dashboards, shaped like the demo plumbers. null while loading. */
 function useLivePlumbers() {
-  const [plumbers, setPlumbers] = useState<Plumber[] | null>(null);
+  // A copy from earlier in this visit shows at once (no loading state); a stale one is refreshed behind it.
+  const [plumbers, setPlumbers] = useState<Plumber[] | null>(() => directory.list);
   useEffect(() => {
+    if (directory.list && Date.now() - directory.at < FRESH_MS) return;
     let cancelled = false;
-    fetchPublishedPlumbers().then((list) => { if (!cancelled) setPlumbers(list); }).catch(() => { if (!cancelled) setPlumbers([]); });
+    loadDirectory().then((list) => { if (!cancelled) setPlumbers(list); });
     return () => { cancelled = true; };
   }, []);
   return plumbers;

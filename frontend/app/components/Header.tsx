@@ -45,6 +45,8 @@ import { readStoredUser, clearStoredUser, type AppUser } from "../components/uti
 import { isCustomerSignedIn, USER_DATA_EVENT, userApi } from "./utils/userApi";
 import { useUserData } from "./dashboard/useUserData";
 import { accountMenuLinks, dashboardLink, type AccountLink } from "./utils/accountLinks";
+import SmartSuggestionList from "./search/SmartSuggestionList";
+import { rememberSearch, resolveSearch, useSmartSuggestions, type Suggestion } from "./search/smartSearch";
 
 const navLinks = [
   { label: "Home", href: "/", icon: FaHouse },
@@ -96,7 +98,6 @@ export function Header() {
   const [mobileSection, setMobileSection] = useState<MobileSection>(null);
   const [mobileStateSearch, setMobileStateSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchLocation, setSearchLocation] = useState("Chicago");
   const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<AppUser | null>(null);
@@ -135,28 +136,39 @@ export function Header() {
     (e?: FormEvent | null, term?: string, location?: string) => {
       if (e) e.preventDefault();
       const nextTerm = (term ?? searchQuery).trim();
-      const nextLocation = (location ?? searchLocation).trim();
+      const nextLocation = (location ?? "").trim();
+      setMenuOpen(false);
+      setMobileSection(null);
+      setSearchOpen(false);
+      // Typed searches open the page they mean ("Top 10 plumbers in Texas" → /top-10-plumbers/texas);
+      // the panel's service and area chips keep using the directory search.
+      if (nextTerm) rememberSearch(nextTerm);
+      if (location === undefined && nextTerm) {
+        resolveSearch(nextTerm).then((url) => router.push(url));
+        return;
+      }
       const params = new URLSearchParams();
       if (nextTerm) params.set("search", nextTerm);
       if (nextLocation) params.set("location", nextLocation);
       router.push(params.toString() ? `/find?${params.toString()}` : "/find");
-      setMenuOpen(false);
-      setMobileSection(null);
-      setSearchOpen(false);
       if (nextLocation) {
         window.localStorage.setItem("plumberfinder_location", nextLocation);
       }
     },
-    [searchLocation, searchQuery, router]
+    [searchQuery, router]
   );
 
+  // Suggestions while typing (header and mobile menu search): ↑/↓, Enter and Escape work in the input.
+  const pickSuggestion = useCallback((item: Suggestion) => {
+    rememberSearch(item.label);
+    setSearchOpen(false);
+    setMenuOpen(false);
+    setMobileSection(null);
+    router.push(item.url);
+  }, [router]);
+  const smart = useSmartSuggestions(searchQuery, { enabled: searchOpen || menuOpen, onPick: pickSuggestion, onClose: () => setSearchOpen(false) });
+
   // Wrapper for SearchSuggestionsPanel (no event, just term + location)
-  const handlePanelSearch = useCallback(
-    (term: string, location: string) => {
-      handleSearch(null, term, location);
-    },
-    [handleSearch]
-  );
 
   const handleLogout = () => {
     clearStoredUser();
@@ -284,6 +296,12 @@ export function Header() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setSearchOpen(true)}
                   onClick={() => setSearchOpen(true)}
+                  onKeyDown={(e) => { if (smart.onKeyDown(e)) e.preventDefault(); }}
+                  autoComplete="off"
+                  role="combobox"
+                  aria-expanded={searchOpen}
+                  aria-controls="header-suggestions"
+                  aria-activedescendant={smart.active >= 0 ? `header-suggestions-${smart.active}` : undefined}
                   placeholder="Search plumbers or services"
                   className="h-11 w-full rounded-full border border-slate-200 bg-slate-50 pl-10 pr-14 text-sm text-slate-800 placeholder-slate-400 transition hover:border-slate-300 focus:border-[#FFD60A] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#FFD60A]/25 lg:pr-28"
                 />
@@ -301,9 +319,8 @@ export function Header() {
                 onClose={() => setSearchOpen(false)}
                 query={searchQuery}
                 onQueryChange={setSearchQuery}
-                location={searchLocation}
-                onLocationChange={setSearchLocation}
-                onSearch={handlePanelSearch}
+                onSubmitQuery={(value) => handleSearch(null, value)}
+                top={searchQuery.trim().length >= 2 ? <SmartSuggestionList wide id="header-suggestions" items={smart.items} active={smart.active} loading={smart.loading} settled={smart.settled} query={searchQuery} onPick={pickSuggestion} onHover={smart.setActive} onSearch={() => handleSearch(null)} /> : undefined}
               />
             </div>
 
@@ -505,6 +522,8 @@ export function Header() {
                   autoFocus={focusMobileSearch}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => { if (smart.onKeyDown(e)) e.preventDefault(); }}
+                  autoComplete="off"
                   placeholder="Search plumbers or services"
                   className="h-12 w-full rounded-full border border-slate-200 bg-slate-50 pl-10 pr-24 text-base text-slate-800 placeholder-slate-400 focus:border-[#FFD60A] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#FFD60A]/25"
                 />
@@ -512,6 +531,11 @@ export function Header() {
                   Search
                 </button>
               </form>
+              {searchQuery.trim().length >= 2 && (
+                <div className="mt-2 rounded-2xl border border-slate-200 bg-white md:hidden">
+                  <SmartSuggestionList id="mobile-suggestions" items={smart.items} active={smart.active} loading={smart.loading} settled={smart.settled} query={searchQuery} onPick={pickSuggestion} onHover={smart.setActive} onSearch={() => handleSearch(null)} />
+                </div>
+              )}
 
               <Link
                 href="/services/emergency-plumbing"

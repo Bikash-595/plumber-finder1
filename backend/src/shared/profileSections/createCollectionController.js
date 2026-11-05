@@ -9,11 +9,13 @@
  *  - afterChange(ctx) runs after create/update/delete (e.g. to sync the public listing).
  *  - publicFilter() returns extra conditions for the public endpoint (e.g. only published blogs).
  *  - listSelect leaves heavy fields out of lists (e.g. "-images -overview"); getOne / getPublicOne return everything.
+ *  - publicView(item) shapes each item the public endpoints return (e.g. uploaded pictures → /media/... links).
  */
-export function createCollectionController({ Model, config, ownerField, resolvePublishedOwner, beforeWrite, afterChange, publicFilter, listSelect = "" }) {
+export function createCollectionController({ Model, config, ownerField, resolvePublishedOwner, beforeWrite, afterChange, publicFilter, listSelect = "", publicView }) {
   const notFound = (res) => res.status(404).json({ message: `${config.label} not found.` });
   const sort = { position: 1, createdAt: 1 };
   const context = (ownerId) => ({ owner: ownerId, [ownerField]: ownerId });
+  const toPublic = (item) => (publicView ? publicView(item.toJSON()) : item);
 
   return {
     list: async (req, res, next) => {
@@ -81,7 +83,7 @@ export function createCollectionController({ Model, config, ownerField, resolveP
         const ownerId = await resolvePublishedOwner(req.params.listingId);
         if (!ownerId) return res.status(404).json({ message: "Listing not found." });
         const items = await Model.find({ [ownerField]: ownerId, ...(publicFilter?.() ?? {}) }).sort(sort).select(`-${ownerField} -__v ${listSelect}`.trim());
-        res.json({ data: items });
+        res.json({ data: items.map(toPublic) });
       } catch (error) { next(error); }
     },
 
@@ -92,7 +94,7 @@ export function createCollectionController({ Model, config, ownerField, resolveP
         if (!ownerId) return res.status(404).json({ message: "Listing not found." });
         const item = await Model.findOne({ _id: req.params.id, [ownerField]: ownerId, ...(publicFilter?.() ?? {}) }).select(`-${ownerField} -__v`);
         if (!item) return notFound(res);
-        res.json({ data: item });
+        res.json({ data: toPublic(item) });
       } catch (error) { next(error); }
     },
   };

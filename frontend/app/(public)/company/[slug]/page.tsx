@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     keywords: company.seo?.keywords?.length ? company.seo.keywords : undefined,
     alternates: { canonical: `/company/${company.slug ?? slug}` },
-    openGraph: { title: company.companyName, description, type: "profile", images: company.logo?.startsWith("http") ? [company.logo] : undefined },
+    openGraph: { title: company.companyName, description, type: "profile", images: company.logo && /^(https?:|\/media\/)/.test(company.logo) ? [company.logo] : undefined },
   };
 }
 

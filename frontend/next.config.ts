@@ -1,7 +1,22 @@
 import type { NextConfig } from "next";
 
+// The backend API (same variable the browser code uses).
+const apiBase = (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api").replace(/\/$/, "");
+
 /** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {
+  // Uploaded pictures are served by the backend at /api/media/... and linked from public pages as /media/...
+  // (same address as the site, so <Image> optimizes and caches them like local files).
+  async rewrites() {
+    return [
+      { source: "/media/:path*", destination: `${apiBase}/media/:path*` },
+      // Top 10 / Top 50 directory pages: /top-10-plumbers/texas, /top-50-drain-cleaning-companies/california/los-angeles
+      // (rendered by app/(public)/rankings/...; the noun is checked by the backend, unknown ones are 404).
+      // The noun needs its own pattern: after an escaped "-" the default one stops at the next hyphen.
+      { source: "/top\\-:limit(10|50)\\-:noun([a-z][a-z\\-]*)/:state", destination: "/rankings/:limit/:noun/:state" },
+      { source: "/top\\-:limit(10|50)\\-:noun([a-z][a-z\\-]*)/:state/:city", destination: "/rankings/:limit/:noun/:state/:city" },
+    ];
+  },
   experimental: {
     cpus: 2,
     staticGenerationMaxConcurrency: 2,
@@ -31,8 +46,6 @@ const nextConfig: NextConfig = {
         hostname: "api.dicebear.com",
         pathname: "/**",
       },
-
-      // ✅ ADD THIS (IMPORTANT)
       {
         protocol: "https",
         hostname: "upload.wikimedia.org",
@@ -42,17 +55,7 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
       },
-      {
-        protocol: 'https',
-        hostname: 'randomuser.me',
-      },
-      {
-        protocol: 'https',
-        hostname: 'randomuser.me',
-      },
-      { protocol: 'https', hostname: 'randomuser.me' },
-      { protocol: 'https', hostname: 'images.unsplash.com' },
-      
+      { protocol: "https", hostname: "randomuser.me" },
     ],
   },
 };

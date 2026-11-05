@@ -3,13 +3,23 @@
 import { FaTh, FaList, FaLocationArrow } from "react-icons/fa";
 import { useUserLocation } from "./useUserLocation";
 
+export type ResultsSort = "relevance" | "rating" | "reviews" | "nearest";
+const sortOptions: { value: ResultsSort; label: string }[] = [
+  { value: "relevance", label: "Best match" },
+  { value: "rating", label: "Highest rated" },
+  { value: "reviews", label: "Most reviewed" },
+  { value: "nearest", label: "Nearest" },
+];
+
 interface ResultsHeaderProps {
   totalResults: number;
   viewMode: "grid" | "list";
   onViewModeChange: (mode: "grid" | "list") => void;
+  sort?: ResultsSort;
+  onSortChange?: (sort: ResultsSort) => void;
 }
 
-export default function ResultsHeader({ viewMode, onViewModeChange }: ResultsHeaderProps) {
+export default function ResultsHeader({ viewMode, onViewModeChange, sort, onSortChange }: ResultsHeaderProps) {
   const { location, status, request, clear } = useUserLocation();
   return (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -28,7 +38,15 @@ export default function ResultsHeader({ viewMode, onViewModeChange }: ResultsHea
         {status === "denied" && <span className="text-xs text-red-600">Location permission was denied.</span>}
         {status === "unavailable" && <span className="text-xs text-red-600">Your location could not be found.</span>}
       </div>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
+        {sort && onSortChange && (
+          <label className="flex items-center gap-2 text-sm text-gray-600">
+            <span className="hidden sm:inline">Sort by</span>
+            <select value={sort} onChange={(event) => onSortChange(event.target.value as ResultsSort)} aria-label="Sort results" className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 focus:border-[#FFD60A] focus:outline-none">
+              {sortOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </label>
+        )}
         <button
           onClick={() => onViewModeChange("grid")}
           className={`rounded-lg p-2 transition ${viewMode === "grid" ? "bg-[#FFD60A] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}

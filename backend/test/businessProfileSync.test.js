@@ -4,8 +4,17 @@ import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { startTestServer } from "./helpers/testServer.js";
 
-let api, stop;
-before(async () => ({ api, stop } = await startTestServer()));
+let api, stop, baseUrl;
+before(async () => ({ api, stop, baseUrl } = await startTestServer()));
+// Public responses link to uploaded pictures; the link must serve exactly the uploaded bytes.
+async function assertMediaLink(link, dataUrl, message) {
+  assert.match(String(link), /^\/media\/[a-z-]+\/[a-f0-9]{24}\/[a-zA-Z]+(-\d+)?\/[a-z0-9]+$/, message);
+  const res = await fetch(`${baseUrl}/api${link}`);
+  assert.equal(res.status, 200, message);
+  assert.equal(res.headers.get("content-type"), dataUrl.slice(5, dataUrl.indexOf(";")), message);
+  assert.equal(Buffer.from(await res.arrayBuffer()).toString("base64"), dataUrl.slice(dataUrl.indexOf(",") + 1), message);
+}
+
 after(() => stop());
 
 let seq = 0;
@@ -74,9 +83,11 @@ describe("service pages", () => {
     assert.equal(list[0].images, undefined, "the dashboard list leaves photos out");
     assert.equal((await api("GET", `/api/companies/services/${created._id}`, { token: company.token })).body.data.images.length, 2);
     const pub = await profile(company);
-    assert.deepEqual([pub.services[0].name, pub.services[0].images, pub.services[0].image], ["Drain Cleaning", undefined, photo], "profile stays light but keeps the card photo");
+    assert.deepEqual([pub.services[0].name, pub.services[0].images], ["Drain Cleaning", undefined], "profile stays light");
+    await assertMediaLink(pub.services[0].image, photo, "the profile keeps the card photo as a link");
     const page = (await api("GET", `/api/companies/services/public/${company.id}/${created._id}`)).body.data;
     assert.deepEqual([page.images.length, page.overview, page.process.length, page.faqs[0].answer, page.price], [2, "We clear any blocked drain.", 3, "About an hour.", "From $129"]);
+    await assertMediaLink(page.images[1], photo.replace("AAAA", "BBBB"), "each page photo is its own link");
     assert.equal((await api("GET", `/api/companies/services/public/${(await newCompany()).id}/${created._id}`)).status, 404, "wrong company");
     await api("PATCH", `/api/companies/services/${created._id}`, { token: company.token, body: { images: [] } });
     assert.equal((await api("GET", `/api/companies/services/${created._id}`, { token: company.token })).body.data.image, null, "removing every photo clears the card photo");
@@ -106,5 +117,54 @@ describe("service pages", () => {
     assert.deepEqual([list.tagline, list.problems], ["Hot water back the same day", undefined], "lists keep the tagline, not the page content");
     const page = (await api("GET", `/api/companies/services/public/${company.id}/${created._id}`)).body.data;
     assert.deepEqual([page.problems, page.highlights, page.prepare], [["No hot water", "Leaking tank"], ["Same-day parts"], ["Clear space around the heater"]]);
+  });
+});
+
+describe("fast public directory and pictures", () => {
+  test("the directory is shared, compressed, answers 304 when unchanged, and shows changes at once", async () => {
+    const company = await newCompany();
+    await api("PUT", "/api/companies/header-profile", { token: company.token, body: { companyName: "Cache Test Plumbing", logo: photo } });
+    const first = await fetch(`${baseUrl}/api/companies/public`, { headers: { "Accept-Encoding": "gzip" } });
+    assert.equal(first.headers.get("content-encoding"), "gzip");
+    const etag = first.headers.get("etag");
+    const card = (await first.json()).data.find((item) => item._id === company.id);
+    assert.equal(card.companyName, "Cache Test Plumbing");
+    await assertMediaLink(card.logo, photo, "cards link to the logo instead of carrying it");
+    assert.equal((await fetch(`${baseUrl}/api/companies/public`, { headers: { "If-None-Match": etag } })).status, 304, "unchanged → 304");
+
+    await api("PUT", "/api/companies/header-profile", { token: company.token, body: { companyName: "Renamed Plumbing" } });
+    const after = await fetch(`${baseUrl}/api/companies/public`, { headers: { "If-None-Match": etag } });
+    assert.equal(after.status, 200, "a change ends the cached copy");
+    assert.equal((await after.json()).data.find((item) => item._id === company.id).companyName, "Renamed Plumbing");
+  });
+
+  test("profiles are cached but show the owner's changes at once; other owners' saves don't end them", async () => {
+    const company = await newCompany();
+    const other = await newCompany();
+    await api("PUT", "/api/companies/header-profile", { token: company.token, body: { companyName: "Before Plumbing" } });
+    const url = `${baseUrl}/api/companies/public/${company.id}/profile`;
+    const first = await fetch(url);
+    const etag = first.headers.get("etag");
+    assert.equal((await first.json()).data.companyName, "Before Plumbing");
+    await api("PUT", "/api/companies/header-profile", { token: other.token, body: { companyName: "Someone Else" } });
+    assert.equal((await fetch(url, { headers: { "If-None-Match": etag } })).status, 304, "another company's save keeps this copy");
+    await api("PUT", "/api/companies/header-profile", { token: company.token, body: { companyName: "After Plumbing" } });
+    const after = await fetch(url, { headers: { "If-None-Match": etag } });
+    assert.equal(after.status, 200, "the owner's save ends the cached copy");
+    assert.equal((await after.json()).data.companyName, "After Plumbing");
+    assert.equal((await fetch(`${baseUrl}/api/companies/public/no-such-company-slug/profile`)).status, 404);
+  });
+
+  test("picture links: cached for good, 304 on revalidation, unknown or private fields are not served", async () => {
+    const company = await newCompany();
+    await api("PUT", "/api/companies/header-profile", { token: company.token, body: { companyName: "Media Co", logo: photo } });
+    const link = (await profile(company)).logo;
+    const res = await fetch(`${baseUrl}/api${link}`);
+    assert.match(res.headers.get("cache-control"), /immutable/);
+    assert.equal((await fetch(`${baseUrl}/api${link}`, { headers: { "If-None-Match": res.headers.get("etag") } })).status, 304);
+    const [, , kind, id] = link.split("/");
+    assert.equal((await fetch(`${baseUrl}/api/media/${kind}/${id}/email/0`)).status, 404, "only listed picture fields");
+    assert.equal((await fetch(`${baseUrl}/api/media/company-verification/${id}/license/0`)).status, 404, "private uploads are never served");
+    assert.equal((await fetch(`${baseUrl}/api/media/${kind}/not-an-id/logo/0`)).status, 404);
   });
 });

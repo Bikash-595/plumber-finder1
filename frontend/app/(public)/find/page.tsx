@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { plumbers } from "@/data/plumbers";
 import { useDirectoryPlumbers } from "@/components/find/usePublishedPlumbers";
 import { sortByDistance } from "@/components/find/distance";
+import { premiumFirst } from "@/components/premium/directoryRank";
 import { useUserLocation } from "@/components/find/useUserLocation";
 import SearchHero from "@/components/find/SearchHero";
 import FilterSidebar from "@/components/find/FilterSidebar";
@@ -13,12 +14,22 @@ import PlumberCardGrid from "@/components/find/PlumberCardGrid";
 import PlumberCardList from "@/components/find/PlumberCardList";
 import Pagination from "@/components/find/Pagination";
 import ServiceSeoContent from "@/components/find/ServiceSeoContent";
+import SearchSummary from "@/components/find/SearchSummary";
+import { useProfileSearch } from "@/components/find/useProfileSearch";
+import type { ResultsSort } from "@/components/find/ResultsHeader";
+
 export default function FindPlumberPageWrapper() {
   return (
     <Suspense>
-      <FindPlumberPage />
+      <FindPlumberPageForUrl />
     </Suspense>
   );
+}
+
+// A new search from the header (a new ?search=) starts the page afresh: new query, filters and page 1.
+function FindPlumberPageForUrl() {
+  const searchParams = useSearchParams();
+  return <FindPlumberPage key={searchParams.toString()} />;
 }
 
 function FindPlumberPage() {
@@ -44,6 +55,7 @@ function FindPlumberPage() {
   const [selectedCertifications, setSelectedCertifications] = useState<string[]>([]);
   const [selectedAvailability, setSelectedAvailability] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [sort, setSort] = useState<ResultsSort>("relevance");
   const itemsPerPage = 6;
 
   const activeServices = useMemo(
@@ -105,8 +117,16 @@ function FindPlumberPage() {
   }, [normalizeValue]);
 
   // Real companies and freelancers replace the demo plumbers once any exist.
-  const { plumbers: directory, loading } = useDirectoryPlumbers();
+  const { plumbers: directory, loading, isDemo } = useDirectoryPlumbers();
   const { location: userLocation } = useUserLocation();
+
+  // The site search ranks live profiles for the typed words (typos and prefixes allowed, best match first); the
+  // demo directory, or a backend that can't be reached, falls back to matching the words on the page.
+  const { search: profileSearch, loading: searching } = useProfileSearch(searchFilters.query);
+  const rankById = useMemo(
+    () => (profileSearch && !isDemo ? new Map(profileSearch.results.map((hit, index) => [hit.id, index])) : null),
+    [profileSearch, isDemo]
+  );
 
   const getSearchableText = useCallback((plumber: typeof plumbers[number]) =>
     [
@@ -150,7 +170,7 @@ function FindPlumberPage() {
     const normalizedResponseTime = normalizeResponseTime(plumber.responseTime);
 
     const searchableText = getSearchableText(plumber);
-    const matchesQuery = !query || searchableText.includes(query);
+    const matchesQuery = !query || (rankById ? rankById.has(plumber.id) : query.split(/\s+/).every((word) => searchableText.includes(word)));
 
     const matchesLocation =
       !locationQuery ||
@@ -220,6 +240,7 @@ function FindPlumberPage() {
   }), [
     directory,
     searchFilters,
+    rankById,
     activeServices,
     priceRange,
     emergencyOnly,
@@ -238,8 +259,22 @@ function FindPlumberPage() {
     normalizeResponseTime,
   ]);
 
-  // Nearest plumbers first once the visitor shares their location.
-  const sortedPlumbers = useMemo(() => sortByDistance(filteredPlumbers, userLocation), [filteredPlumbers, userLocation]);
+  // Best match first for a search (nearest first otherwise, once the visitor shares their location).
+  const sortedPlumbers = useMemo(() => {
+    if (sort === "rating") return [...filteredPlumbers].sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount);
+    if (sort === "reviews") return [...filteredPlumbers].sort((a, b) => b.reviewCount - a.reviewCount || b.rating - a.rating);
+    // Premium plans keep their placement among the profiles that match the search.
+    if (sort === "relevance" && rankById) return premiumFirst([...filteredPlumbers].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0)));
+    return sortByDistance(filteredPlumbers, userLocation);
+  }, [filteredPlumbers, userLocation, sort, rankById]);
+  // Related profiles (some words match, or the same services and places) when few or none match every word.
+  const relatedPlumbers = useMemo(() => {
+    if (!profileSearch || isDemo || sortedPlumbers.length >= 6) return [];
+    const byId = new Map(directory.map((plumber) => [plumber.id, plumber]));
+    const shown = new Set(sortedPlumbers.map((plumber) => plumber.id));
+    return [...profileSearch.results, ...profileSearch.related].map((hit) => byId.get(hit.id)).filter((plumber): plumber is (typeof directory)[number] => Boolean(plumber) && !shown.has(plumber!.id)).slice(0, 6);
+  }, [profileSearch, isDemo, sortedPlumbers, directory]);
+  const waiting = loading || (searching && !isDemo);
   const totalPages = Math.ceil(sortedPlumbers.length / itemsPerPage);
   const safeCurrentPage = totalPages === 0 ? 1 : Math.min(currentPage, totalPages);
   const paginatedPlumbers = sortedPlumbers.slice(
@@ -250,7 +285,7 @@ function FindPlumberPage() {
   return (
     <main className="min-h-screen bg-white font-sans">
       <SearchHero
-        onSearch={setSearchFilters}
+        onSearch={(filters) => { setSearchFilters(filters); setCurrentPage(1); }}
         initialFilters={{
           query: searchParams.get("search") ?? "",
           zip: searchParams.get("location") ?? "",
@@ -285,9 +320,14 @@ function FindPlumberPage() {
             />
           </aside>
           <div className="flex-1">
-            <ResultsHeader totalResults={filteredPlumbers.length} viewMode={viewMode} onViewModeChange={setViewMode} />
-            {paginatedPlumbers.length === 0 ? (
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-12 text-center">{loading ? "Loading plumbers…" : "No plumbers match your criteria."}</div>
+            {searchFilters.query.trim() && !waiting && (
+              <SearchSummary query={searchFilters.query.trim()} total={sortedPlumbers.length} correctedQuery={rankById ? profileSearch?.correctedQuery ?? null : null} />
+            )}
+            <ResultsHeader totalResults={filteredPlumbers.length} viewMode={viewMode} onViewModeChange={setViewMode} sort={sort} onSortChange={(next) => { setSort(next); setCurrentPage(1); }} />
+            {waiting && paginatedPlumbers.length === 0 ? (
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-12 text-center text-gray-600">{loading ? "Loading plumbers…" : "Searching…"}</div>
+            ) : paginatedPlumbers.length === 0 ? (
+              relatedPlumbers.length ? null : <div className="rounded-2xl border border-gray-200 bg-gray-50 p-12 text-center">No plumbers match your criteria.</div>
             ) : viewMode === "grid" ? (
               <PlumberCardGrid plumbers={paginatedPlumbers} />
             ) : (
@@ -298,6 +338,13 @@ function FindPlumberPage() {
               totalPages={totalPages}
               onPageChange={setCurrentPage}
             />
+            {relatedPlumbers.length > 0 && (safeCurrentPage === totalPages || totalPages === 0) && (
+              <section className="mt-10" aria-labelledby="related-heading">
+                <h2 id="related-heading" className="text-xl font-bold text-gray-900">{sortedPlumbers.length ? "Related profiles you may like" : "Profiles you may like"}</h2>
+                <p className="mb-5 mt-1 text-sm text-gray-500">Matching some of your words, or offering the same services nearby.</p>
+                {viewMode === "grid" ? <PlumberCardGrid plumbers={relatedPlumbers} /> : <PlumberCardList plumbers={relatedPlumbers} />}
+              </section>
+            )}
             <ServiceSeoContent service={requestedService} />
           </div>
         </div>

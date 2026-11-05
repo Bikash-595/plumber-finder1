@@ -24,6 +24,7 @@ import { CompanySocialLinks } from "../../social-links/models/CompanySocialLinks
 import { CompanyOpeningHours } from "../../opening-hours/models/CompanyOpeningHours.js";
 import { publicHours } from "../../../shared/profileSections/openingHoursSection.js";
 import { withViews } from "../../../blogs/engagement/views.js";
+import { withMediaUrls } from "../../../media/mediaUrls.js";
 import { cardOffer, publicOffer } from "../../../shared/profileSections/specialOffersSection.js";
 import { currentOffers, publishedBlogs, visibleProjects } from "../../../shared/profileSections/publicFilters.js";
 import { firstPoint, galleryCounts, publishedBlogCounts } from "../../../shared/profileSections/cardExtras.js";
@@ -49,7 +50,7 @@ export async function cardSummaries(listings) {
   const [ratings, overviews, headers, offers, operations, emergencyServices, accounts, teamCounts, drafts, serviceAreas, wizardLocations, blogCounts, teamMembers, mediaCounts, openingHours] = await Promise.all([
     // PlumberFinder rating: published customer reviews only (Google ratings are shown separately).
     ratingsByAccount("company", companies),
-    CompanyOverview.find({ company: { $in: companies } }).lean(),
+    CompanyOverview.find({ company: { $in: companies } }).select("company foundedYear yearsInBusiness teamSize licenseNumber insurance certifications responseTime averageCost projectsCompleted").lean(),
     CompanyHeaderProfile.find({ company: { $in: companies } }).select("company ownerName yearsInBusiness licenseNumber insurance certifications").lean(),
     CompanySpecialOffer.find({ company: { $in: companies }, ...currentOffers() }).sort(byPosition).select("company title discount promoCode coupons").lean(),
     CompanyOperations.find({ company: { $in: companies } }).select("company weeklyHours availability24x7").lean(),
@@ -153,11 +154,14 @@ export async function fullProfile(listing) {
     CompanyBranch.find({ company }).sort(byPosition).select(`${hidden} -_id -createdAt -updatedAt -position`).lean(),
     CompanySeo.findOne({ company }).lean(),
   ]);
-  const { company: _owner, __v, ...publicListing } = listing;
+  const { company: _owner, __v, ...ownListing } = listing;
+  // Uploaded pictures become /media/... links (media/mediaUrls.js), so the page loads them separately and cached.
+  const publicListing = withMediaUrls("company-listing", ownListing, ["logo", "coverImage"]);
+  const media = (kind, fields) => (doc) => withMediaUrls(kind, doc, fields);
   return {
     ...publicListing,
     ...summaries.get(String(company)),
-    header: header ?? null,
+    header: withMediaUrls("company-header", header, ["logo", "coverImage", "coverImages"]) ?? null,
     about: { ...pick(draft?.formData, publicWizardFields), ...pick(profile, ["companyHistory", "founderStory", "businessGoals", "coreValues"]) },
     contact: pick(contact, publicContactFields),
     hours: publicHours(openingHours) ?? { ...pick(operations, hoursFields), weeklyHours: operations?.weeklyHours ?? [] },
@@ -166,8 +170,9 @@ export async function fullProfile(listing) {
       ? branchList.map(({ name, latitude, longitude, ...branch }) => ({ ...branch, label: name, latitude: latitude ?? undefined, longitude: longitude ?? undefined }))
       : (locations?.locations ?? []).map(({ _id, ...branch }) => branch),
     // Wizard-only service names still show when the Services section is empty.
-    services: services.length ? services : (listing.services ?? []).map((name) => ({ name })),
-    gallery, projects, reviews, team, faqs, blogs: await withViews(blogs, "company"), offers: offers.map(publicOffer),
+    services: services.length ? services.map(media("company-service", ["image", "images"])) : (listing.services ?? []).map((name) => ({ name })),
+    gallery: gallery.map(media("company-gallery", ["media"])), projects: projects.map(media("company-project", ["beforeImage", "afterImage"])), reviews, team: team.map(media("company-team", ["photo"])), faqs,
+    blogs: await withViews(blogs.map(media("company-blog", ["coverImage"])), "company"), offers: offers.map(publicOffer),
     booking: booking ?? null,
     serviceArea: withCurrentServices(serviceArea, services),
     socialLinks: socialLinks ?? {},

@@ -16,6 +16,10 @@ import { locationRouter } from "./location/routers/locationRouter.js";
 import { userRouter, userSections } from "./user/userRouter.js";
 import { adminRouter, adminSections } from "./admin/adminRouter.js";
 import { premiumWebhookRouter } from "./premium/routers/webhookRouter.js";
+import { mediaRouter } from "./media/mediaRouter.js";
+import { directoryRouter, searchRouter } from "./directory/routers/directoryRouter.js";
+import { invalidateDirectories } from "./shared/business/directoryCache.js";
+import { invalidateProfiles } from "./shared/business/profileCache.js";
 
 export const app = express();
 app.disable("x-powered-by");
@@ -56,6 +60,24 @@ app.get("/api", (_req, res) => {
   });
 });
 
+// Public directories and profiles are cached (shared/business/directoryCache.js, profileCache.js). A successful
+// change by a company or freelancer ends the directories and that owner's profile; a change by an admin, a
+// customer's review, or a Stripe event can touch anyone's, so it ends them all.
+const publicWriters = /^\/api\/(companies|freelancers|admin|users\/reviews|premium)\b/;
+app.use((req, res, next) => {
+  if (req.method !== "GET" && req.method !== "HEAD" && publicWriters.test(req.path)) {
+    res.on("finish", () => {
+      if (res.statusCode >= 400) return;
+      invalidateDirectories();
+      const { accountType, sub } = req.auth ?? {};
+      invalidateProfiles(accountType === "company" || accountType === "freelancer" ? `${accountType}:${sub}` : undefined);
+    });
+  }
+  next();
+});
+
+// Uploaded pictures as cacheable image files (public pages link to them instead of embedding them).
+app.use("/api/media", mediaRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/companies", companySectionsRouter);
 app.use("/api/companies/onboarding", companyOnboardingRouter);
@@ -70,6 +92,9 @@ app.use("/api/booking-quote", bookingQuoteRouter);
 // reviews live in each area: /api/users/reviews, /api/companies/reviews, /api/freelancers/reviews, /api/admin/reviews.
 app.use("/api/reviews", publicReviewsRouter);
 app.use("/api/location", locationRouter);
+// Top 10 / Top 50 directory pages, natural-language search and suggestions (src/directory).
+app.use("/api/directory", directoryRouter);
+app.use("/api/search", searchRouter);
 app.use("/api/users", userRouter);
 app.use("/api/admin", adminRouter);
 

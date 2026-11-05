@@ -3,6 +3,7 @@ import { SERVICE_LIST_SELECT, syncPriceLabel } from "../../../shared/profileSect
 import { createCollectionController } from "../../shared/createCollectionController.js";
 import { servicesConfig } from "../config/servicesConfig.js";
 import { FreelancerServiceOffering } from "../models/FreelancerServiceOffering.js";
+import { withMediaUrls } from "../../../media/mediaUrls.js";
 
 // The public listing's `services` drive search and the /services/[slug] pages.
 async function syncListingServices({ freelancer }) {
@@ -11,6 +12,8 @@ async function syncListingServices({ freelancer }) {
 }
 
 export const servicesController = createCollectionController({
+  // Public responses link to uploaded pictures (/media/...) instead of carrying them.
+  publicView: (item) => withMediaUrls("freelancer-service", item, ["image", "images"]),
   Model: FreelancerServiceOffering,
   config: servicesConfig,
   beforeWrite: syncPriceLabel,

@@ -1,5 +1,6 @@
 import {
   FaCrown,
+  FaListOl,
   FaBell,
   FaBuilding,
   FaBullhorn,
@@ -181,6 +182,16 @@ export const adminNavSections = [
           { label: "Requests", href: "/premium?status=pending" },
           { label: "Active plans", href: "/premium?status=active" },
           { label: "All plans", href: "/premium" },
+        ],
+      },
+      {
+        label: "Directory & SEO",
+        href: "/directory",
+        icon: FaListOl,
+        subItems: [
+          { label: "Ranking settings", href: "/directory?tab=settings" },
+          { label: "Preview & exclusions", href: "/directory?tab=preview" },
+          { label: "Search analytics", href: "/directory?tab=search" },
         ],
       },
     ],

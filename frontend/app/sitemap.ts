@@ -1,12 +1,15 @@
 import type { MetadataRoute } from "next";
 import { plumbers } from "@/data/plumbers";
 import { fetchPublishedPlumbers } from "@/components/find/companyListing";
+import { fetchDirectorySitemap } from "@/components/directory/directoryApi";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://plumberfinder.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Real company pages (/company/<slug>); the backend being offline just leaves them out.
-  const live = await fetchPublishedPlumbers().catch(() => []);
+  const [live, rankings] = await Promise.all([fetchPublishedPlumbers().catch(() => []), fetchDirectorySitemap()]);
+  // Top 10 / Top 50 pages with enough real providers (the backend decides which qualify).
+  const rankingRoutes = rankings.map((page) => ({ url: `${siteUrl}${page.path}`, lastModified: new Date(), changeFrequency: "daily" as const, priority: 0.8 }));
   const companyRoutes = live.filter((plumber) => plumber.providerType === "company" && plumber.slug).map((plumber) => ({
     url: `${siteUrl}/company/${plumber.slug}`,
     lastModified: new Date(),
@@ -59,6 +62,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: route === "" ? 1 : 0.7,
     })),
     ...companyRoutes,
+    ...rankingRoutes,
     ...plumberRoutes,
   ];
 }

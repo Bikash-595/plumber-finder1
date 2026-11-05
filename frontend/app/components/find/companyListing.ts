@@ -414,7 +414,8 @@ const isListingId = (id: string) => /^[a-f0-9]{24}$/i.test(id);
 
 async function getData<T>(path: string): Promise<T | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, { cache: "no-store" });
+    // "no-cache": the browser keeps its copy but asks the server first; an unchanged directory answers 304 (no body).
+    const response = await fetch(`${API_BASE_URL}${path}`, { cache: "no-cache" });
     if (!response.ok) return null;
     return ((await response.json()).data ?? null) as T | null;
   } catch {

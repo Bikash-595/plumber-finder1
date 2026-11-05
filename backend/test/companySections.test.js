@@ -4,8 +4,17 @@ import assert from "node:assert/strict";
 import mongoose from "mongoose";
 import { startTestServer } from "./helpers/testServer.js";
 
-let api, stop;
-before(async () => ({ api, stop } = await startTestServer()));
+let api, stop, baseUrl;
+before(async () => ({ api, stop, baseUrl } = await startTestServer()));
+// Public responses link to uploaded pictures; the link must serve exactly the uploaded bytes.
+async function assertMediaLink(link, dataUrl, message) {
+  assert.match(String(link), /^\/media\/[a-z-]+\/[a-f0-9]{24}\/[a-zA-Z]+(-\d+)?\/[a-z0-9]+$/, message);
+  const res = await fetch(`${baseUrl}/api${link}`);
+  assert.equal(res.status, 200, message);
+  assert.equal(res.headers.get("content-type"), dataUrl.slice(5, dataUrl.indexOf(";")), message);
+  assert.equal(Buffer.from(await res.arrayBuffer()).toString("base64"), dataUrl.slice(dataUrl.indexOf(",") + 1), message);
+}
+
 after(() => stop());
 
 let seq = 0;
@@ -454,7 +463,7 @@ describe("review fixes", () => {
     assert.equal(pub.body.data.companyName, "Acme Plumbing");
     const listing = (await api("GET", `/api/companies/public/${listingId}`)).body.data;
     assert.equal(listing.companyName, "Acme Plumbing");
-    assert.equal(listing.logo, tinyPng);
+    await assertMediaLink(listing.logo, tinyPng, "the listing links to the uploaded logo");
   });
 
   test("re-running the wizard keeps dashboard-managed listing fields", async () => {
@@ -470,7 +479,7 @@ describe("review fixes", () => {
     assert.equal(res.status, 201);
     const listing = (await api("GET", `/api/companies/public/${listingId}`)).body.data;
     assert.equal(listing.companyName, "Dashboard Name");
-    assert.equal(listing.logo, tinyPng);
+    await assertMediaLink(listing.logo, tinyPng, "the dashboard logo is kept");
     assert.deepEqual(listing.services, ["Dashboard Service"]);
     assert.deepEqual(listing.serviceAreas, ["Austin"]);
   });

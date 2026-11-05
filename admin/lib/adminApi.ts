@@ -102,7 +102,36 @@ const query = (params: Record<string, string | number | undefined>) => {
   return search.toString() ? `?${search}` : "";
 };
 
+// ---------- Directory & SEO (Top 10 / Top 50 rankings) ----------
+export type RankingFactor = { key: string; label: string; default: number };
+export type RankingExclusion = { providerType: "company" | "freelancer"; listingId: string; reason: string; name?: string };
+export type RankingSettings = {
+  weights: Record<string, number>; ratingConfidenceReviews: number; jobsForFullScore: number; engagementForFullScore: number;
+  newBusinessDays: number; newBusinessPenalty: number; minimumQualifyingCompanies: number; defaultResultLimit: 10 | 50; sponsoredSlots: number;
+  exclusions: RankingExclusion[];
+};
+export type DirectoryConfig = {
+  settings: RankingSettings; defaults: RankingSettings; factors: RankingFactor[]; rankingTypes: { key: string; label: string }[];
+  services: { slug: string; name: string }[]; history: { at: string; adminName?: string; changes: string[] }[]; updatedAt: string | null;
+};
+export type PreviewRow = {
+  position?: number; providerType: "company" | "freelancer"; listingId: string; name: string; city: string | null; url?: string; verified?: boolean; premium?: boolean;
+  rating?: number; reviews?: number; completedJobs?: number; score: number; breakdown: { key: string; label: string; weight: number; value: number; points: number }[]; newBusinessPenalty: number;
+};
+export type DirectoryPreview = { location: { state: string; city: string | null }; items: PreviewRow[]; sponsored: PreviewRow[]; excluded: PreviewRow[]; qualifying: number; seo: { isIndexable: boolean; minimumQualifyingCompanies: number; duplicateOfTop10: boolean } };
+export type SearchStats = {
+  days: number; searches: number; noResults: number; top10: number; top50: number;
+  intents: { label: string; count: number }[]; queries: { label: string; count: number }[]; services: { label: string; count: number }[];
+  states: { label: string; count: number }[]; cities: { label: string; count: number }[]; noResultQueries: { label: string; count: number }[];
+};
+export type DirectoryState = { code: string; name: string; slug: string; providers: number };
+export type DirectoryCity = { name: string; slug: string; providers: number; major: boolean };
+
 export const adminApi = {
+  directoryConfig: () => adminRequest<{ data: DirectoryConfig }>("/admin/directory/config"),
+  saveDirectoryConfig: (body: Partial<Omit<RankingSettings, "exclusions">> & { exclusions?: RankingExclusion[] }) => adminRequest<{ data: DirectoryConfig; message: string }>("/admin/directory/config", { method: "PUT", body }),
+  directoryPreview: (params: { state: string; city?: string; service?: string; limit?: number }) => adminRequest<{ data: DirectoryPreview }>(`/admin/directory/preview${query(params)}`),
+  searchStats: (days: number) => adminRequest<{ data: SearchStats }>(`/admin/directory/search-stats?days=${days}`),
   me: () => adminRequest<{ account: { name: string; email: string } }>("/auth/admins/me"),
   overview: () => adminRequest<{ data: Overview }>("/admin/overview"),
   users: (params: { search?: string; page?: number }) => adminRequest<Paginated<AdminCustomer>>(`/admin/users${query(params)}`),

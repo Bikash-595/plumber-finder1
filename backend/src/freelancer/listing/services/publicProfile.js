@@ -22,6 +22,7 @@ import { FreelancerContact } from "../../contact/models/FreelancerContact.js";
 import { FreelancerLocation } from "../../location/models/FreelancerLocation.js";
 import { FreelancerSeo } from "../../seo/models/FreelancerSeo.js";
 import { publicSeo } from "../../../shared/profileSections/seoSection.js";
+import { withMediaUrls } from "../../../media/mediaUrls.js";
 
 const hidden = "-freelancer -__v";
 const byPosition = { position: 1, createdAt: 1 };
@@ -117,12 +118,16 @@ export async function fullProfile(listing) {
     FreelancerContact.findOne({ freelancer }).select("secondaryPhone whatsapp emergencyHotline email website").lean(),
     FreelancerSeo.findOne({ freelancer }).lean(),
   ]);
-  const { freelancer: _owner, __v, ...publicListing } = listing;
+  const { freelancer: _owner, __v, ...ownListing } = listing;
+  // Uploaded pictures become /media/... links (media/mediaUrls.js), so the page loads them separately and cached.
+  const publicListing = withMediaUrls("freelancer-listing", ownListing, ["photo", "coverImage", "coverImages"]);
+  const media = (kind, fields) => (doc) => withMediaUrls(kind, doc, fields);
   return {
     ...publicListing,
     ...summaries.get(String(freelancer)),
-    services: services.length ? services : (listing.services ?? []).map((name) => ({ name })),
-    gallery, projects, reviews, faqs, blogs: await withViews(blogs, "freelancer"), offers: offers.map(publicOffer),
+    services: services.length ? services.map(media("freelancer-service", ["image", "images"])) : (listing.services ?? []).map((name) => ({ name })),
+    gallery: gallery.map(media("freelancer-gallery", ["media"])), projects: projects.map(media("freelancer-project", ["beforeImage", "afterImage"])), reviews, faqs,
+    blogs: await withViews(blogs.map(media("freelancer-blog", ["coverImage"])), "freelancer"), offers: offers.map(publicOffer),
     booking: booking ?? null,
     serviceArea: withCurrentServices(serviceArea, services),
     socialLinks: socialLinks ?? {},
