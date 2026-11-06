@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState } from "react";
 import { FaImage, FaTrash, FaUpload, FaVideo } from "react-icons/fa";
+import PreviewBox from "@/components/company-dashboard/business-profile/local-media-upload/PreviewBox";
 
 export type MediaKind = "image" | "video" | "media";
 
@@ -41,10 +42,6 @@ export function compressImage(file: File, maxDimension = 1200): Promise<{ dataUr
     image.onerror = () => { URL.revokeObjectURL(sourceUrl); resolve({ error: `${file.name} could not be read. Please choose another image.` }); };
     image.src = sourceUrl;
   });
-}
-
-function PreviewBox({ onClick, className, children }: { onClick?: () => void; className: string; children: ReactNode }) {
-  return onClick ? <button type="button" onClick={onClick} className={className}>{children}</button> : <div className={className}>{children}</div>;
 }
 
 export default function LocalMediaUpload({ label, value = "", kind = "image", onChange }: Props) {

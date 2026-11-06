@@ -105,20 +105,47 @@ const query = (params: Record<string, string | number | undefined>) => {
 // ---------- Directory & SEO (Top 10 / Top 50 rankings) ----------
 export type RankingFactor = { key: string; label: string; default: number };
 export type RankingExclusion = { providerType: "company" | "freelancer"; listingId: string; reason: string; name?: string };
+export type TemplateKey = "usa" | "state" | "city";
+export type PageTemplate = { title: string; description: string; showMap: boolean; showFaq: boolean };
+export type Placement = {
+  providerType: "company" | "freelancer"; listingId: string; kind: "featured" | "sponsored";
+  stateCode: string | null; citySlug: string | null; until: string | null; note: string; name?: string;
+};
 export type RankingSettings = {
   weights: Record<string, number>; ratingConfidenceReviews: number; jobsForFullScore: number; engagementForFullScore: number;
   newBusinessDays: number; newBusinessPenalty: number; minimumQualifyingCompanies: number; defaultResultLimit: 10 | 50; sponsoredSlots: number;
-  exclusions: RankingExclusion[];
+  exclusions: RankingExclusion[]; placements: Placement[]; templates: Record<TemplateKey, PageTemplate>;
 };
 export type DirectoryConfig = {
   settings: RankingSettings; defaults: RankingSettings; factors: RankingFactor[]; rankingTypes: { key: string; label: string }[];
+  templates: { key: TemplateKey; label: string }[]; placeholders: string[];
   services: { slug: string; name: string }[]; history: { at: string; adminName?: string; changes: string[] }[]; updatedAt: string | null;
 };
+export type PremiumListing = {
+  providerType: "company" | "freelancer"; listingId: string; name: string; url: string; city: string | null; stateCode: string | null;
+  tier: "premium" | "elite"; until: string | null; expiresSoon: boolean; verified: boolean; blocked: boolean; missingLocation: boolean;
+  eligible: boolean; excludedReason: string | null;
+};
+export type LandingPage = {
+  path: string; limit: 10 | 50; service: string | null; verifiedOnly: boolean; scope: TemplateKey; qualifying: number;
+  published: boolean; hiddenBy: string | null; hasOverrides: boolean; isIndexable: boolean; duplicateOfTop10: boolean; minimumQualifyingCompanies: number;
+  title: string; description: string; intro: string; updatedBy: string | null; updatedAt: string | null;
+};
+export type LandingPages = { location: { key: string; published: boolean; state: string | null; city: string | null }; pages: LandingPage[] };
+export type SitemapStatus = {
+  total: number; byScope: Record<TemplateKey, number>; sitemaps: string[]; robots: string;
+  statesWithPremium: number; statesWithoutPremium: number; cities: number;
+  thinStatePages: { path: string; qualifying: number; needs: number }[];
+  unpublished: { key: string; kind: "page" | "location"; updatedBy: string | null; updatedAt: string }[];
+  generatedAt: string;
+};
+export type PageSettingBody = { key: string; kind: "page" | "location"; published?: boolean; title?: string; description?: string; intro?: string };
 export type PreviewRow = {
   position?: number; providerType: "company" | "freelancer"; listingId: string; name: string; city: string | null; url?: string; verified?: boolean; premium?: boolean;
+  stateCode?: string | null; placement?: "featured" | "sponsored";
   rating?: number; reviews?: number; completedJobs?: number; score: number; breakdown: { key: string; label: string; weight: number; value: number; points: number }[]; newBusinessPenalty: number;
 };
-export type DirectoryPreview = { location: { state: string; city: string | null }; items: PreviewRow[]; sponsored: PreviewRow[]; excluded: PreviewRow[]; qualifying: number; seo: { isIndexable: boolean; minimumQualifyingCompanies: number; duplicateOfTop10: boolean } };
+export type DirectoryPreview = { location: { state: string; city: string | null }; items: PreviewRow[]; sponsored: PreviewRow[]; excluded: PreviewRow[]; qualifying: number; otherProviders: number; seo: { isIndexable: boolean; minimumQualifyingCompanies: number; duplicateOfTop10: boolean } };
 export type SearchStats = {
   days: number; searches: number; noResults: number; top10: number; top50: number;
   intents: { label: string; count: number }[]; queries: { label: string; count: number }[]; services: { label: string; count: number }[];
@@ -129,7 +156,11 @@ export type DirectoryCity = { name: string; slug: string; providers: number; maj
 
 export const adminApi = {
   directoryConfig: () => adminRequest<{ data: DirectoryConfig }>("/admin/directory/config"),
-  saveDirectoryConfig: (body: Partial<Omit<RankingSettings, "exclusions">> & { exclusions?: RankingExclusion[] }) => adminRequest<{ data: DirectoryConfig; message: string }>("/admin/directory/config", { method: "PUT", body }),
+  saveDirectoryConfig: (body: Partial<Omit<RankingSettings, "exclusions" | "placements" | "templates">> & { exclusions?: RankingExclusion[]; placements?: Placement[]; templates?: Partial<Record<TemplateKey, Partial<PageTemplate>>> }) => adminRequest<{ data: DirectoryConfig; message: string }>("/admin/directory/config", { method: "PUT", body }),
+  premiumListings: (params: { state?: string; q?: string }) => adminRequest<{ data: { rows: PremiumListing[]; total: number; eligible: number; verified: number } }>(`/admin/directory/premium${query(params)}`),
+  landingPages: (params: { state: string; city?: string }) => adminRequest<{ data: LandingPages }>(`/admin/directory/pages${query(params)}`),
+  saveLandingPage: (body: PageSettingBody) => adminRequest<{ message: string }>("/admin/directory/pages", { method: "PUT", body }),
+  sitemapStatus: () => adminRequest<{ data: SitemapStatus }>("/admin/directory/sitemap-status"),
   directoryPreview: (params: { state: string; city?: string; service?: string; limit?: number }) => adminRequest<{ data: DirectoryPreview }>(`/admin/directory/preview${query(params)}`),
   searchStats: (days: number) => adminRequest<{ data: SearchStats }>(`/admin/directory/search-stats?days=${days}`),
   me: () => adminRequest<{ account: { name: string; email: string } }>("/auth/admins/me"),

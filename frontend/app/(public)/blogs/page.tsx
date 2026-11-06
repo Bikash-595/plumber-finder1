@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FaArrowRight, FaBookOpen, FaClock, FaEnvelope, FaEye, FaSearch, FaStar } from "react-icons/fa";
 import { plumbers } from "@/data/plumbers";
 import { BlogPost } from "@/components/find/types";
@@ -82,6 +83,7 @@ function getBlogFeed(): BlogFeedItem[] {
 }
 
 export default function BlogsPage() {
+  const router = useRouter();
   // Posts written by real companies and freelancers replace the demo articles once any exist.
   const [liveFeed, setLiveFeed] = useState<BlogFeedItem[] | null>(null);
   useEffect(() => {
@@ -290,7 +292,7 @@ export default function BlogsPage() {
             onSubmit={(event) => {
               event.preventDefault();
               if (!email) return;
-              window.location.href = `/contact?email=${encodeURIComponent(email)}`;
+              router.push(`/contact?email=${encodeURIComponent(email)}`);
             }}
           >
             <input

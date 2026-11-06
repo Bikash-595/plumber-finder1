@@ -1,4 +1,5 @@
-import CompanySectionPage, { CompanySectionTable } from "./addcompany/CompanySectionPage";
+import CompanySectionPage from "./addcompany/CompanySectionPage";
+import CompanySectionTable from "./addcompany/company-section-page/CompanySectionTable";
 
 const content = {
   title: "Services & Pricing",

@@ -1,28 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Panel, useAdminQuery } from "@/components/AdminData";
+import { useAdminQuery } from "@/components/AdminData";
 import { adminApi } from "@/lib/adminApi";
-
-const intentLabels: Record<string, string> = { ranking: "Top 10 / Top 50", "service-location": "Service in a place", location: "Plumbers in a place", service: "Service only", nearby: "Near me", "unknown-location": "Unknown place", keyword: "Name / other" };
-
-function List({ title, rows, empty = "No searches yet." }: { title: string; rows: { label: string; count: number }[]; empty?: string }) {
-  const max = Math.max(1, ...rows.map((row) => row.count));
-  return (
-    <Panel title={title}>
-      {rows.length ? (
-        <ol className="space-y-2 text-sm">
-          {rows.map((row) => (
-            <li key={row.label} className="grid grid-cols-[minmax(0,1fr)_3rem] items-center gap-3">
-              <span className="min-w-0"><span className="block truncate text-gray-800">{intentLabels[row.label] ?? row.label}</span><span className="mt-1 block h-1.5 rounded-full bg-gray-100"><span className="block h-full rounded-full bg-[#0b1f3b]" style={{ width: `${(row.count / max) * 100}%` }} /></span></span>
-              <span className="text-right font-semibold tabular-nums text-gray-700">{row.count}</span>
-            </li>
-          ))}
-        </ol>
-      ) : <p className="text-sm text-gray-500">{empty}</p>}
-    </Panel>
-  );
-}
+import SearchTermList from "./SearchTermList";
 
 /** What visitors search for on the site, and the searches that found nothing (logged when a search is submitted). */
 export default function SearchAnalytics() {
@@ -43,12 +24,12 @@ export default function SearchAnalytics() {
             ))}
           </div>
           <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
-            <List title="Most searched" rows={stats.queries} />
-            <List title="Searches that found nothing" rows={stats.noResultQueries} empty="Every search found something." />
-            <List title="What people looked for" rows={stats.intents} />
-            <List title="Services" rows={stats.services} />
-            <List title="States" rows={stats.states} />
-            <List title="Cities" rows={stats.cities} />
+            <SearchTermList title="Most searched" rows={stats.queries} />
+            <SearchTermList title="Searches that found nothing" rows={stats.noResultQueries} empty="Every search found something." />
+            <SearchTermList title="What people looked for" rows={stats.intents} />
+            <SearchTermList title="Services" rows={stats.services} />
+            <SearchTermList title="States" rows={stats.states} />
+            <SearchTermList title="Cities" rows={stats.cities} />
           </div>
         </>
       )}

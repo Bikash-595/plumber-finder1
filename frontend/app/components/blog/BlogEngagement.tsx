@@ -1,77 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FaCommentDots, FaEye, FaLink, FaRegThumbsDown, FaRegThumbsUp, FaReply, FaThumbsDown, FaThumbsUp } from "react-icons/fa";
-import { API_BASE_URL } from "@/components/utils/apiClient";
 import { readStoredUser } from "@/components/utils/auth";
 import { timeAgo } from "@/components/bookings/bookingsApi";
 import { formatCount, useBlogViews } from "./useBlogViews";
-
-type Reaction = "like" | "dislike" | null;
-type Summary = { likes: number; dislikes: number; comments: number; myReaction: Reaction };
-type Comment = {
-  _id: string; root: string | null; parent: string | null; createdAt: string; editedAt?: string;
-  body: string; deleted: boolean; edited: boolean; likes: number; dislikes: number; replyCount: number;
-  replyTo: { comment: string; name: string } | null;
-  author: { name: string; type: "user" | "company" | "freelancer" | "admin"; isPostAuthor: boolean; isMe: boolean };
-  myReaction: Reaction; canEdit: boolean; canDelete: boolean;
-  replies?: Comment[];
-};
-
-const MAX = 2000;
-const SHOWN_REPLIES = 3;
-
-/** Calls the blog engagement API; reading works signed out, the token is sent when there is one. */
-async function call<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<{ data: T; total?: number; message?: string }> {
-  const token = readStoredUser()?.accessToken;
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}/blogs${path}`, { method: init.method ?? "GET", headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: init.body === undefined ? undefined : JSON.stringify(init.body) });
-  } catch {
-    throw new Error("Can't reach the server right now. Please try again.");
-  }
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.message || `Request failed (${response.status}).`);
-  return payload;
-}
-
-const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "?";
-const avatarTone = { user: "bg-sky-100 text-sky-800", company: "bg-indigo-100 text-indigo-800", freelancer: "bg-violet-100 text-violet-800", admin: "bg-[#FFD60A] text-[#0b1f3b]" };
-const typeBadge = { user: null, company: "Plumbing company", freelancer: "Plumber", admin: "Plumber Finder" };
-
-function Badge({ comment }: { comment: Comment }) {
-  if (comment.deleted) return null;
-  if (comment.author.isPostAuthor) return <span className="rounded-full bg-[#0b1f3b] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Author</span>;
-  const label = typeBadge[comment.author.type];
-  return label ? <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-600">{label}</span> : null;
-}
-
-/** A text box for a new comment, a reply, or an edit. */
-function Composer({ initial = "", placeholder, submitLabel, onSubmit, onCancel, autoFocus = false }: { initial?: string; placeholder: string; submitLabel: string; onSubmit: (body: string) => Promise<boolean>; onCancel?: () => void; autoFocus?: boolean }) {
-  const [text, setText] = useState(initial);
-  const [busy, setBusy] = useState(false);
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!text.trim() || busy) return;
-    setBusy(true);
-    if (await onSubmit(text.trim())) setText("");
-    setBusy(false);
-  };
-  return (
-    <form onSubmit={submit} className="space-y-2">
-      <textarea value={text} onChange={(e) => setText(e.target.value.slice(0, MAX))} rows={3} autoFocus={autoFocus} placeholder={placeholder} aria-label={placeholder}
-        className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none transition focus:border-[#f7672c] focus:ring-2 focus:ring-[#f7672c]/20" />
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className={`text-xs ${text.length > MAX - 100 ? "text-amber-700" : "text-slate-400"}`}>{text.length}/{MAX}</span>
-        <div className="flex gap-2">
-          {onCancel && <button type="button" onClick={onCancel} className="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100">Cancel</button>}
-          <button type="submit" disabled={!text.trim() || busy} className="rounded-full bg-slate-950 px-5 py-2 text-sm font-bold text-white transition hover:bg-[#f7672c] disabled:opacity-40">{busy ? "Posting…" : submitLabel}</button>
-        </div>
-      </div>
-    </form>
-  );
-}
+import Badge from "@/components/blog/engagement/Badge";
+import Composer from "@/components/blog/engagement/Composer";
+import { SHOWN_REPLIES, call, initials, avatarTone, type Reaction, type Summary, type Comment } from "@/components/blog/engagement/engagementApi";
 
 /**
  * Likes, dislikes, and comments for a blog post. `postPath` is "company/<id>", "freelancer/<id>",

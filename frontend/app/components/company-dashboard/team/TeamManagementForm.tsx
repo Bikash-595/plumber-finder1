@@ -4,6 +4,10 @@ import { useState } from "react";
 import { FaArrowLeft, FaArrowRight, FaCheck, FaPlus, FaTrash, FaUsers } from "react-icons/fa";
 import LocalMediaUpload from "@/components/company-dashboard/business-profile/LocalMediaUpload";
 import { saveProfileDraft } from "@/components/company-dashboard/business-profile/profileStore";
+import Field from "@/components/company-dashboard/team/form-fields/Field";
+import Select from "@/components/company-dashboard/team/form-fields/Select";
+import TextArea from "@/components/company-dashboard/team/form-fields/TextArea";
+import { months } from "@/components/company-dashboard/team/form-fields/months";
 
 type TeamMember = {
   id: string; name: string; photo: string; role: string; bio: string; specialties: string;
@@ -59,8 +63,3 @@ export default function TeamManagementForm() {
     </form>
   </section>;
 }
-
-const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-function Field({ label, value, onChange, type = "text", placeholder, hint, required = false, max }: { label: string; value: string; onChange: (value: string) => void; type?: "text" | "number" | "tel" | "email"; placeholder?: string; hint?: string; required?: boolean; max?: string }) { return <label><span className="text-sm font-semibold text-gray-700">{label}</span>{hint && <span className="ml-2 text-xs text-gray-400">{hint}</span>}<input type={type} required={required} min={type === "number" ? "0" : undefined} max={max} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[#FFD60A]" /></label>; }
-function Select({ label, value, onChange, options, placeholder }: { label: string; value: string; onChange: (value: string) => void; options: readonly string[]; placeholder?: string }) { return <label><span className="text-sm font-semibold text-gray-700">{label}</span><select value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[#FFD60A]"><option value="">{placeholder ?? "Select an option"}</option>{options.map((option, index) => <option key={option} value={options === months ? index + 1 : option}>{option}</option>)}</select></label>; }
-function TextArea({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) { return <label><span className="text-sm font-semibold text-gray-700">{label}</span><textarea rows={6} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[#FFD60A]" /></label>; }

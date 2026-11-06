@@ -6,7 +6,6 @@
 //     { value: "1000+", label: "VERIFIED PLUMBERS", icon: "🔧" },
 //     { value: "99%", label: "SATISFACTION RATE", icon: "⭐" },
 //   ];
-
 //   return (
 //     <div className="mt-16">
 //       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -25,18 +24,9 @@
 //   );
 // }
 
-
-
-
-
-
-
-
-
 "use client";
 
-import { useEffect, useState } from "react";
-import { useInView } from "react-intersection-observer";
+import { Counter } from "@/components/about/about-stats/Counter";
 
 const stats = [
   { label: "Years of Excellence", value: 4, suffix: "+", icon: "🏆" },
@@ -44,30 +34,6 @@ const stats = [
   { label: "Verified Pros", value: 250, suffix: "", icon: "👨‍🔧" },
   { label: "Happy Customers", value: 15000, suffix: "+", icon: "😊" },
 ];
-
-const Counter = ({ end, duration = 2000 }: { end: number; duration?: number }) => {
-  const [count, setCount] = useState(0);
-  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.5 });
-
-  useEffect(() => {
-    if (inView) {
-      let start = 0;
-      const increment = end / (duration / 16);
-      const timer = setInterval(() => {
-        start += increment;
-        if (start >= end) {
-          setCount(end);
-          clearInterval(timer);
-        } else {
-          setCount(Math.floor(start));
-        }
-      }, 16);
-      return () => clearInterval(timer);
-    }
-  }, [inView, end, duration]);
-
-  return <span ref={ref}>{count}</span>;
-};
 
 export default function AboutStats() {
   return (

@@ -3,13 +3,7 @@ import Link from "next/link";
 import { FaArrowRight, FaBolt, FaCalendarCheck, FaCamera, FaClock, FaPlay, FaShieldAlt, FaStar } from "react-icons/fa";
 import type { ServiceDetail } from "@/components/find/types";
 import { bookService, serviceIcon, splitPrice } from "./serviceVisuals";
-
-const frame = "relative block aspect-[16/11] overflow-hidden bg-[#0b1f3b]";
-
-/** The photo area: a link to the service's page when it has one (hidden from screen readers; the name links too). */
-function MediaFrame({ href, children }: { href?: string; children: React.ReactNode }) {
-  return href ? <Link href={href} tabIndex={-1} aria-hidden className={frame}>{children}</Link> : <div className={frame}>{children}</div>;
-}
+import MediaFrame from "@/components/plumber/services/service-card/MediaFrame";
 
 /**
  * A compact service card: the photo with its price on it, then the category, name, one-line subheading,

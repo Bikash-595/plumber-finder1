@@ -14,7 +14,12 @@ import { rankingConfig, rankingConfigVersion } from "./rankingConfig.js";
 //   completeness the share of profile basics filled in (logo, cover, description, phone, website, 3+ services, hours, photos, city)
 //   engagement   profile views and contact clicks in the last 90 days (log scale up to `engagementForFullScore`)
 // score = Σ weight × factor / Σ weights × 100, less up to `newBusinessPenalty` for providers younger than `newBusinessDays`.
-// Paid (premium) listings never get organic positions for money: they appear in a separate, labelled Sponsored box.
+//
+// Who is ranked: only listings with an active premium plan (its end date is checked on every request, so an expired
+// plan drops out at once), that are not suspended / rejected and not excluded by an admin. Verified premium
+// providers come first, then the other premium ones; inside each group the score decides — paying more never does.
+// Free listings are never used to fill a list. Featured / sponsored placements (chosen by an admin) are returned
+// apart, for their own labelled box.
 
 const NEUTRAL_RATING = 3;
 const clamp = (value) => Math.max(0, Math.min(1, value));
@@ -78,30 +83,59 @@ const sorters = {
 const resultCache = new Map();
 const RESULT_TTL_MS = 60_000;
 
-/**
- * The ranking for one page: up to `limit` real providers (never padded), duplicates removed, suspended/rejected/
- * excluded ones left out. Also returns the Sponsored box, counts and whether search engines should index the page.
- */
-export async function rankProviders({ state, city = null, service = null, limit = 10, type = "top-rated", verifiedOnly = false }) {
-  const config = await rankingConfig();
-  const cacheKey = [state.code, city?.slug, service?.slug, limit, type, verifiedOnly, rankingIndexVersion(), rankingConfigVersion()].join("|");
-  const cached = resultCache.get(cacheKey);
-  if (cached && Date.now() - cached.at < RESULT_TTL_MS) return cached.result;
+/** Active premium plan right now (the index may be a few minutes old, the end date is checked here). */
+export const hasActivePremium = (entry, now = Date.now()) => Boolean(entry.premium) && (!entry.premium.until || new Date(entry.premium.until).getTime() > now);
 
+/** In the area of a page: anywhere (USA), a state, or based in / serving a city. */
+export const inArea = (entry, state, city) => (!state || entry.stateCode === state.code) && (!city || inCity(entry, state.code, city.slug) || servesCity(entry, state.code, city.slug));
+
+/** Can appear in rankings at all (premium aside): not suspended / rejected, not excluded by an admin. */
+export function rankable(config) {
   const excluded = new Set(config.exclusions.map((item) => `${item.providerType}:${item.listingId}`));
-  const context = { stateCode: state.code, citySlug: city?.slug ?? null };
+  return (entry) => !entry.blocked && !excluded.has(entry.key) && Boolean(entry.stateCode);
+}
+
+/** The admin's featured / sponsored placements for a page: USA ones on USA pages, a state's on its pages and cities'. */
+function placementsFor(config, entries, state, city, now) {
+  const byKey = new Map(entries.map((entry) => [entry.key, entry]));
+  const allowed = rankable(config);
+  return config.placements
+    .filter((item) => (!item.until || new Date(item.until).getTime() > now)
+      && (state ? item.stateCode === state.code && (!item.citySlug || item.citySlug === city?.slug) : !item.stateCode))
+    .map((item) => ({ placement: item, entry: byKey.get(`${item.providerType}:${item.listingId}`) }))
+    .filter(({ entry }) => entry && allowed(entry))
+    // The most specific first (city, then state, then USA), featured before sponsored.
+    .sort((a, b) => Number(Boolean(b.placement.citySlug)) - Number(Boolean(a.placement.citySlug)) || Number(a.placement.kind !== "featured") - Number(b.placement.kind !== "featured"))
+    .slice(0, config.sponsoredSlots);
+}
+
+/**
+ * The ranking for one page: up to `limit` real premium providers (never padded, never filled with free listings),
+ * duplicates removed. `state` null = the whole USA. Also returns the featured / sponsored placements, how many free
+ * listings are in the area (for "see all plumbers"), and whether search engines should index the page.
+ */
+export async function rankProviders({ state = null, city = null, service = null, limit = 10, type = "top-rated", verifiedOnly = false }) {
+  const config = await rankingConfig();
+  const now = Date.now();
+  // Minute precision: an expiring plan leaves the cached result within a minute.
+  const cacheKey = [state?.code ?? "USA", city?.slug, service?.slug, limit, type, verifiedOnly, rankingIndexVersion(), rankingConfigVersion(), Math.floor(now / 60_000)].join("|");
+  const cached = resultCache.get(cacheKey);
+  if (cached && now - cached.at < RESULT_TTL_MS) return cached.result;
+
+  const context = { stateCode: state?.code ?? null, citySlug: city?.slug ?? null };
   const onlyVerified = verifiedOnly || type === "verified";
-  const candidates = (await rankingEntries()).filter((entry) => !entry.blocked && !excluded.has(entry.key)
-    && entry.stateCode === state.code
-    && (!city || inCity(entry, state.code, city.slug) || servesCity(entry, state.code, city.slug))
-    && offersService(entry, service)
+  const entries = await rankingEntries();
+  const allowed = rankable(config);
+  const inPage = entries.filter((entry) => allowed(entry) && inArea(entry, state, city) && offersService(entry, service));
+  const candidates = inPage.filter((entry) => hasActivePremium(entry, now)
     && (!onlyVerified || entry.verified)
     && (type !== "recently-recommended" || entry.recentPositive > 0));
 
+  const sorter = sorters[type] ?? sorters["top-rated"];
   const scored = candidates.map((entry) => {
     const { average, count } = combinedRating(entry);
     return { entry, ...scoreEntry(entry, context, config), ratingAverage: average, ratingCount: count };
-  }).sort(sorters[type] ?? sorters["top-rated"]);
+  }).sort((a, b) => Number(b.entry.verified) - Number(a.entry.verified) || sorter(a, b));
 
   // The same business listed twice keeps only its best-scoring listing.
   const seen = new Set();
@@ -112,15 +146,21 @@ export async function rankProviders({ state, city = null, service = null, limit 
     return true;
   });
 
-  const sponsored = unique.filter((item) => item.entry.premium).sort((a, b) => b.entry.premium.rank - a.entry.premium.rank || b.score - a.score).slice(0, config.sponsoredSlots);
+  const sponsored = placementsFor(config, entries, state, city, now).map(({ placement, entry }) => {
+    const { average, count } = combinedRating(entry);
+    return { entry, placement: { kind: placement.kind }, ...scoreEntry(entry, context, config), ratingAverage: average, ratingCount: count };
+  });
   const items = unique.slice(0, limit).map((item, index) => ({ position: index + 1, ...item }));
   const qualifying = unique.length;
   const result = {
     items, sponsored, qualifying,
+    verifiedCount: unique.filter((item) => item.entry.verified).length,
+    // Listings in the area without premium: never ranked, but "see all plumbers" can point to them.
+    otherProviders: inPage.filter((entry) => !hasActivePremium(entry, now)).length,
     // Indexable only with enough real providers; a Top 50 page with no more than 10 would repeat the Top 10 page.
     seo: { minimumQualifyingCompanies: config.minimumQualifyingCompanies, isIndexable: qualifying >= config.minimumQualifyingCompanies && (limit <= 10 || qualifying > 10), duplicateOfTop10: limit > 10 && qualifying <= 10 },
   };
-  resultCache.set(cacheKey, { at: Date.now(), result });
+  resultCache.set(cacheKey, { at: now, result });
   if (resultCache.size > 2000) resultCache.delete(resultCache.keys().next().value);
   return result;
 }

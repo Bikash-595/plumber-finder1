@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FaShieldAlt, FaTools } from "react-icons/fa";
+import { FaTools } from "react-icons/fa";
 
 const footerLinks = [
   { label: "Home", href: "/" },

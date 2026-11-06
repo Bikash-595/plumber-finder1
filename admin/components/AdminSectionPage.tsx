@@ -1,6 +1,4 @@
 import { ReactNode } from "react";
-import Link from "next/link";
-import { FaArrowRight } from "react-icons/fa";
 
 interface AdminSectionPageProps {
   title: string;

@@ -115,7 +115,8 @@ async function buildEntries() {
       verified: Boolean(summary.verified),
       // Suspended companies and freelancers whose documents were rejected never rank.
       blocked: type === "company" ? account.status === "suspended" : account.verificationStatus === "rejected",
-      premium: listing.premium?.tier && (!listing.premium.until || new Date(listing.premium.until) > new Date()) ? { tier: listing.premium.tier, rank: listing.premium.rank ?? 0 } : null,
+      // Copied from the subscription by the premium system; the end date is checked again on every ranking request.
+      premium: listing.premium?.tier && (!listing.premium.until || new Date(listing.premium.until) > new Date()) ? { tier: listing.premium.tier, rank: listing.premium.rank ?? 0, until: listing.premium.until ?? null } : null,
       rating: summary.rating ?? 0, reviewCount: summary.reviewCount ?? 0,
       google: g ? { rating: g.rating, count: g.userRatingCount ?? 0 } : null,
       completedJobs: jobsBy.get(accountKey)?.completed ?? 0, disputedJobs: jobsBy.get(accountKey)?.disputed ?? 0,

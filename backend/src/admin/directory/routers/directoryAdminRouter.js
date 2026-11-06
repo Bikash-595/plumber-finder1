@@ -9,3 +9,7 @@ directoryAdminRouter.get("/config", directory.getConfig);
 directoryAdminRouter.put("/config", directory.updateConfig);
 directoryAdminRouter.get("/preview", directory.preview);
 directoryAdminRouter.get("/search-stats", directory.searchStats);
+directoryAdminRouter.get("/premium", directory.premium);
+directoryAdminRouter.get("/pages", directory.pages);
+directoryAdminRouter.put("/pages", directory.savePage);
+directoryAdminRouter.get("/sitemap-status", directory.sitemapStatus);

@@ -11,6 +11,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/dashboard", "/company-dashboard", "/freelancer", "/checkout", "/rankings/"],
       },
     ],
-    sitemap: `${siteUrl}/sitemap.xml`,
+    // The main sitemap, and the Top 10 / Top 50 directory sitemaps (USA, states, cities).
+    sitemap: [`${siteUrl}/sitemap.xml`, ...["usa", "states", "cities"].map((name) => `${siteUrl}/sitemaps/${name}.xml`)],
   };
 }

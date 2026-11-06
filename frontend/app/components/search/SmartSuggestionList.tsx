@@ -1,51 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { Fragment, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { FaArrowRight, FaBuilding, FaChevronRight, FaListOl, FaMagnifyingGlass, FaStar, FaUser, FaWrench } from "react-icons/fa6";
 import { FaCheckCircle } from "react-icons/fa";
 import type { Suggestion } from "./smartSearch";
+import { Heading } from "@/components/search/suggestions/Heading";
+import Highlight from "@/components/search/suggestions/Highlight";
+import SkeletonRows from "@/components/search/suggestions/SkeletonRows";
 
 const searchIcons = { ranking: FaListOl, service: FaWrench, provider: FaBuilding, location: FaMagnifyingGlass };
-
-/** Like a shop's search box: what was typed stays plain and the rest of the suggestion is bold. */
-export function Highlight({ text, query }: { text: string; query: string }) {
-  const words = query.toLowerCase().split(/[^a-z0-9]+/).filter((word) => word.length >= 2);
-  if (!words.length) return <span className="font-semibold text-slate-900">{text}</span>;
-  const pattern = new RegExp(`\\b(${words.map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "gi");
-  const parts: ReactNode[] = [];
-  let last = 0;
-  for (const match of text.matchAll(pattern)) {
-    const at = match.index ?? 0;
-    if (at > last) parts.push(<b key={`b${at}`} className="font-semibold text-slate-900">{text.slice(last, at)}</b>);
-    parts.push(<mark key={at} className="bg-transparent font-normal text-slate-500">{match[0]}</mark>);
-    last = at + match[0].length;
-  }
-  if (last < text.length) parts.push(<b key="end" className="font-semibold text-slate-900">{text.slice(last)}</b>);
-  return <>{parts.map((part, index) => <Fragment key={index}>{part}</Fragment>)}</>;
-}
-
-function SkeletonRows({ count, tall }: { count: number; tall?: boolean }) {
-  return (
-    <div className="space-y-2 px-2" aria-hidden>
-      {Array.from({ length: count }, (_, index) => (
-        <div key={index} className="flex items-center gap-3 rounded-xl px-2 py-2">
-          <span className={`${tall ? "h-11 w-11" : "h-8 w-8"} shrink-0 animate-pulse rounded-xl bg-slate-100`} />
-          <span className="flex-1 space-y-1.5">
-            <span className="block h-3 w-2/3 animate-pulse rounded bg-slate-100" />
-            {tall && <span className="block h-2.5 w-1/3 animate-pulse rounded bg-slate-100" />}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-const Heading = ({ children, aside }: { children: ReactNode; aside?: ReactNode }) => (
-  <li role="presentation" className="flex items-center justify-between px-3 pb-1.5 pt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
-    <span>{children}</span>{aside}
-  </li>
-);
 
 /**
  * What's under the search box while typing (a listbox the input drives with ↑/↓/Enter): matching profiles as

@@ -11,7 +11,6 @@ import {
   FaCog,
   FaSearch,
   FaSignOutAlt,
-  FaUserShield,
 } from "react-icons/fa";
 import {
   clearStoredAdmin,

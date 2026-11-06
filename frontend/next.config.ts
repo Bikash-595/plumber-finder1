@@ -13,9 +13,15 @@ const nextConfig: NextConfig = {
       // Top 10 / Top 50 directory pages: /top-10-plumbers/texas, /top-50-drain-cleaning-companies/california/los-angeles
       // (rendered by app/(public)/rankings/...; the noun is checked by the backend, unknown ones are 404).
       // The noun needs its own pattern: after an escaped "-" the default one stops at the next hyphen.
+      // USA-wide pages: /top-10-plumbers-usa, /top-50-drain-cleaning-companies-usa
+      { source: "/top\\-:limit(10|50)\\-:noun([a-z][a-z\\-]*)\\-usa", destination: "/rankings/:limit/:noun/usa" },
       { source: "/top\\-:limit(10|50)\\-:noun([a-z][a-z\\-]*)/:state", destination: "/rankings/:limit/:noun/:state" },
       { source: "/top\\-:limit(10|50)\\-:noun([a-z][a-z\\-]*)/:state/:city", destination: "/rankings/:limit/:noun/:state/:city" },
     ];
+  },
+  // One address per page: /top-10-plumbers/usa is the USA page's other spelling.
+  async redirects() {
+    return [{ source: "/top\\-:limit(10|50)\\-:noun([a-z][a-z\\-]*)/usa", destination: "/top-:limit-:noun-usa", permanent: true }];
   },
   experimental: {
     cpus: 2,

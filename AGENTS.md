@@ -27,6 +27,11 @@
 - Use the existing `packages/` packages for shared client/backend code
 - `next.config.ts` includes external image host patterns and experimental static generation settings
 
+## Component structure
+- One component per file; keep `page.tsx` files thin (metadata, data loading, then a page component)
+- When a page or component grows parts, give it a folder named after it (kebab-case) beside it, with one PascalCase file per part, plus small `.ts` files for its data, types and helpers — e.g. `components/header/` (with `mobile-menu/`), `components/about/about-page/`, `components/blog/article-page/`, `components/company-dashboard/sections/addcompany/wizard/`
+- Shared hooks are `useX.ts`; a file that only re-exports keeps old import paths working (e.g. `admin/components/AdminData.tsx`, `business-profile/SavedItems.tsx`)
+
 ## What agents should not do without confirmation
 - Reorganize top-level route groups such as `(dashboard)` or `(public)`
 - Replace the current Next.js App Router structure with Pages Router code

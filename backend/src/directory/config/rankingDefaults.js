@@ -1,5 +1,6 @@
 // Default ranking settings. Admins change them in Directory & SEO (stored in RankingConfiguration); every
 // factor is a 0–1 score per provider (see services/rankingEngine.js) and the weights say how much each counts.
+// Only listings with an active premium plan are ranked; the score decides their order (paying never does).
 
 export const RANKING_FACTORS = [
   { key: "rating", label: "Customer rating and review quality", default: 25 },
@@ -20,6 +21,18 @@ export const RANKING_TYPES = [
 
 export const RANKING_LIMITS = [10, 50];
 
+// The three page designs: the whole USA, one state, one city.
+export const PAGE_TEMPLATES = [
+  { key: "usa", label: "USA-wide" },
+  { key: "state", label: "State-wide" },
+  { key: "city", label: "City-wide" },
+];
+
+// Words an admin can use in a template's SEO title / description; filled in for each page.
+export const TEMPLATE_PLACEHOLDERS = ["{limit}", "{noun}", "{place}", "{state}", "{city}", "{count}"];
+
+const template = { title: "", description: "", showMap: true, showFaq: true };
+
 export const rankingDefaults = {
   weights: Object.fromEntries(RANKING_FACTORS.map((factor) => [factor.key, factor.default])),
   // Reviews a provider needs before its own average counts fully (fewer pull it towards the site-wide average).
@@ -36,8 +49,14 @@ export const rankingDefaults = {
   minimumQualifyingCompanies: 3,
   // Results for a general "best plumbers in X" search (no number asked for).
   defaultResultLimit: 10,
-  // Paid (premium) listings shown in the separate, labelled "Sponsored" box on a ranking page.
+  // The most featured / sponsored placements shown (in their own labelled box) on one ranking page.
   sponsoredSlots: 2,
-  // Listings an admin has removed from rankings: [{ providerType, listingId, reason }].
+  // Listings an admin has removed from rankings (and premium listings made ineligible): [{ providerType, listingId, reason }].
   exclusions: [],
+  // Featured / sponsored placements an admin sold or chose: [{ providerType, listingId, kind, stateCode, citySlug, until, note }].
+  // A placement with no state shows on the USA pages, with a state on that state's pages (and its cities), with a
+  // city on that city's pages. They are always labelled and never change the ranked order.
+  placements: [],
+  // Per page design: SEO title / description patterns (empty = the built-in wording) and optional sections.
+  templates: { usa: { ...template }, state: { ...template }, city: { ...template } },
 };

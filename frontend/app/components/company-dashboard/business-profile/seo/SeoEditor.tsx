@@ -9,15 +9,10 @@ import KeywordsInput from "./KeywordsInput";
 import SearchPreview from "./SearchPreview";
 import SeoChecklist, { type SeoDraft } from "./SeoChecklist";
 import SidebarPreview from "./SidebarPreview";
+import Counter from "@/components/company-dashboard/business-profile/seo/seo-editor/Counter";
 
 const field = "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[#FFD60A] focus:ring-2 focus:ring-[#FFD60A]/30";
 const empty: SeoDraft = { metaTitle: "", metaDescription: "", keywords: [], sidebarHeading: "", sidebarContent: "" };
-
-function Counter({ value, max, ideal }: { value: string; max: number; ideal?: [number, number] }) {
-  const n = value.trim().length;
-  const good = ideal ? n >= ideal[0] && n <= ideal[1] : true;
-  return <span className={`font-normal ${n > max ? "text-red-600" : good ? "text-emerald-600" : "text-gray-400"}`}>{n}/{max}</span>;
-}
 
 /**
  * SEO & keywords (companies and freelancers): the title and description search engines show, keywords, and the

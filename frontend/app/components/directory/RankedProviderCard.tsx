@@ -1,39 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FaCheckCircle, FaClock, FaExternalLinkAlt, FaGoogle, FaMapMarkerAlt, FaPhoneAlt, FaStar } from "react-icons/fa";
-import type { RankedProvider, WeekDay } from "./directoryApi";
+import { FaCheckCircle, FaClock, FaCrown, FaExternalLinkAlt, FaGoogle, FaLocationArrow, FaMapMarkerAlt, FaPhoneAlt } from "react-icons/fa";
+import type { RankedProvider } from "./directoryApi";
+import Stars from "@/components/directory/ranked-card/Stars";
+import { hoursSummary } from "@/components/directory/ranked-card/openingHours";
 
-const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-const short = (day: string) => day.slice(0, 1).toUpperCase() + day.slice(1, 3);
-const clock = (value?: string) => {
-  const [h, m] = String(value ?? "").split(":").map(Number);
-  if (!Number.isFinite(h)) return "";
-  return `${h % 12 || 12}${m ? `:${String(m).padStart(2, "0")}` : ""} ${h < 12 ? "AM" : "PM"}`;
-};
-
-/** "Mon–Fri 8 AM–5 PM · Sat 9 AM–1 PM" from the weekly hours (consecutive days with the same hours are grouped). */
-export function hoursSummary(week: WeekDay[]) {
-  const byDay = new Map(week.map((day) => [day.day, day]));
-  const groups: { from: string; to: string; hours: string }[] = [];
-  for (const name of DAYS) {
-    const day = byDay.get(name);
-    const hours = day?.isOpen ? `${clock(day.opensAt)}–${clock(day.closesAt)}` : "";
-    const last = groups.at(-1);
-    if (hours && last && last.hours === hours && DAYS.indexOf(last.to) === DAYS.indexOf(name) - 1) last.to = name;
-    else if (hours) groups.push({ from: name, to: name, hours });
-  }
-  return groups.map((group) => `${short(group.from)}${group.to !== group.from ? `–${short(group.to)}` : ""} ${group.hours}`).join(" · ");
-}
-
-function Stars({ value }: { value: number }) {
-  return (
-    <span className="inline-flex" aria-hidden>
-      {[1, 2, 3, 4, 5].map((n) => <FaStar key={n} className={`h-3.5 w-3.5 ${value >= n - 0.25 ? "text-[#FFB800]" : value >= n - 0.75 ? "text-[#FFB800]/50" : "text-gray-200"}`} />)}
-    </span>
-  );
-}
-
-/** One provider on a Top 10 / Top 50 page (or in the Sponsored box when `sponsored`). */
+/** One provider on a Top 10 / Top 50 page (or in the featured / sponsored box when `sponsored`). */
 export default function RankedProviderCard({ item, sponsored = false }: { item: RankedProvider; sponsored?: boolean }) {
   const hours = hoursSummary(item.weeklyHours ?? []);
   const rating = item.rating;
@@ -52,9 +24,10 @@ export default function RankedProviderCard({ item, sponsored = false }: { item: 
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            {sponsored && <span className="rounded-md bg-[#FFD60A] px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#0b1f3b]">Sponsored</span>}
+            {sponsored && <span className="rounded-md bg-[#FFD60A] px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#0b1f3b]">{item.placement === "featured" ? "Featured" : "Sponsored"}</span>}
             <h3 className="text-lg font-extrabold leading-tight text-[#0b1f3b]"><Link href={item.url} className="hover:underline">{item.name}</Link></h3>
-            {item.verified && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200"><FaCheckCircle className="h-3 w-3" aria-hidden />Verified</span>}
+            {item.premiumTier && <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#FFD60A] to-[#FFC300] px-2 py-0.5 text-xs font-extrabold text-[#0b1f3b]"><FaCrown className="h-3 w-3" aria-hidden />{item.premiumTier === "elite" ? "Elite Premium" : "Premium Company"}</span>}
+            {item.verified && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200"><FaCheckCircle className="h-3 w-3" aria-hidden />Verified Business</span>}
             {item.isEmergency && <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-bold text-red-700 ring-1 ring-inset ring-red-200">24/7 emergency</span>}
             <span className="text-xs font-medium text-gray-400">{item.providerType === "company" ? "Company" : "Independent plumber"}</span>
           </div>
@@ -76,6 +49,7 @@ export default function RankedProviderCard({ item, sponsored = false }: { item: 
           <dl className="mt-3 grid gap-1.5 text-sm text-gray-600 sm:grid-cols-2">
             {item.address && <div className="flex items-start gap-2"><dt className="sr-only">Address</dt><FaMapMarkerAlt className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-400" aria-hidden /><dd className="min-w-0">{item.address}</dd></div>}
             {hours && <div className="flex items-start gap-2"><dt className="sr-only">Opening hours</dt><FaClock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-400" aria-hidden /><dd className="min-w-0">{hours}</dd></div>}
+            {item.distanceMiles !== undefined && <div className="flex items-start gap-2"><dt className="sr-only">Distance</dt><FaLocationArrow className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-400" aria-hidden /><dd className="min-w-0">{item.distanceMiles < 1 ? "Under 1 mile" : `${item.distanceMiles.toFixed(item.distanceMiles < 10 ? 1 : 0)} miles`} from the city centre</dd></div>}
           </dl>
 
           {item.services.length > 0 && (

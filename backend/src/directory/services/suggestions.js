@@ -1,12 +1,14 @@
 import { DIRECTORY_SERVICES } from "../config/directoryServices.js";
 import { US_STATES, stateByCode } from "../config/usStates.js";
 import { findService, rankingPath } from "./intentParser.js";
-import { citiesByState } from "./locations.js";
+import { canonicalCitySlug, citiesByState } from "./locations.js";
 import { profileSuggestions } from "./providerSearch.js";
+import { hasActivePremium } from "./rankingEngine.js";
 import { rankingEntries } from "./rankingIndex.js";
 
 // Search-as-you-type suggestions from real data: states, major cities and cities providers are in, the services,
 // and provider names. "Best plumbers in New…" → New York, New Jersey, New Mexico, New Hampshire, New Orleans…
+// "… in the US" / "… in America" offers the USA-wide pages. Hints count premium providers (the ones rankings show).
 
 const MAX = 8;
 
@@ -30,31 +32,45 @@ export async function searchSuggestions(rawQuery) {
 
   const [cities, entries] = await Promise.all([citiesByState(), rankingEntries()]);
   const providersIn = new Map();
-  for (const entry of entries) if (entry.stateCode && !entry.blocked) providersIn.set(entry.stateCode, (providersIn.get(entry.stateCode) ?? 0) + 1);
+  const premiumIn = new Map();
+  const bump = (map, key) => map.set(key, (map.get(key) ?? 0) + 1);
+  for (const entry of entries) {
+    if (!entry.stateCode || entry.blocked) continue;
+    bump(providersIn, entry.stateCode);
+    if (!hasActivePremium(entry)) continue;
+    bump(premiumIn, "USA");
+    bump(premiumIn, entry.stateCode);
+    if (entry.citySlug) bump(premiumIn, `${entry.stateCode}/${canonicalCitySlug(entry.stateCode, entry.citySlug)}`);
+  }
+  const usa = { state: null, city: null, providers: premiumIn.get("USA") ?? 0 };
 
   // Places: what is typed after "in", or (nothing typed yet) the states and cities with the most providers.
   const typed = typedPlace(q);
   const places = [];
   const prefix = typed?.text ?? "";
   if (prefix) {
+    if (prefix.length >= 2 && ["usa", "united states", "america", "the usa", "the us"].some((name) => name.startsWith(prefix))) places.push(usa);
     for (const state of US_STATES) if (state.name.toLowerCase().startsWith(prefix) || (prefix.length === 2 && state.code.toLowerCase() === prefix)) places.push({ state, city: null, providers: providersIn.get(state.code) ?? 0 });
     for (const [code, list] of cities) {
       if (typed.stateHint && !code.toLowerCase().startsWith(typed.stateHint)) continue;
       for (const city of list.values()) if (city.name.toLowerCase().startsWith(prefix)) places.push({ state: stateByCode.get(code), city, providers: city.providers });
     }
     // States first, then cities with providers, then major cities.
-    places.sort((a, b) => Number(Boolean(a.city)) - Number(Boolean(b.city)) || b.providers - a.providers || Number(Boolean(b.city?.major)) - Number(Boolean(a.city?.major)));
+    places.sort((a, b) => Number(Boolean(a.state)) - Number(Boolean(b.state)) || Number(Boolean(a.city)) - Number(Boolean(b.city)) || b.providers - a.providers || Number(Boolean(b.city?.major)) - Number(Boolean(a.city?.major)));
   } else {
+    // Nothing typed after "in" yet: the USA, then the states with the most providers.
+    places.push(usa);
     for (const [code, count] of [...providersIn].sort((a, b) => b[1] - a[1]).slice(0, 3)) places.push({ state: stateByCode.get(code), city: null, providers: count });
   }
 
   const suggestions = [];
   const add = (item) => { if (suggestions.length < MAX && !suggestions.some((s) => s.url === item.url && s.label === item.label)) suggestions.push(item); };
-  const placeLabel = (place) => (place.city ? `${place.city.name}, ${place.state.code}` : place.state.name);
+  const placeLabel = (place) => (!place.state ? "the USA" : place.city ? `${place.city.name}, ${place.state.code}` : place.state.name);
+  const premiumAt = (place) => premiumIn.get(!place.state ? "USA" : place.city ? `${place.state.code}/${place.city.slug}` : place.state.code) ?? 0;
   const top = places.slice(0, 4);
   for (const [index, place] of top.entries()) {
     const at = placeLabel(place);
-    const count = place.providers ? `${place.providers} listed` : undefined;
+    const count = premiumAt(place) ? `${premiumAt(place)} premium` : undefined;
     if (limit) add({ kind: "ranking", label: `Top ${limit} ${noun.toLowerCase()} in ${at}`, url: rankingPath({ limit, service, type, ...place }), hint: count });
     else {
       add({ kind: "ranking", label: `Best ${noun.toLowerCase()} in ${at}`, url: rankingPath({ limit: 10, service, type, ...place }), hint: count });

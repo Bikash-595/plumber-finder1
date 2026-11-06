@@ -4,6 +4,7 @@ import { resolveLocation } from "./locations.js";
 
 // What a search means and where it should go. Each kind of result has one URL, and plain listings reuse the
 // pages the site already has, so no duplicate pages are made:
+//   "Best plumbers in the USA"           → ranking   /top-10-plumbers-usa
 //   "Top 10 plumbers in New York"        → ranking   /top-10-plumbers/new-york
 //   "Best emergency plumbers in Texas"   → ranking   /top-10-emergency-plumbers/texas (the default number)
 //   "Top 10 licensed plumbers in LA"     → ranking   /top-10-licensed-plumbers/california/los-angeles (verified only)
@@ -13,10 +14,13 @@ import { resolveLocation } from "./locations.js";
 //   anything else (a company name, ...)  → keyword   /find?search=...
 
 const PLUMBING = /\b(plumb\w*|contractors?|companies|company|pros?|services?|technicians?|repair|installers?)\b/;
-const RANKING_WORDS = /\b(best|top|top[- ]rated|highest[- ]rated|leading|recommended|trusted|most reviewed|popular)\b/;
-const NEAR_ME = /\b(near me|nearby|close to me|around me|my area)\b/;
+const RANKING_WORDS = /\b(best|top|top[- ]rated|highest[- ]rated|leading|recommended|trusted|most reviewed|popular|premium)\b/;
+// The whole country: "in the USA", "in America", "across the US", "nationwide".
+const USA = /^(the\s+)?(usa|u\.?s\.?a?\.?|us|america|united states( of america)?|whole country|country)$/;
+const NATIONWIDE = /\b(nationwide|across (the )?(usa|us|america|united states|country))\b/;
+const NEAR_ME = /\b(near me|near us|nearby|close to me|around me|my area)\b/;
 const VERIFIED_WORDS = /\b(licensed|verified|certified|insured|bonded)\b/;
-const FILLER = /\b(the|best|top|\d{1,3}|top[- ]rated|highest[- ]rated|rated|leading|recommended|trusted|most|reviewed|popular|good|cheap|affordable|local|licensed|verified|certified|insured|bonded|plumbers?|plumbing|plumbs?|contractors?|companies|company|services?|pros?|technicians?|repair|repairs|experts?|specialists?|for|a|an|of|and|find|me|my)\b/g;
+const FILLER = /\b(the|best|top|premium|\d{1,3}|top[- ]rated|highest[- ]rated|rated|leading|recommended|trusted|most|reviewed|popular|good|cheap|affordable|local|licensed|verified|certified|insured|bonded|plumbers?|plumbing|plumbs?|contractors?|companies|company|services?|pros?|technicians?|repair|repairs|experts?|specialists?|for|a|an|of|and|find|me|my)\b/g;
 
 const normalize = (q) => String(q ?? "").toLowerCase().replace(/[“”"']/g, "").replace(/\s+/g, " ").trim();
 
@@ -59,8 +63,13 @@ function locationText(text) {
 /** The URL noun of a ranking page: "plumbers", "licensed-plumbers" or a service's ("drain-cleaning-companies"). */
 export const rankingNoun = (service, type) => (service ? service.urlNoun : type === "verified" ? "licensed-plumbers" : "plumbers");
 
-/** "/top-10-plumbers/new-york/brooklyn" for a ranking page. */
-export const rankingPath = ({ limit, service, type, state, city }) => `/top-${limit}-${rankingNoun(service, type)}/${state.slug}${city ? `/${city.slug}` : ""}`;
+/** "/top-10-plumbers/new-york/brooklyn" for a ranking page; "/top-10-plumbers-usa" when there is no state. */
+export const rankingPath = ({ limit, service, type, state, city }) => (state
+  ? `/top-${limit}-${rankingNoun(service, type)}/${state.slug}${city ? `/${city.slug}` : ""}`
+  : `/top-${limit}-${rankingNoun(service, type)}-usa`);
+
+/** True when the place words mean the whole country. */
+export const isUsa = (text) => USA.test(String(text ?? "").toLowerCase().replace(/[.?!]+$/, "").trim());
 
 /** Ranking URL noun → { service, verifiedOnly } or null when it isn't one. */
 export function parseRankingNoun(noun) {
@@ -84,6 +93,16 @@ export async function parseSearch(query, { defaultLimit = 10 } = {}) {
   if (NEAR_ME.test(q)) return { q, intent: "nearby", category: service?.slug ?? "plumbing", service: service?.slug ?? null, location: "user-location", url: `/find?near=1${service ? `&search=${encodeURIComponent(service.name)}` : ""}` };
 
   const placeText = locationText(q);
+  // "Best plumbers in the USA", "top 50 plumbing companies nationwide": the USA-wide page.
+  if ((placeText && isUsa(placeText.text)) || NATIONWIDE.test(q)) {
+    if (!plumbing && !ranking) return empty;
+    const pageLimit = limit?.limit ?? defaultLimit;
+    return {
+      q, intent: "ranking", category: service?.slug ?? "plumbing", service: service?.slug ?? null,
+      location: { country: "US", name: "United States" }, rankingLimit: pageLimit, ...(limit && limit.requested !== pageLimit ? { requestedLimit: limit.requested } : {}), rankingType: type,
+      url: rankingPath({ limit: pageLimit, service, type, state: null, city: null }), alternatives: [],
+    };
+  }
   const found = placeText ? await resolveLocation(placeText.text) : null;
   if (placeText?.explicit && (!found || found.unknownCity)) {
     // "... in <a place we don't know>": search the directory for the words instead.
@@ -98,6 +117,8 @@ export async function parseSearch(query, { defaultLimit = 10 } = {}) {
   }
   if (!plumbing && !ranking) return empty;
 
+  // A ZIP code in a town with no page of its own ranks the whole state.
+  if (place.zip && place.city && !place.city.known) place.city = null;
   const location = { state: place.state.name, stateCode: place.state.code, stateSlug: place.state.slug, ...(place.city ? { city: place.city.name, citySlug: place.city.slug } : {}), ...(place.zip ? { zip: place.zip } : {}) };
   const alternatives = (place.alternatives ?? []).map((alt) => ({ city: alt.city.name, stateCode: alt.state.code, url: rankingPath({ limit: limit?.limit ?? defaultLimit, service, type, state: alt.state, city: alt.city }) }));
   if (ranking || service) {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import type { Plumber } from "@/components/find/types";
 import { plumberHref } from "@/components/find/companyListing";
+import CarouselButton from "@/components/plumber/profile-team/CarouselButton";
 
 export default function ProfileTeam({ plumber }: { plumber: Plumber }) {
   const members = plumber.teamMembers ?? [];
@@ -42,8 +43,4 @@ export default function ProfileTeam({ plumber }: { plumber: Plumber }) {
       </Link>)}
     </div>
   </section>;
-}
-
-function CarouselButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
-  return <button type="button" aria-label={label} onClick={onClick} className="grid h-9 w-9 place-items-center rounded-full border border-gray-200 text-gray-700 transition hover:border-[#FFD60A] hover:bg-[#FFD60A]/10">{children}</button>;
 }

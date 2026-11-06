@@ -26,8 +26,8 @@ export async function search(req, res, next) {
       if (shape.nameHit || shape.otherWords.length) result = { ...result, intent: "keyword", url: `/find?search=${encodeURIComponent(q.trim())}` };
     }
     let results = null;
-    if (result.location?.stateCode && (result.intent === "ranking" || result.intent === "service-location")) {
-      const state = stateByCode.get(result.location.stateCode);
+    if ((result.location?.stateCode || result.location?.country) && (result.intent === "ranking" || result.intent === "service-location")) {
+      const state = result.location.stateCode ? stateByCode.get(result.location.stateCode) : null;
       const ranking = await rankProviders({ state, city: result.location.citySlug ? { slug: result.location.citySlug, name: result.location.city } : null, service: result.service ? serviceBySlug.get(result.service) : null, limit: result.rankingLimit, type: result.rankingType });
       results = Math.min(ranking.qualifying, result.rankingLimit);
     }

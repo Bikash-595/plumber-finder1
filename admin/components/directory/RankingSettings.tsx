@@ -4,10 +4,10 @@ import { useState } from "react";
 import { Panel } from "@/components/AdminData";
 import { adminApi, formatDate, type DirectoryConfig, type RankingSettings as Settings } from "@/lib/adminApi";
 
-type Numbers = Omit<Settings, "weights" | "exclusions">;
+type Numbers = Omit<Settings, "weights" | "exclusions" | "placements" | "templates">;
 const numberFields: { key: keyof Numbers; label: string; help: string; step?: number; percent?: boolean }[] = [
   { key: "minimumQualifyingCompanies", label: "Minimum providers to index a page", help: "Pages with fewer real providers are noindex and left out of the sitemap." },
-  { key: "sponsoredSlots", label: "Sponsored listings per page", help: "Premium listings in the labelled Sponsored box (0 turns it off)." },
+  { key: "sponsoredSlots", label: "Featured / sponsored placements per page", help: "The most placements shown in their labelled box (0 turns it off). Placements are chosen on the Placements tab." },
   { key: "ratingConfidenceReviews", label: "Reviews before a rating counts fully", help: "Fewer reviews are pulled towards a neutral 3.0." },
   { key: "jobsForFullScore", label: "Completed jobs for the full jobs score", help: "Counted on a log scale; disputes lower it." },
   { key: "engagementForFullScore", label: "Views and contact clicks (90 days) for full engagement", help: "Counted on a log scale." },
@@ -26,9 +26,8 @@ export default function RankingSettings({ config, onSaved }: { config: Directory
     setBusy(true);
     setNotice(null);
     try {
-      // Exclusions are managed on the Preview tab, so this form never sends them.
-      const body: Partial<Settings> = { ...values };
-      delete body.exclusions;
+      // Exclusions, placements and templates have their own tabs, so this form never sends them.
+      const { exclusions: _exclusions, placements: _placements, templates: _templates, ...body } = values;
       const { data, message } = await adminApi.saveDirectoryConfig(body);
       setDraft(data.settings);
       onSaved(data);
@@ -72,7 +71,7 @@ export default function RankingSettings({ config, onSaved }: { config: Directory
         {notice && <p className={`mt-4 rounded-xl px-4 py-3 text-sm ${notice.tone === "ok" ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>{notice.text}</p>}
         <div className="mt-5 flex flex-wrap gap-2">
           <button type="button" disabled={busy || total === 0} onClick={() => save(draft)} className="rounded-full bg-[#0b1f3b] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">{busy ? "Saving…" : "Save settings"}</button>
-          <button type="button" disabled={busy} onClick={() => { if (window.confirm("Put every weight and rule back to the defaults? Exclusions are kept.")) save({ ...config.defaults, exclusions: draft.exclusions }); }} className="rounded-full border border-gray-200 px-5 py-2 text-sm font-semibold text-gray-700 disabled:opacity-50">Reset to defaults</button>
+          <button type="button" disabled={busy} onClick={() => { if (window.confirm("Put every weight and rule back to the defaults? Exclusions, placements and templates are kept.")) save({ ...config.defaults, exclusions: draft.exclusions, placements: draft.placements, templates: draft.templates }); }} className="rounded-full border border-gray-200 px-5 py-2 text-sm font-semibold text-gray-700 disabled:opacity-50">Reset to defaults</button>
           {total === 0 && <span className="self-center text-xs text-red-600">At least one weight must be above 0.</span>}
         </div>
       </Panel>

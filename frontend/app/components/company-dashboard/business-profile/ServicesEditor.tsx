@@ -3,9 +3,7 @@
 import Link from "next/link";
 import { FormEvent, KeyboardEvent, useRef, useState } from "react";
 import { FaCamera, FaCheck, FaClock, FaExternalLinkAlt, FaPlus, FaShieldAlt, FaStar, FaTimes, FaVideo, FaWrench } from "react-icons/fa";
-import { youtubeId, youtubeThumbnail } from "@/components/find/media";
 import { serviceSegment } from "@/components/find/serviceLinks";
-import ServiceCard from "@/components/plumber/services/ServiceCard";
 import { companyApi } from "./companyApi";
 import FaqListEditor, { cleanFaqs, type FaqItem } from "./FaqListEditor";
 import MultiImageUpload from "./MultiImageUpload";
@@ -13,9 +11,8 @@ import ServiceListEditor from "./ServiceListEditor";
 import ServiceVideosEditor from "./ServiceVideosEditor";
 import { ExampleCard, NoticeMessage, useSavedItems } from "./SavedItems";
 import { useOwnListing } from "./useOwnListing";
+import Preview, { type Draft, type PriceType } from "@/components/company-dashboard/business-profile/services-editor/Preview";
 
-type PriceType = "fixed" | "from" | "hourly" | "quote" | "free" | "custom";
-type Draft = { name: string; category: string; description: string; priceType: PriceType; priceAmount: string; price: string; duration: string; includes: string[]; warranty: string; emergency: boolean; featured: boolean; images: string[]; videos: string[]; tagline: string; overview: string; process: string[]; problems: string[]; highlights: string[]; prepare: string[]; faqs: FaqItem[] };
 // Lists leave out images/overview/process/faqs; opening a service for editing loads them.
 type SavedService = { _id: string; name: string; category?: string; description?: string; priceType?: Exclude<PriceType, "custom">; priceAmount?: number; price?: string; duration?: string; includes?: string[]; warranty?: string; emergency?: boolean; featured?: boolean; image?: string; images?: string[]; videos?: string[]; photoCount?: number; videoCount?: number; videoPoster?: string; tagline?: string; overview?: string; process?: string[]; problems?: string[]; highlights?: string[]; prepare?: string[]; faqs?: FaqItem[] };
 
@@ -34,17 +31,6 @@ const suggestions = ["Leak Repair", "Drain Cleaning", "Water Heater Installation
 const needsAmount = (type: PriceType) => type === "fixed" || type === "from" || type === "hourly";
 const input = "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#FFD60A] focus:ring-2 focus:ring-[#FFD60A]/30";
 const blank = (): Draft => ({ name: "", category: "", description: "", priceType: "from", priceAmount: "", price: "", duration: "", includes: [], warranty: "", emergency: false, featured: false, images: [], videos: [], tagline: "", overview: "", process: [], problems: [], highlights: [], prepare: [], faqs: [] });
-
-/** "From $89" — the same wording customers see. */
-function shownPrice(draft: Pick<Draft, "priceType" | "priceAmount" | "price">) {
-  const amount = Number(draft.priceAmount);
-  const money = Number.isInteger(amount) ? `$${amount}` : `$${amount.toFixed(2)}`;
-  if (draft.priceType === "quote") return "Free quote";
-  if (draft.priceType === "free") return "Free";
-  if (draft.priceType === "custom") return draft.price || "Ask for a quote";
-  if (!(amount > 0)) return "Set a price";
-  return draft.priceType === "from" ? `From ${money}` : draft.priceType === "hourly" ? `${money}/hr` : money;
-}
 
 const toDraft = (service: SavedService): Draft => ({
   name: service.name, category: service.category ?? "", description: service.description ?? "",
@@ -66,22 +52,6 @@ const payload = (draft: Draft) => ({
   // The first photo becomes the card photo (the server keeps `image` in step).
   images: draft.images, videos: draft.videos, tagline: draft.tagline.trim(), overview: draft.overview, process: draft.process, problems: draft.problems, highlights: draft.highlights, prepare: draft.prepare, faqs: cleanFaqs(draft.faqs).faqs,
 });
-
-/** How the service will look on the public profile: the same card customers see. */
-function Preview({ draft }: { draft: Draft }) {
-  const youtube = draft.videos.map((video) => youtubeId(video) ?? video.match(/youtube\.com\/shorts\/([\w-]{11})/)?.[1]).find(Boolean);
-  return (
-    <div className="@container pointer-events-none select-none" aria-hidden>
-      <ServiceCard service={{
-        id: "preview", name: draft.name || "Service name", category: draft.category || undefined,
-        description: draft.description || "A short description of the job and what makes your service great.",
-        price: shownPrice(draft), duration: draft.duration || undefined, includes: draft.includes, warranty: draft.warranty || undefined,
-        emergency: draft.emergency, featured: draft.featured, image: draft.images[0], photoCount: draft.images.length, videoCount: draft.videos.length,
-        poster: youtube ? youtubeThumbnail(youtube) : undefined,
-      }} />
-    </div>
-  );
-}
 
 /**
  * Services & pricing: one form per service (name, category, price, duration, what's included, warranty,

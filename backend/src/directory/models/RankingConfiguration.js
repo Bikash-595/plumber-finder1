@@ -7,6 +7,23 @@ const exclusionSchema = new mongoose.Schema({
   reason: { type: String, trim: true, maxlength: 300 },
 }, { _id: false });
 
+const placementSchema = new mongoose.Schema({
+  providerType: { type: String, enum: ["company", "freelancer"], required: true },
+  listingId: { type: mongoose.Schema.Types.ObjectId, required: true },
+  kind: { type: String, enum: ["featured", "sponsored"], default: "sponsored" },
+  stateCode: { type: String, default: null },
+  citySlug: { type: String, default: null },
+  until: { type: Date, default: null },
+  note: { type: String, trim: true, maxlength: 300 },
+}, { _id: false });
+
+const templateSchema = new mongoose.Schema({
+  title: { type: String, trim: true, maxlength: 160 },
+  description: { type: String, trim: true, maxlength: 320 },
+  showMap: Boolean,
+  showFaq: Boolean,
+}, { _id: false });
+
 const rankingConfigurationSchema = new mongoose.Schema({
   key: { type: String, default: "default", unique: true },
   weights: {
@@ -21,6 +38,8 @@ const rankingConfigurationSchema = new mongoose.Schema({
   defaultResultLimit: Number,
   sponsoredSlots: Number,
   exclusions: { type: [exclusionSchema], default: [] },
+  placements: { type: [placementSchema], default: [] },
+  templates: { usa: templateSchema, state: templateSchema, city: templateSchema },
   history: {
     type: [{ at: Date, admin: mongoose.Schema.Types.ObjectId, adminName: String, changes: [String], _id: false }],
     default: [],

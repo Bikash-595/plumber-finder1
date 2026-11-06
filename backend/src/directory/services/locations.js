@@ -58,7 +58,8 @@ export async function resolveLocation(text) {
     if (!state) return null;
     const cities = (await citiesByState()).get(state.code);
     const slug = canonicalCitySlug(state.code, slugify(place.city));
-    return { state, city: cities.get(slug) ?? { name: place.city, slug, providers: 0, major: false }, zip: raw };
+    const known = cities.get(slug);
+    return { state, city: known ? { ...known, known: true } : { name: place.city, slug, providers: 0, major: false, known: false }, zip: raw };
   }
   const cities = await citiesByState();
   const findCity = (code, name) => cities.get(code)?.get(canonicalCitySlug(code, slugify(name))) ?? null;

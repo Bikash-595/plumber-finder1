@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FaArrowRight } from "react-icons/fa";
-import CompanySectionPage, { CompanySectionTable } from "./addcompany/CompanySectionPage";
+import CompanySectionPage from "./addcompany/CompanySectionPage";
+import CompanySectionTable from "./addcompany/company-section-page/CompanySectionTable";
 // import { companyNavSections } from "../companyDashboardData";
 
 const content = {
