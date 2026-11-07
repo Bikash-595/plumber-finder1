@@ -20,9 +20,10 @@ async function start() {
   const stopReviewJobs = startReviewScheduler();
   // Premium plans whose paid period is over lose their badge and top position.
   const stopPremiumJobs = startPremiumScheduler();
-  const server = app.listen(port, () => {
+  const server = app.listen(port, "0.0.0.0" ,() => {
     console.log(`Plumber Finder API listening on http://localhost:${port}`);
   });
+  
 
   // Graceful stop (Ctrl+C, nodemon restarts, a host's SIGTERM): background jobs stop first, no new connections,
   // requests already running finish, then the database closes. Nothing touches the database after it's closed.
