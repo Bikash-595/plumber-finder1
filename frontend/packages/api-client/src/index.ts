@@ -24,12 +24,9 @@ export class ApiClientError extends Error {
 const DEFAULT_BASE_URL = "http://localhost:3300/api";
 
 export function createApiClient(options: ApiClientOptions = {}) {
-  const baseUrl =
-    options.baseUrl ||
-    process.env.NEXT_PUBLIC_BACKEND_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.API_URL ||
-    DEFAULT_BASE_URL;
+  // The bare service address works too: "/api" is added when missing (as in app/components/utils/apiBase.ts).
+  const raw = String(options.baseUrl || process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || DEFAULT_BASE_URL).trim().replace(/\/+$/, "");
+  const baseUrl = /\/api$/i.test(raw) ? raw : `${raw}/api`;
 
   async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const headers = new Headers(init.headers);

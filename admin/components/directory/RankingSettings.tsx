@@ -27,7 +27,10 @@ export default function RankingSettings({ config, onSaved }: { config: Directory
     setNotice(null);
     try {
       // Exclusions, placements and templates have their own tabs, so this form never sends them.
-      const { exclusions: _exclusions, placements: _placements, templates: _templates, ...body } = values;
+      const body: Partial<Settings> = { ...values };
+      delete body.exclusions;
+      delete body.placements;
+      delete body.templates;
       const { data, message } = await adminApi.saveDirectoryConfig(body);
       setDraft(data.settings);
       onSaved(data);

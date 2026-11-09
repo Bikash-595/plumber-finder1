@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { DataTable, Panel } from "@/components/AdminData";
+import { FRONTEND_URL as siteUrl } from "@/lib/siteUrls";
 import { adminApi, type DirectoryConfig, type LandingPages as Pages, type PageSettingBody } from "@/lib/adminApi";
 import LocationPicker from "../LocationPicker";
 import { useLocations } from "../useLocations";
 import PageEditor from "./PageEditor";
 import { indexNote, pageLabel } from "./pageLabel";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 /**
  * Every landing page at a location (the USA, a state or a city): publish / unpublish it or the whole location,

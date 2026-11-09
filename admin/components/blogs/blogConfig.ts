@@ -1,6 +1,6 @@
 import { type BlogFaq, type PlatformBlog } from "@/lib/adminApi";
 
-export const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost:3000";
+export { FRONTEND_URL } from "@/lib/siteUrls";
 
 export const categories = ["Maintenance tips", "Emergency advice", "Cost guides", "Water heaters", "Drains & sewer", "Hiring a plumber", "Plumber Finder news"];
 

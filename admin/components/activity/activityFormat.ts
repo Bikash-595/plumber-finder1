@@ -1,6 +1,6 @@
 import { type ActivityEvent, type BookingStatus } from "@/lib/adminApi";
 
-export const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost:3000";
+export { FRONTEND_URL } from "@/lib/siteUrls";
 
 export const eventLabels: Record<ActivityEvent, string> = {
   profile_view: "Visited the profile", project_view: "Viewed a project", blog_read: "Read a blog post", compare_add: "Added to compare", save: "Saved the plumber",

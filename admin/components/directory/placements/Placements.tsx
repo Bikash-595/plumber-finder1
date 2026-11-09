@@ -23,6 +23,8 @@ export default function Placements({ config, onSaved }: { config: DirectoryConfi
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+  // "Now" for the ended / until labels, fixed when the tab opens (render stays pure).
+  const [now] = useState(() => Date.now());
 
   const save = async (placements: Placement[], message: string) => {
     setBusy(true);
@@ -40,7 +42,7 @@ export default function Placements({ config, onSaved }: { config: DirectoryConfi
   };
   const remove = (index: number) => save(plainPlacements(config).filter((_, i) => i !== index), "Placement removed.");
   const scopeLabel = (item: Placement) => (!item.stateCode ? "USA pages" : item.citySlug ? `${item.citySlug.replace(/-/g, " ")}, ${item.stateCode}` : `${states.find((s) => s.code === item.stateCode)?.name ?? item.stateCode} + its cities`);
-  const expired = (item: Placement) => Boolean(item.until && new Date(item.until).getTime() < Date.now());
+  const expired = (item: Placement) => Boolean(item.until && new Date(item.until).getTime() < now);
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">

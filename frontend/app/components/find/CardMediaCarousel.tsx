@@ -6,10 +6,11 @@ import { FaPlay } from "react-icons/fa";
 import { displayableImage } from "./companyListing";
 import { youtubeId } from "./media";
 import type { Plumber } from "./types";
+import { API_BASE_URL } from "@/components/utils/apiBase";
 
 type Slide = { kind: "image" | "video" | "youtube"; src: string };
 
-const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
+const API_BASE = API_BASE_URL;
 const IMAGE_MS = 3500;
 const VIDEO_MS = 8000;
 // Gallery fetched once per company per page visit, shared by every card that shows it.

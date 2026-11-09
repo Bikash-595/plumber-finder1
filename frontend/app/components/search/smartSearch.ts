@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { API_BASE_URL } from "@/components/utils/apiBase";
 
 // Natural-language search: suggestions while typing (GET /api/search/suggestions) and, on Enter, the page a
 // search means (GET /api/search: "Top 10 plumbers in Texas" → /top-10-plumbers/texas). Used by the header search
 // and the search box on directory pages.
 
-const API = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
+const API = API_BASE_URL;
 const DEBOUNCE_MS = 180;
 
 export type Suggestion = { kind: "ranking" | "service" | "provider" | "location"; label: string; url: string; hint?: string; logo?: string; rating?: number; reviewCount?: number; verified?: boolean };

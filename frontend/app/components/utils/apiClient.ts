@@ -1,8 +1,9 @@
 "use client";
 
+import { API_BASE_URL } from "@/components/utils/apiBase";
 import { clearStoredUser, readStoredUser } from "@/components/utils/auth";
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
+export { API_BASE_URL };
 
 export class ApiRequestError extends Error {
   constructor(message: string, public status = 0) {
@@ -25,7 +26,7 @@ export async function apiRequest<T>(path: string, init: { method?: string; body?
       body: init.body === undefined ? undefined : JSON.stringify(init.body),
     });
   } catch {
-    throw new ApiRequestError("Cannot reach the backend. Start it with: cd backend && npm run dev");
+    throw new ApiRequestError("Cannot reach the server right now. Please check your connection and try again in a moment.");
   }
 
   let payload: ApiPayload<T>;

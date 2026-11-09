@@ -1,6 +1,6 @@
 import { type ReviewStatus } from "@/lib/adminApi";
 
-export const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost:3000";
+export { FRONTEND_URL } from "@/lib/siteUrls";
 
 export const tabs = [{ value: "pending", label: "Held for review" }, { value: "reported", label: "Reported" }, { value: "published", label: "Live" }, { value: "hidden", label: "Hidden" }, { value: "rejected", label: "Rejected" }, { value: "all", label: "All" }];
 

@@ -7,10 +7,10 @@ import BlogEngagement from "@/components/blog/BlogEngagement";
 import BlogFaqs from "@/components/blog/BlogFaqs";
 import BlogViewCount from "@/components/blog/BlogViewCount";
 import { displayableImage, textToArticleHtml } from "@/components/find/companyListing";
+import { API_BASE_URL } from "@/components/utils/apiBase";
 
 export const dynamic = "force-dynamic";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
 type PlatformPost = { id: string; slug: string; title: string; category?: string; excerpt: string; content: string; coverImage?: string; author?: string; publishDate?: string; tags?: string[]; faqs?: { question: string; answer: string }[]; readTime: number };
 type Props = { params: Promise<{ slug: string }> };
 

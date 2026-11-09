@@ -4,11 +4,12 @@ import { emailProvider } from "../../shared/notifications/providerEmail.js";
 import { UserSettings } from "../../user/settings/models/UserSettings.js";
 import { User } from "../../auth/user/models/User.js";
 import { notify as notifyCustomer } from "../../user/notifications/services/notify.js";
+import { frontendUrl } from "../../config/urls.js";
 
 // Everyone who hears about review events, in one place: customers (in-app + email when they allow it),
 // plumbers and admins (in-app).
 
-export const siteUrl = () => (process.env.FRONTEND_URL || "http://localhost:3000").split(",")[0].trim();
+export const siteUrl = frontendUrl;
 export const providerReviewsPath = { company: "/company-dashboard/business-profile/reviews", freelancer: "/freelancer/business-profile/reviews" };
 export const profileReviewsPath = (providerId, bookingId) => `/plumber/${providerId}${bookingId ? `?review=${bookingId}` : ""}#reviews`;
 

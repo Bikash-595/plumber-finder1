@@ -1,9 +1,9 @@
 "use client";
 
 import { Panel, useAdminQuery } from "@/components/AdminData";
+import { FRONTEND_URL as siteUrl } from "@/lib/siteUrls";
 import { adminApi, formatDate } from "@/lib/adminApi";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 /**
  * What the site tells search engines: pages in the directory sitemaps per design, state pages too thin to index,

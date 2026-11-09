@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { DataTable, Panel } from "@/components/AdminData";
+import { FRONTEND_URL as siteUrl } from "@/lib/siteUrls";
 import { adminApi, formatDate, type DirectoryConfig, type PremiumListing } from "@/lib/adminApi";
 import { plainExclusions } from "./configLists";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 /**
  * Every listing with an active premium plan (the subscription system sets and expires them) and whether it may

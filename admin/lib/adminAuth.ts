@@ -1,12 +1,14 @@
 "use client";
 
+import { API_BASE_URL } from "./siteUrls";
+
 // Admin session, kept separately from the public site's customer/business sessions.
 export type AdminUser = { name: string; email: string; avatarUrl?: string; accessToken: string };
 
 export const ADMIN_STORAGE_KEY = "plumberfinder_admin";
 export const ADMIN_SESSION_EVENT = "plumberfinder:admin-session";
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
+export { API_BASE_URL };
 
 export function getInitials(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");

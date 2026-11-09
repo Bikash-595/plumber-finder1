@@ -6,11 +6,12 @@ import { Subscription } from "../models/Subscription.js";
 import { syncListingBadge } from "../services/listingBadge.js";
 import { createCheckoutSession, createPortalSession, setCancelAtPeriodEnd, stripeConfigured } from "../services/stripe.js";
 import { hasPremium, subscriptionView } from "../services/subscriptions.js";
+import { frontendUrl } from "../../config/urls.js";
 
 // The company's or freelancer's own premium page (/api/companies/premium and /api/freelancers/premium).
 // Every action is scoped to the signed-in account; prices and return URLs are decided on the server.
 
-const frontendUrl = () => (process.env.FRONTEND_URL || "http://localhost:3000").split(",")[0].trim().replace(/\/$/, "");
+
 const ownerOf = (req) => ({ providerType: sideOf(req).type, account: req.auth.sub });
 
 async function snapshot(req) {

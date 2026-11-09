@@ -11,6 +11,7 @@ import { rankingConfigWithHistory, saveConfigChange, validateConfigChange } from
 import { hasActivePremium, rankProviders, scoreEntry } from "../../../directory/services/rankingEngine.js";
 import { rankingEntries } from "../../../directory/services/rankingIndex.js";
 import { FreelancerListing } from "../../../freelancer/listing/models/FreelancerListing.js";
+import { frontendUrl } from "../../../config/urls.js";
 
 /** Excluded listings with their names, so the admin sees who they are. */
 async function namedExclusions(exclusions) {
@@ -150,7 +151,7 @@ export const directoryAdminController = {
       }
       const cityCount = [...(await citiesByState()).values()].reduce((sum, list) => sum + list.size, 0);
       const unpublished = (await storedPageSettings()).filter((doc) => doc.published === false).map((doc) => ({ key: doc.key, kind: doc.kind, updatedBy: doc.updatedBy ?? null, updatedAt: doc.updatedAt }));
-      const siteUrl = (process.env.SITE_URL || process.env.FRONTEND_URL || "http://localhost:3000").split(",")[0].trim().replace(/\/$/, "");
+      const siteUrl = frontendUrl();
       res.json({
         data: {
           total: listed.length, byScope,

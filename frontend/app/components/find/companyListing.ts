@@ -1,7 +1,7 @@
 import { youtubeId } from "./media";
 import type { BlogPost, OpeningHours, OpeningHoursDay, Plumber, PlumberReview, ProfileSeo, ServiceDetail, TeamMember } from "./types";
+import { API_BASE_URL } from "@/components/utils/apiBase";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
 
 type Offer = { title?: string; discount?: string; promoCode?: string; couponCount?: number };
 type PublicOffer = { _id: string; title: string; description?: string; image?: string; endDate?: string; coupons?: { code: string; discount: string; appliesTo?: string; minSpend?: number; terms?: string }[] };
@@ -415,7 +415,8 @@ const isListingId = (id: string) => /^[a-f0-9]{24}$/i.test(id);
 async function getData<T>(path: string): Promise<T | null> {
   try {
     // "no-cache": the browser keeps its copy but asks the server first; an unchanged directory answers 304 (no body).
-    const response = await fetch(`${API_BASE_URL}${path}`, { cache: "no-cache" });
+    // On the server a slow (sleeping) backend gives up after 12 s instead of hanging the page; browsers wait longer.
+    const response = await fetch(`${API_BASE_URL}${path}`, { cache: "no-cache", signal: AbortSignal.timeout(typeof window === "undefined" ? 12_000 : 60_000) });
     if (!response.ok) return null;
     return ((await response.json()).data ?? null) as T | null;
   } catch {

@@ -17,6 +17,29 @@ The development command intentionally starts without Node's file watcher, which 
 
 The API runs at `http://localhost:3300` by default. The frontend API client already defaults to `http://localhost:3300/api`.
 
+## Deploy: backend on Render, frontend and admin on Vercel
+
+Each app has a `.env.example` listing its variables. `.env` files are never committed, so set the values in each host's dashboard.
+
+**Render (backend):** Root directory `backend`, build `npm install`, start `npm start`, health check path `/health`.
+- `MONGODB_URI`: Atlas connection string. In Atlas → Network Access, allow `0.0.0.0/0`.
+- `JWT_SECRET`: a long random value.
+- `FRONTEND_URL` and `ADMIN_URL`: the two Vercel addresses. Trailing slashes are fine. Add `https://<project>-*.vercel.app` to allow preview deployments.
+- `GOOGLE_CLIENT_ID`, plus the SMTP settings if email is used.
+
+**Vercel (two projects):** root directory `frontend` and `admin`.
+- `NEXT_PUBLIC_BACKEND_URL`: the Render address, with or without `/api`.
+- Frontend also: `NEXT_PUBLIC_SITE_URL` (its own address) and `NEXT_PUBLIC_GOOGLE_CLIENT_ID`.
+- Admin also: `NEXT_PUBLIC_FRONTEND_URL`.
+- `NEXT_PUBLIC_` values are written into the build, so **redeploy after changing them**.
+
+**When the apps don't connect:**
+- **Render log says `CORS: refused https://…`:** that address is missing from `FRONTEND_URL`, `ADMIN_URL` or `CORS_ORIGIN`.
+- **`/health` answers 503:** the server is up, but MongoDB isn't connected. The log shows the reason and retries.
+- **Requests still go to `localhost`:** the Vercel variable was added after the last build, so redeploy.
+- **Google sign-in fails:** add the Vercel address to the OAuth client's *Authorized JavaScript origins*.
+- **Free Render plans sleep:** the first request can take about a minute. Directory pages show "temporarily unavailable" after 12 s instead of hanging.
+
 ## Endpoints
 
 - `GET /health` — verifies API and database connectivity

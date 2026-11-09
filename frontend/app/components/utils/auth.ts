@@ -1,5 +1,6 @@
 "use client";
 
+import { API_BASE_URL } from "./apiBase";
 import { isExpired, readTokenClaims, SESSION_COOKIE } from "./session";
 
 export type AppUser = {
@@ -21,7 +22,7 @@ type AuthResponse = {
   accountType?: string;
 };
 
-const API_BASE = () => process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
+const API_BASE = () => API_BASE_URL;
 const apiAccountType: Record<AccountType, string> = { seeker: "user", company: "company", freelancer: "freelancer" };
 
 /** Thrown when the account exists but its email isn't confirmed yet: show the code step for `email`. */
@@ -98,7 +99,7 @@ export async function authenticateAccount(accountType: AccountType, action: Auth
     freelancer: "freelancers",
   };
   const resource = resourceByAccountType[accountType];
-  const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
+  const baseUrl = API_BASE_URL;
   let response: Response;
   try {
     response = await fetch(`${baseUrl}/auth/${resource}/${action}`, {
@@ -107,7 +108,7 @@ export async function authenticateAccount(accountType: AccountType, action: Auth
       body: JSON.stringify(body),
     });
   } catch {
-    throw new Error("Cannot reach the backend. Make sure it is running on http://localhost:3300.");
+    throw new Error("Cannot reach the server right now. Please check your connection and try again in a moment.");
   }
 
   const payload = await readAuthPayload(response);
@@ -120,7 +121,7 @@ export async function authenticateAccount(accountType: AccountType, action: Auth
 }
 
 export async function loginWithEmail(email: string, password: string, selectedAccountType: AccountType) {
-  const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
+  const baseUrl = API_BASE_URL;
   let response: Response;
   try {
     response = await fetch(`${baseUrl}/auth/login`, {
@@ -129,7 +130,7 @@ export async function loginWithEmail(email: string, password: string, selectedAc
       body: JSON.stringify({ email: email.trim(), password }),
     });
   } catch {
-    throw new Error("Cannot reach the backend. Make sure it is running on http://localhost:3300.");
+    throw new Error("Cannot reach the server right now. Please check your connection and try again in a moment.");
   }
 
   const payload = await readAuthPayload(response);
@@ -159,7 +160,7 @@ async function postJson(path: string, body: Record<string, unknown>) {
   try {
     response = await fetch(`${API_BASE()}${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   } catch {
-    throw new Error("Cannot reach the backend. Make sure it is running on http://localhost:3300.");
+    throw new Error("Cannot reach the server right now. Please check your connection and try again in a moment.");
   }
   const payload = await readAuthPayload(response);
   if (!response.ok) throw new Error(payload.message || `Request failed (${response.status}).`);

@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
+import { normalizeApiBase } from "./app/components/utils/apiBase";
 
-// The backend API (same variable the browser code uses).
-const apiBase = (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api").replace(/\/$/, "");
+// The backend API (same variable and rule as the browser code: "/api" is added when the address lacks it).
+const apiBase = normalizeApiBase(process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL);
 
 /** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {

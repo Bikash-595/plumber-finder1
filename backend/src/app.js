@@ -20,18 +20,32 @@ import { mediaRouter } from "./media/mediaRouter.js";
 import { directoryRouter, searchRouter } from "./directory/routers/directoryRouter.js";
 import { invalidateDirectories } from "./shared/business/directoryCache.js";
 import { invalidateProfiles } from "./shared/business/profileCache.js";
+import { allowedOrigins, originMatcher } from "./config/urls.js";
 
 export const app = express();
 app.disable("x-powered-by");
-// Behind a load balancer / reverse proxy, set TRUST_PROXY (e.g. "1" = one hop) so rate limits see the real client IP.
-if (process.env.TRUST_PROXY) app.set("trust proxy", /^\d+$/.test(process.env.TRUST_PROXY) ? Number(process.env.TRUST_PROXY) : process.env.TRUST_PROXY);
+// Behind a load balancer / reverse proxy, rate limits must see the real client IP, not the proxy's (or every
+// visitor shares one limit). TRUST_PROXY sets it ("1" = one hop); on Render, which always sits behind one proxy,
+// it is one hop unless set otherwise.
+const trustProxy = process.env.TRUST_PROXY ?? (process.env.RENDER ? "1" : "");
+if (trustProxy) app.set("trust proxy", /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
 app.use(securityHeaders);
 
-const frontendUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "http://localhost:3000";
-// The admin panel is a separate app on its own origin.
-const adminUrl = process.env.ADMIN_URL || "http://localhost:3001";
-
-app.use(cors({ origin: [...frontendUrl.split(","), ...adminUrl.split(",")].map((origin) => origin.trim()).filter(Boolean) }));
+// The public site and the admin panel are separate apps on their own origins (config/urls.js).
+const isAllowedOrigin = originMatcher();
+const refused = new Set();
+app.use(cors({
+  origin(origin, callback) {
+    // Requests without an Origin (server-side rendering, health checks, curl) aren't cross-origin browser calls.
+    if (!origin || isAllowedOrigin(origin)) return callback(null, true);
+    if (!refused.has(origin) && refused.size < 50) {
+      refused.add(origin);
+      console.warn(`CORS: refused ${origin}. Allowed: ${allowedOrigins().join(", ")} — add it to FRONTEND_URL, ADMIN_URL or CORS_ORIGIN.`);
+    }
+    return callback(null, false);
+  },
+  maxAge: 600,
+}));
 // Gallery items may be videos; header profiles and services carry several photos, so those routes accept larger bodies.
 const largeBodyPaths = ["/api/companies/gallery", "/api/freelancers/gallery", "/api/companies/header-profile", "/api/freelancers/header-profile", "/api/users/reviews"];
 // Services carry up to 8 photos and an uploaded clip (the services config caps their total size).

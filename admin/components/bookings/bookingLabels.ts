@@ -1,6 +1,6 @@
 import { type AdminBookingStatus, type BookingStatus } from "@/lib/adminApi";
 
-export const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost:3000";
+export { FRONTEND_URL } from "@/lib/siteUrls";
 
 export const statuses = [{ value: "all", label: "All" }, { value: "pending", label: "Waiting for plumber" }, { value: "scheduled", label: "Confirmed" }, { value: "in_progress", label: "In progress" }, { value: "awaiting_confirmation", label: "Waiting for customer" }, { value: "disputed", label: "Disputed" }, { value: "completed", label: "Completed" }, { value: "declined", label: "Declined" }, { value: "cancelled", label: "Cancelled" }];
 

@@ -1,7 +1,14 @@
+import { API_BASE_URL } from "@/components/utils/apiBase";
+
 // Top 10 / Top 50 directory pages (USA, state and city): data from the backend (GET /api/directory/rankings/...),
 // fetched on the server so search engines see the real listings. Answers are cached for 60 seconds (the backend caches rankings too).
 
-const API = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
+const API = API_BASE_URL;
+// A sleeping backend (free hosting plans wake up slowly) must not hang the page until the host cuts it off:
+// after this long the page shows "temporarily unavailable" and tries again on the next visit.
+// (A race rather than an abort signal, so the response still goes into Next's data cache.)
+const SERVER_TIMEOUT_MS = 12_000;
+const timed = (request: Promise<Response>) => Promise.race([request, new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), SERVER_TIMEOUT_MS))]);
 
 export type WeekDay = { day: string; isOpen: boolean; opensAt?: string; closesAt?: string };
 export type ScoreFactor = { key: string; label: string; weight: number; value: number; points: number };
@@ -57,7 +64,7 @@ export type RankingResult = { status: "ok"; data: RankingPage } | { status: "mis
 export async function fetchRankingPage(limit: string, noun: string, state: string, city?: string, sort?: string): Promise<RankingResult> {
   const path = [limit, noun, state, city].filter(Boolean).map((part) => encodeURIComponent(part!)).join("/");
   try {
-    const response = await fetch(`${API}/directory/rankings/${path}${sort ? `?sort=${encodeURIComponent(sort)}` : ""}`, { next: { revalidate: 60 } });
+    const response = await timed(fetch(`${API}/directory/rankings/${path}${sort ? `?sort=${encodeURIComponent(sort)}` : ""}`, { next: { revalidate: 60 } }));
     if (response.status === 404) return { status: "missing" };
     if (!response.ok) return { status: "unavailable" };
     return { status: "ok", data: (await response.json()).data as RankingPage };
@@ -69,7 +76,7 @@ export async function fetchRankingPage(limit: string, noun: string, state: strin
 /** The ranking pages worth indexing, all or for one page design (for the sitemaps). Empty when the backend is down. */
 export async function fetchDirectorySitemap(scope?: RankingScope): Promise<{ path: string; providers: number; scope: RankingScope }[]> {
   try {
-    const response = await fetch(`${API}/directory/sitemap${scope ? `?scope=${scope}` : ""}`, { next: { revalidate: 3600 } });
+    const response = await timed(fetch(`${API}/directory/sitemap${scope ? `?scope=${scope}` : ""}`, { next: { revalidate: 3600 } }));
     return response.ok ? (await response.json()).data : [];
   } catch {
     return [];

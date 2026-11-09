@@ -10,6 +10,7 @@ import { recordActivity } from "../../activity/recordActivity.js";
 import { AUTO_CONFIRM_AFTER_MS } from "../../reviews/config/reviewsConfig.js";
 import { cancelReviewRequests, processDueReviewRequests, scheduleReviewRequests } from "../../reviews/services/requests.js";
 import { UserBooking } from "../../user/bookings/models/UserBooking.js";
+import { frontendUrl } from "../../config/urls.js";
 
 // How a booking moves between customer, plumber (company or freelancer), admin and the system:
 //   pending ──accept──▶ scheduled ──start──▶ in_progress ──mark done──▶ awaiting_confirmation
@@ -21,7 +22,7 @@ import { UserBooking } from "../../user/bookings/models/UserBooking.js";
 
 const listings = { company: { Model: CompanyListing, owner: "company" }, freelancer: { Model: FreelancerListing, owner: "freelancer" } };
 export const providerBookingsPath = { company: "/company-dashboard/bookings", freelancer: "/freelancer/bookings" };
-const siteUrl = () => (process.env.FRONTEND_URL || "http://localhost:3000").split(",")[0].trim();
+const siteUrl = frontendUrl;
 
 export const statusLabels = { pending: "waiting for a reply", scheduled: "confirmed", in_progress: "in progress", awaiting_confirmation: "waiting for the customer to confirm", completed: "completed", disputed: "disputed", cancelled: "cancelled", declined: "declined" };
 const verbs = { scheduled: "accepted", in_progress: "started", awaiting_confirmation: "marked as done", completed: "completed", disputed: "disputed", declined: "declined", cancelled: "cancelled" };

@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { DataTable, Panel } from "@/components/AdminData";
+import { FRONTEND_URL as siteUrl } from "@/lib/siteUrls";
 import { adminApi, type DirectoryConfig, type DirectoryPreview, type PreviewRow, type RankingExclusion } from "@/lib/adminApi";
 import LocationPicker from "./LocationPicker";
 import { useLocations } from "./useLocations";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 /** Rank the USA or any state / city / service with every score explained; exclude listings from (or restore them to) the rankings. */
 export default function RankingPreview({ config, onSaved }: { config: DirectoryConfig; onSaved: (config: DirectoryConfig) => void }) {

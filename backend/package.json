@@ -10,7 +10,7 @@
     "create-admin": "node scripts/createAdmin.js"
   },
   "engines": {
-    "node": "26.x"
+    "node": ">=22"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

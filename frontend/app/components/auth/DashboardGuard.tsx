@@ -4,8 +4,9 @@ import { useEffect, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { clearStoredUser, readStoredUser, syncSessionCookie } from "@/components/utils/auth";
 import { DASHBOARD_HOME, isExpired, loginPathFor, readTokenClaims, type DashboardArea } from "@/components/utils/session";
+import { API_BASE_URL } from "@/components/utils/apiBase";
 
-const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api";
+const API_BASE = API_BASE_URL;
 const meEndpoint: Record<DashboardArea, string> = { user: "/auth/users/me", company: "/auth/companies/me", freelancer: "/auth/freelancers/me" };
 
 /**
