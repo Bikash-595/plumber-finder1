@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
+    "build": "node -e \"console.log('No build step: the API runs straight from src/ (npm start).')\"",
     "dev": "nodemon src/server.js",
     "test": "node --test test/*.test.js",
     "create-admin": "node scripts/createAdmin.js"
